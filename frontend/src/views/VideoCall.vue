@@ -65,11 +65,16 @@ import { showSnackBar } from '../utils/utils.js';
 import CustomButton from '../components/CustomButton.vue';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
+import ParticipantStatistics from '../services/ParticipantStatistics.js';
+import ZoomVideo from '@zoom/videosdk';
 
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
 const sessionContainer = ref(null);
+
+// Initialize participantStatistics
+let participantStatistics = null;
 
 // 获取 mode from query
 const mode = ref(route.query.mode || 'join'); // 默认模式为加入会议
@@ -92,10 +97,8 @@ const config = reactive({
   }
 });
 const role = ref(mode.value === 'create' ? 1 : 0);
-
 const sessionJoined = ref(false);
-const autoJoin = ref(false);
-
+const autoJoin = ref(false)
 const buttonText = ref(mode.value === 'create' ? '创建会议' : '加入会议');
 
 // 读取路由参数并自动加入会议
@@ -221,6 +224,12 @@ const joinSession = async () => {
       throw new Error('sessionContainer 元素未找到');
     }
 
+    //初始化——要用不是组件形式的？
+    participantStatistics = new ParticipantStatistics(ZoomVideo.createClient()); 
+
+    participantStatistics.initializeEventListeners(); 
+    participantStatistics.startPeriodicSave(store.getters.getUser.uid, config.meetingId); 
+
     // 使用 UI Toolkit 加入会议
     uitoolkit.joinSession(sc, {
       videoSDKJWT: config.videoSDKJWT,
@@ -232,11 +241,13 @@ const joinSession = async () => {
       virtualBackground: config.virtualBackground
     });
     console.log('调用 uitoolkit.joinSession 成功');
+    console.log(uitoolkit);
+
 
     // 监听会议加入成功事件
     uitoolkit.onSessionJoined(() => {
-      console.log('会议加入成功');
       sessionJoined.value = true;
+      console.log('会议加入成功');
     });
 
     // 监听会议关闭事件
@@ -244,7 +255,7 @@ const joinSession = async () => {
       console.log('会议已关闭');
       uitoolkit.closeSession(sc);
       sessionJoined.value = false;
-
+      participantStatistics = null; 
       // 更新会议历史记录（状态为已完成）
       const user = store.getters.getUser;
       if (user && config.meetingId) {

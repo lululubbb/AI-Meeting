@@ -229,7 +229,7 @@ export default {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background-color: #22c55e; /* 更改按钮背景颜色 */
+  background-color: #feb2a5e0; /* 更改按钮背景颜色 */
   border: none;
   cursor: pointer;
   width: 60px;
@@ -254,7 +254,7 @@ export default {
   right: 30px;
   width: 400px; /* 增大聊天窗口宽度 */
   max-height: 500px;
-  background-color: #1f2937; /* 深色背景 */
+  background-color: #bcd9ffe0; /* 深色背景 */
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   display: flex;
@@ -278,7 +278,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #10b981; /* 更亮的绿色 */
+  background-color: #feb2a5e0; /* 更亮的绿色 */
   color: white;
   padding: 12px;
   border-top-left-radius: 12px;
@@ -297,13 +297,13 @@ export default {
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background-color: #111827; /* 深色背景 */
+  background-color: #bcd9ffe0; /* 深色背景 */
   color: #d1d5db; /* 浅灰色文字 */
 }
 
 .user-message {
   text-align: right;
-  background-color: #10b981; /* 更亮的绿色 */
+  background-color: #feb2a5e0; /* 更亮的绿色 */
   color: white;
   padding: 10px 16px;
   border-radius: 20px;
@@ -315,7 +315,7 @@ export default {
 
 .ai-message {
   text-align: left;
-  background-color: #374151; /* 中等灰色背景 */
+  background-color: #bcd9ffe0; /* 中等灰色背景 */
   color: #d1d5db; /* 浅灰色文字 */
   padding: 10px 16px;
   border-radius: 20px;
@@ -333,7 +333,7 @@ export default {
 
 .chat-input {
   display: flex;
-  border-top: 1px solid #4b5563; /* 深灰色边框 */
+  border-top: 1px solid #bcd9ffe0; /* 深灰色边框 */
 }
 
 .chat-input input {
@@ -343,7 +343,7 @@ export default {
   border-bottom-left-radius: 12px;
   outline: none;
   font-size: 16px;
-  background-color: #111827; /* 深色背景 */
+  background-color: #bcd9ffe0; /* 深色背景 */
   color: #d1d5db; /* 浅灰色文字 */
 }
 
@@ -353,7 +353,7 @@ export default {
 
 .chat-input button {
   padding: 12px 20px;
-  background-color: #10b981; /* 更亮的绿色 */
+  background-color: #feb2a5e0; /* 更亮的绿色 */
   color: white;
   border: none;
   cursor: pointer;
@@ -363,6 +363,6 @@ export default {
 }
 
 .chat-input button:hover {
-  background-color: #059669; /* 更深的绿色 */
+  background-color: #feb2a5e0; /* 更深的绿色 */
 }
 </style>

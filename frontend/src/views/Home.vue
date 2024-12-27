@@ -57,20 +57,20 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: #e0e0e0;
+  color: rgb(132, 183, 246);
 }
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  background-color: #1a1a1a;
-  border-bottom: 2px solid #333;
+  background-color: #fcfcfc;
+  border-bottom: 2px solid #e7e7e7;
 }
 .logout-btn {
   padding: 8px 16px;
-  background-color: #ef4444;
+  background-color: #fea3a3;
   border: none;
   border-radius: 20px;
   color: white;
@@ -78,7 +78,7 @@ header {
   transition: background-color 0.3s;
 }
 .logout-btn:hover {
-  background-color: #dc2626;
+  background-color: #ff7777;
 }
 main {
   flex: 1;
@@ -93,13 +93,13 @@ main {
   margin-bottom: 30px;
 }
 footer {
-  background-color: #141414;
+  background-color: #eaeaea;
   padding: 10px;
   text-align: center;
 }
 footer nav a {
   margin: 0 10px;
-  color: #1a73e8;
+  color: #1f1f1f;
   text-decoration: none;
   font-weight: bold;
 }

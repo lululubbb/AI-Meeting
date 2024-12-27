@@ -9,6 +9,8 @@ class ZoomVideoService {
   constructor() {
     this.jwt = '';
     this.isTesting = false; // 是否处于测试模式
+    this.videoStats = {};
+    this.audioStats = {};
   }
 
   // 获取 Zoom Video SDK 的 JWT
@@ -82,5 +84,4 @@ class ZoomVideoService {
     });
   }
 }
-
 export default new ZoomVideoService();

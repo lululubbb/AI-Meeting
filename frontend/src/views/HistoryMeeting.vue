@@ -7,6 +7,7 @@
     </div>
     <ul v-else>
       <li v-for="meeting in meetings" :key="meeting.id">
+        <!-- 这里存在的问题就是创建时间是按照插入数据库的时间算的，如果是日程安排的话怎么处理 -->
         <strong>会议名称:</strong> {{ meeting.meetingName }} <br />
         <strong>创建时间:</strong> {{ formatDate(meeting.createdAt) }} <br />
         <strong>状态:</strong> {{ meeting.status }}<br />
