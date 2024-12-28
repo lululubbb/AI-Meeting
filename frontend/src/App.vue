@@ -2,16 +2,29 @@
 <template>
   <div id="app">
     <router-view></router-view>
-    <AIFloatingChat />
+  <!-- 只有在非 Login 页面时才显示 AIFloatingChat -->
+  <AIFloatingChat v-if="!isLoginPage" />
   </div>
 </template>
 
 <script>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
 export default {
   name: 'App',
   components: {
     AIFloatingChat
+  },
+  setup() {
+    const route = useRoute();
+
+    // 判断当前是否是登录页面，如果是则不显示 AIFloatingChat
+    const isLoginPage = computed(() => route.name === 'Login');
+
+    return {
+      isLoginPage
+    };
   }
 }
 </script>
