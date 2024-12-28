@@ -74,7 +74,7 @@ const router = useRouter();
 const sessionContainer = ref(null);
 
 // Initialize participantStatistics
-let participantStatistics = null;
+// let participantStatistics = null;
 
 // 获取 mode from query
 const mode = ref(route.query.mode || 'join'); // 默认模式为加入会议
@@ -225,10 +225,10 @@ const joinSession = async () => {
     }
 
     //初始化——要用不是组件形式的？
-    participantStatistics = new ParticipantStatistics(ZoomVideo.createClient()); 
+    // participantStatistics = new ParticipantStatistics(ZoomVideo.createClient()); 
 
-    participantStatistics.initializeEventListeners(); 
-    participantStatistics.startPeriodicSave(store.getters.getUser.uid, config.meetingId); 
+    // participantStatistics.initializeEventListeners(); 
+    // participantStatistics.startPeriodicSave(store.getters.getUser.uid, config.meetingId); 
 
     // 使用 UI Toolkit 加入会议
     uitoolkit.joinSession(sc, {
@@ -255,7 +255,7 @@ const joinSession = async () => {
       console.log('会议已关闭');
       uitoolkit.closeSession(sc);
       sessionJoined.value = false;
-      participantStatistics = null; 
+      // participantStatistics = null; 
       // 更新会议历史记录（状态为已完成）
       const user = store.getters.getUser;
       if (user && config.meetingId) {
@@ -310,7 +310,7 @@ main {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #2c2c2c;
+  background-color: #c8c8c8;
 }
 
 #action-flow {
@@ -325,7 +325,7 @@ main {
 
 #action-flow h1 {
   margin-bottom: 20px;
-  color: #333333;
+  color: #000000;
 }
 
 .input-group {
@@ -359,6 +359,6 @@ main {
 #sessionContainer {
   width: 100%;
   height: 100vh;
-  background-color: #000000;
+  background-color: #eaeaea;
 }
 </style>

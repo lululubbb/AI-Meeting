@@ -10,6 +10,7 @@
   "license": "ISC",
   "keywords": [],
   "dependencies": {
-    "@mdi/font": "^7.4.47"
+    "@mdi/font": "^7.4.47",
+    "vue-router": "^4.5.0"
   }
 }

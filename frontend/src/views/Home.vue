@@ -57,15 +57,15 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #e0e0e0;
-  color: rgb(132, 183, 246);
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
 }
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  background-color: #fcfcfc;
+  background-color: #edeff3;
   border-bottom: 2px solid #e7e7e7;
 }
 .logout-btn {

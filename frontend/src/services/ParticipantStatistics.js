@@ -3,19 +3,19 @@
 class ParticipantStatistics {
     constructor(client) {
       // 假设传入的 client 已经是一个初始化好的 Zoom 客户端实例
-      this.client = client;
-      console.log('Zoom 客户端:', this.client);
-      this.videoStats = {}; // 用于存储视频统计
-      this.audioStats = {}; // 用于存储音频统计
+        this.client = client;
+        console.log('Zoom 客户端:', this.client);
+        this.videoStats = {}; // 用于存储视频统计
+        his.audioStats = {}; // 用于存储音频统计
     }
-  
+
     initializeEventListeners() {
       // 监听视频状态变化
       this.client.on('video-active-change', (payload) => {
         console.log('视频状态变化:', payload);  
         const { userId, state } = payload;
         const currentTime = new Date().getTime();
-  
+
         // 初始化用户的视频统计
         if (!this.videoStats[userId]) {
           this.videoStats[userId] = {
@@ -25,7 +25,7 @@ class ParticipantStatistics {
             openTimes: [],
           };
         }
-  
+
         // 视频开启状态
         if (state === 'Active') {
           this.videoStats[userId].openCount++;
@@ -42,24 +42,24 @@ class ParticipantStatistics {
           console.log('用户', userId, '视频持续时间:', duration, '秒');
           console.log('用户', userId, '视频持续总时间:', this.videoStats[userId].totalDuration, '秒');
         }
-      });
-  
+    });
+
       // 监听音频状态变化
-      this.client.on('audio-active-change', (payload) => {
+    this.client.on('audio-active-change', (payload) => {
         console.log('音频状态变化:', payload);  
         const { userId, state } = payload;
         const currentTime = new Date().getTime();
-  
+
         // 初始化用户的音频统计
-        if (!this.audioStats[userId]) {
-          this.audioStats[userId] = {
+    if (!this.audioStats[userId]) {
+        this.audioStats[userId] = {
             openCount: 0,
             totalDuration: 0,
             lastStartTime: null,
             openTimes: [],
-          };
-        }
-  
+        };
+    }
+
         // 音频开启状态
         if (state === 'Active') {
           this.audioStats[userId].openCount++;
@@ -76,17 +76,16 @@ class ParticipantStatistics {
           console.log('用户', userId, '音频持续时间:', duration, '秒');
           console.log('用户', userId, '音频持续总时间:', this.audioStats[userId].totalDuration, '秒');
         }
-      });
+        });
     }
-  
+
     // 每分钟打印一次统计数据
     startPeriodicSave(userId, meetingId) {
-      setInterval(() => {
+    setInterval(() => {
         console.log('用户', userId, '视频统计数据:', this.videoStats[userId] || {});
         console.log('用户', userId, '音频统计数据:', this.audioStats[userId] || {});
       }, 6000); // 每分钟打印一次
     }
-  }
-  
-  export default ParticipantStatistics;
-  
+}
+
+export default ParticipantStatistics;

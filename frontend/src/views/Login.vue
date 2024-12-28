@@ -45,7 +45,7 @@ import { ref } from 'vue';
 import showIcon from '@/assets/show.png';
 import hideIcon from '@/assets/hide.png';
 import AuthService from '../services/AuthService.js';
-
+import { useRouter } from 'vue-router';
 export default {
   name: 'Login',
   components: {},
@@ -54,6 +54,7 @@ export default {
     const password = ref('');
     const isLoginMode = ref(true);
     const showPassword = ref(false);
+    const router = useRouter();
 
     const toggleMode = () => {
       isLoginMode.value = !isLoginMode.value;
@@ -62,26 +63,50 @@ export default {
     const toggleShow = () => {
       console.log("Before:", showPassword.value);
       showPassword.value = !showPassword.value;
-    console.log("After:", showPassword.value);
+      console.log("After:", showPassword.value);
     };
 
+    // const handleAuth = async () => {
+    //   if (!email.value.trim() || !password.value.trim()) {
+    //     alert("邮箱或密码不能为空");
+    //     return;
+    //   }
+    //   if (isLoginMode.value) {
+    //     const res = await AuthService.signInWithEmailAndPassword(email.value, password.value);
+    //     if (res) this.$router.push('/home');
+    //   } else {
+    //     const res = await AuthService.registerWithEmailAndPassword(email.value, password.value);
+    //     if (res) this.$router.push('/home');
+    //   }
+    // };
+
     const handleAuth = async () => {
-      if (!email.value.trim() || !password.value.trim()) {
+      // console.log("router:", router);  // 调试 router 是否存在
+      if (email.value.trim() === '' || password.value.trim() === '') {
         alert("邮箱或密码不能为空");
         return;
       }
+      let res;
       if (isLoginMode.value) {
-        const res = await AuthService.signInWithEmailAndPassword(email.value, password.value);
-        if (res) this.$router.push('/home');
+        console.log("尝试登录:", email.value);
+        res = await AuthService.signInWithEmailAndPassword(email.value, password.value);
       } else {
-        const res = await AuthService.registerWithEmailAndPassword(email.value, password.value);
-        if (res) this.$router.push('/home');
+        console.log("尝试注册:", email.value);
+        res = await AuthService.registerWithEmailAndPassword(email.value, password.value);
+      }
+
+      if (res) {
+        console.log(isLoginMode.value ? "登录成功" : "注册成功");
+        router.push('/home');  // 跳转到 /home 页面
       }
     };
 
     const loginWithGoogle = async () => {
       const res = await AuthService.signInWithGoogle();
-      if (res) this.$router.push('/home');
+      if (res){
+        console.log("google登录成功" );
+        router.push('/home');  // 跳转到 /home 页面router.push('/home');
+      }
     };
 
     return {
@@ -91,6 +116,7 @@ export default {
       showPassword,
       showIcon,
       hideIcon,
+      router,
       toggleMode,
       toggleShow,
       handleAuth,
