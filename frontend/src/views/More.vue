@@ -1,3 +1,5 @@
+<!-- src/views/More.vue -->
+<!-- src/views/Chat.vue -->
 <template>
   <div class="home-container">
  <!-- 主体布局 -->
@@ -5,19 +7,12 @@
       <!-- 左侧区域 -->
       <div class="left-section">
         <Mood/>
-        <div class="options">
-        <MeetingOption 
-          @new-meeting="navigateToCreateMeeting" 
-          @join-meeting="navigateToJoinMeeting" 
-          @history-meeting="navigateToHistoryMeeting" 
-        />
-      </div>
+        <CalendarTodoList />
       </div>
 
       <!-- 中间部分 -->
       <div class="middle-section">
         <!-- 中间区域的组件 -->
-        <CalendarTodoList />
       </div>
 
       <!-- 右侧部分 -->
@@ -54,37 +49,10 @@ const router = useRouter();
 
 // 获取 Vuex store 实例
 const store = useStore();
-
-// 导航到创建会议
-const navigateToCreateMeeting = () => {
-  router.push({ 
-    name: 'VideoCall', 
-    query: { mode: 'create' }
-  });
-};
-
-// 导航到加入会议
-const navigateToJoinMeeting = () => {
-  router.push({ 
-    name: 'VideoCall', 
-    query: { mode: 'join' }
-  });
-};
-
-// 导航到历史会议
-const navigateToHistoryMeeting = () => {
-  router.push({ 
-    name: 'HistoryMeeting'
-  });
-};
-
-// 用户登出
-const logout = async () => {
-  await store.dispatch('signOutUser');
-  router.push('/');
-};
+  
+  
 </script>
-
+  
 <style scoped>
 .home-container {
   display: flex;
@@ -94,6 +62,7 @@ const logout = async () => {
   background-color: #ffffff;
   overflow: hidden; 
 }
+
 .main-layout {
   display: flex;
   flex: 1;
@@ -102,41 +71,30 @@ const logout = async () => {
   overflow: auto; 
 }
 
-.options {
-  margin: 100px auto;
-  padding: 30px;
-  width: 85%; 
-  max-width: 400px; 
-}
-
 /* 左侧部分 */
 .left-section {
-  flex: 1 1 400px;
+  flex:0.7;
   background-color: #ffffff;
   padding: 20px;
   box-shadow: inset -1px 0 0 #ddd;
-  justify-content: center;
-  align-items: center; 
   overflow: auto; 
 }
 
 /* 中间部分 */
 .middle-section {
-  flex:1 1 400px;
+  flex: 1.3;
   background-color: #ffffff;
   padding: 20px;
   box-shadow: inset -1px 0 0 #ddd;
-  padding: 0;
-  justify-content: center;
   overflow: auto; 
 }
 
 /* 右侧部分 */
 .right-section {
-  flex: 1 1 400px;
+  flex: 0.7;
   display: flex;
   flex-direction: column;
-  background-color: #f3f3f3;
+  background-color: #ffffff;
   padding: 0;
   overflow: auto; 
 }
@@ -168,5 +126,5 @@ footer {
   border-top: 1px solid #ddd;
 }
 
-
-</style>
+  </style>
+  

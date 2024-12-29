@@ -46,6 +46,8 @@ import showIcon from '@/assets/show.png';
 import hideIcon from '@/assets/hide.png';
 import AuthService from '../services/AuthService.js';
 import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+
 export default {
   name: 'Login',
   components: {},
@@ -64,24 +66,10 @@ export default {
       showPassword.value = !showPassword.value;
     };
 
-    // const handleAuth = async () => {
-    //   if (!email.value.trim() || !password.value.trim()) {
-    //     alert("邮箱或密码不能为空");
-    //     return;
-    //   }
-    //   if (isLoginMode.value) {
-    //     const res = await AuthService.signInWithEmailAndPassword(email.value, password.value);
-    //     if (res) this.$router.push('/home');
-    //   } else {
-    //     const res = await AuthService.registerWithEmailAndPassword(email.value, password.value);
-    //     if (res) this.$router.push('/home');
-    //   }
-    // };
-
     const handleAuth = async () => {
       // console.log("router:", router);  // 调试 router 是否存在
       if (email.value.trim() === '' || password.value.trim() === '') {
-        alert("邮箱或密码不能为空");
+        ElMessage.error("邮箱或密码不能为空");  // 使用 ElMessage 提示错误
         return;
       }
       let res;
@@ -94,16 +82,19 @@ export default {
       }
 
       if (res) {
-        console.log(isLoginMode.value ? "登录成功" : "注册成功");
-        router.push('/home');  // 跳转到 /home 页面
+        ElMessage.success(isLoginMode.value ? "登录成功" : "注册成功");        router.push('/home');  // 跳转到 /home 页面
+      }else {
+        ElMessage.error("操作失败，请重试");  // 如果登录或注册失败时，显示失败信息
       }
     };
 
     const loginWithGoogle = async () => {
       const res = await AuthService.signInWithGoogle();
       if (res){
-        console.log("google登录成功" );
+        ElMessage.success("Google 登录成功"); 
         router.push('/home');  // 跳转到 /home 页面router.push('/home');
+      }else {
+        ElMessage.error("Google 登录失败");  // 如果 Google 登录失败时，显示失败信息
       }
     };
 

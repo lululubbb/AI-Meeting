@@ -5,6 +5,8 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import ZoomVideoService from './services/ZoomVideoService.js'
+import '@fortawesome/fontawesome-free/css/all.min.css'; // 引入 Font Awesome
+import 'element-plus/dist/index.css'; // Import Element Plus CSS globally
 
 const app = createApp(App)
 

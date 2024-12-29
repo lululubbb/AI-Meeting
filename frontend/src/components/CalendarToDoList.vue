@@ -1,10 +1,11 @@
-<template>
+alendar<template>
     <div class="calendar-todolist">
       <!-- FullCalendar -->
       <FullCalendar 
         :options="calendarOptions" 
         :locale="zhCnLocale"
         @dateClick="handleDateClick" 
+        class="calendar"
       />
   
       <!-- To-Do List Section -->
@@ -22,7 +23,7 @@
               <span :class="{'completed-text': todo.isCompleted}">{{ todo.text }}</span>
               <span class="date">{{ todo.date }}</span>
             </div>
-  
+            <div class="button-container">
             <!-- 编辑按钮 -->
             <button @click="editTodo(todo)" class="edit-button">···</button>
   
@@ -33,6 +34,7 @@
               class="delete-button" 
               @click="deleteTodo(todo)" 
             />
+            </div>
           </li>
         </ul>
       </div>
@@ -65,7 +67,7 @@
         calendarOptions: {
         },
         todos: [
-          { id: 1, text: 'Design layout homepage', date: '2024-12-01', isCompleted: true },
+          { id: 1, text: 'Design layout', date: '2024-12-01', isCompleted: true },
           { id: 2, text: 'Push on Github', date: '2024-12-05', isCompleted: false },
           { id: 3, text: 'Deploy with Firebase', date: '2024-12-09', isCompleted: false }
         ],
@@ -80,10 +82,12 @@
         return {
         plugins: [dayGridPlugin, interactionPlugin],
         locale: zhCnLocale,
-         height: 'auto',  
-         contentHeight: 'auto', // 自动高度
+        height: 'auto',  
+        contentHeight: 'auto', // 自动高度
         minWidth: '300px',
         maxWidth: '1000px',
+        height: '600px',  // 设置日历的固定高度
+        contentHeight: '500px',  // 设置日历内容区域的高度
           buttonText: {
             today: '今天',
             month: '月',
@@ -149,15 +153,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 600px; 
-    margin: 40px; 
-    max-width: 1000px;
-    padding: 20px;
+    justify-content: center;
+    width: 95%; 
+    margin: 10px; 
+    max-width: 800px;
+    padding: 10px;
   }
 
-.full-calendar {
-  width:60%; /* FullCalendar 宽度自适应 */
-  max-width: 100%; /* 防止 FullCalendar 宽度超出容器 */
+  .calendar {
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px; 
+  width:90%;
+  height: 70vh;
 }
   .header {
     display: flex;
@@ -166,6 +173,7 @@
   }
   
   .header h2 {
+    margin-top: 50px;
     margin-bottom: 1px;
   }
   
@@ -175,16 +183,18 @@
   }
   
   .todo-list {
-    width: 100%;
-    margin-top: -20px;
+    width: 90%;
+    margin-top: -10px;
   }
   
   .todo-list li {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    /* justify-content: space-between;  */
     padding: 10px 0;
     border-bottom: 1px solid #ccc;
+    position: relative;
   }
   
   .todo-list li input[type="checkbox"] {
@@ -222,7 +232,13 @@
     color: #525252;
     font-size: 16px;
   }
-  
+  .todo-list li .button-container {
+  display: flex;
+  flex-direction: row; /* 垂直排列 */
+  align-items: center; /* 垂直居中 */
+  margin-left: auto; /* 将按钮容器推到最右边 */
+  justify-content: center; /* 垂直居中 */
+}
   .todo-list li .edit-button {
     background: none;
     border: none;
@@ -231,14 +247,12 @@
     font-size: 26px;
     font-weight: bolder;
     padding: 0 10px;
-    margin-right: -30px; 
   }
   
   .todo-list li .delete-button {
     cursor: pointer;
     width: 20px;
     height: 20px;
-    margin-left: -30px; 
   }
   
   .todo-dialog {

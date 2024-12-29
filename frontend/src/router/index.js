@@ -5,7 +5,12 @@ import Login from '../views/Login.vue'
 import Home from '../views/Home.vue'
 import HistoryMeeting from '../views/HistoryMeeting.vue'
 import VideoCall from '../views/VideoCall.vue'
+import Meetings from '../views/Meetings.vue';
 import store from '../store'
+import Reservations from '../views/Reservations.vue';
+import Files from '../views/Files.vue';
+import More from '../views/More.vue';
+import Chat from '../views/Chat.vue';
 
 // 定义路由规则
 const routes = [
@@ -33,6 +38,33 @@ const routes = [
     component: VideoCall,
     meta: { requiresAuth: true }
   },
+  { path: '/meetings',
+    name: 'Meetings', 
+    component: Meetings,
+    meta: { requiresAuth: true }
+  },
+  { path: '/reservations',
+    name: 'Reservations', 
+    component: Reservations,
+    meta: { requiresAuth: true }
+  },
+  { path: '/files',
+    name: 'Files',
+    component: Files,
+    meta: { requiresAuth: true }
+  },
+  { path: '/more',
+    name: 'More', 
+    component: More,
+    meta: { requiresAuth: true }
+  },
+  { path: '/chat',
+    name: 'Chat', 
+    component: Chat,
+    meta: { requiresAuth: true }
+  },
+  // 处理未定义的路径
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 // 创建路由实例

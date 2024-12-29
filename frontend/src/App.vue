@@ -1,9 +1,16 @@
 <!-- src/App.vue -->
 <template>
   <div id="app">
-    <router-view></router-view>
+  
   <!-- 只有在非 Login 页面时才显示 AIFloatingChat -->
   <AIFloatingChat v-if="!isLoginPage" />
+  <Header v-if="!isLoginPage" />
+  <div :class="['content', { 'no-header': isLoginPage }]">
+      <transition name="fade" mode="out-in">
+        <router-view />
+      </transition>
+    </div>
+
   </div>
 </template>
 
@@ -11,10 +18,13 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
+import Header from './components/Header.vue';
+
 export default {
   name: 'App',
   components: {
-    AIFloatingChat
+    AIFloatingChat,
+    Header
   },
   setup() {
     const route = useRoute();
@@ -40,12 +50,32 @@ html, body, #app {
   flex-direction: column;
 }
 body {
-  background-color: #ffffff;
-  color: white;
+  background-color:transparent;
+  color: rgb(0, 0, 0);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 a {
   color: inherit;
   text-decoration: none;
+}
+.content {
+  padding-top: 90px; /* 根据 Header 的高度调整 */
+  min-height: calc(100vh - 90px);
+  box-sizing: border-box;
+}
+/* 只有在登录页面时，不应用 padding-top 和 min-height */
+.content.no-header {
+  padding-top: 0;
+  min-height: 100vh; /* 让登录页面充满整个视口 */
+}
+
+/* 过渡效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

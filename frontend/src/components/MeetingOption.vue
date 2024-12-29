@@ -1,3 +1,4 @@
+<!-- src/components/MeetingOption.vue-->
 <template>
   <div class="meeting-options">
     <div class="option" @click="handleNewMeeting">
@@ -27,34 +28,32 @@
   </div>
 </template>
 
-<script>
-import { ref } from 'vue';
+<script setup>
+// 使用 defineEmits 来定义事件
+const emit = defineEmits();
 
-export default {
-  setup() {
-    const handleNewMeeting = () => {
-      console.log('New Meeting clicked');
-    };
+// 处理新会议按钮点击事件
+const handleNewMeeting = () => {
+  console.log('New Meeting clicked');
+  emit('new-meeting'); // 触发父组件事件
+};
 
-    const handleJoinMeeting = () => {
-      console.log('Join Meeting clicked');
-    };
+// 处理加入会议按钮点击事件
+const handleJoinMeeting = () => {
+  console.log('Join Meeting clicked');
+  emit('join-meeting'); // 触发父组件事件
+};
 
-    const handleScheduleMeeting = () => {
-      console.log('Schedule Meeting clicked');
-    };
+// 处理安排会议按钮点击事件
+const handleScheduleMeeting = () => {
+  console.log('Schedule Meeting clicked');
+  emit('schedule-meeting'); // 触发父组件事件
+};
 
-    const handleHistoryMeeting = () => {
-      console.log('History Meeting clicked');
-    };
-
-    return {
-      handleNewMeeting,
-      handleJoinMeeting,
-      handleScheduleMeeting,
-      handleHistoryMeeting
-    };
-  }
+// 处理历史会议按钮点击事件
+const handleHistoryMeeting = () => {
+  console.log('History Meeting clicked');
+  emit('history-meeting'); // 触发父组件事件
 };
 </script>
 
@@ -62,8 +61,8 @@ export default {
 .meeting-options {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* 2 columns */
-  gap: 20px;
-  padding: 20px;
+  gap: 10px;
+  padding: 10px;
   background-color: transparent;
 }
 
@@ -73,30 +72,32 @@ export default {
   align-items: center;
   cursor: pointer;
   text-align: center;
+  width: auto;
+  margin: 20px;
 }
 
 .icon-wrapper1 {
   background-color: #fba1a3; 
-  padding: 20px;
-  border-radius: 10px;
+  padding: 10px;
+  border-radius: 50%;
 }
 .icon-wrapper {
   background-color: #c6e0ff; 
-  padding: 20px;
-  border-radius: 10px;
+  padding: 10px;
+  border-radius: 50%;
 }
 .icon-wrapper1 img {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
 }
 .icon-wrapper img {
-  width: 60px;
-  height: 60px;
+  width: 90px;
+  height: 90px;
 }
 
 span {
   margin-top: 10px;
-  font-size: 16px;
+  font-size: 24px;
   color: #333;
   font-weight:bold;
 }

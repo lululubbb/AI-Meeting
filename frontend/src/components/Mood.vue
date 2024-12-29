@@ -1,3 +1,4 @@
+<!-- src/components/Mood.vue-->
 <template>
     <div>
       <h2>当前心情：</h2>
@@ -61,6 +62,7 @@
     methods: {
       updateMood() {
         console.log('当前选中的心情:', this.selectedMood);
+        this.$refs.moodSelect.blur();
       },
       onSelectFocus() {
       // 恢复文本显示
