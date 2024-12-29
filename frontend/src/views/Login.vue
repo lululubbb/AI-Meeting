@@ -61,9 +61,7 @@ export default {
     };
 
     const toggleShow = () => {
-      console.log("Before:", showPassword.value);
       showPassword.value = !showPassword.value;
-      console.log("After:", showPassword.value);
     };
 
     // const handleAuth = async () => {
@@ -155,8 +153,6 @@ export default {
   align-items: center;
   padding: 20px;
   margin: 40px;
-  /* border-top-right-radius: 20px;
-  border-bottom-right-radius: 20px; */
   border-radius: 20px;
   background: linear-gradient(to bottom right, #f6f6f6c0, #b9d1ff);
 

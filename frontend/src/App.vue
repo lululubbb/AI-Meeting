@@ -40,7 +40,7 @@ html, body, #app {
   flex-direction: column;
 }
 body {
-  background-color: #1a1a1a;
+  background-color: #ffffff;
   color: white;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

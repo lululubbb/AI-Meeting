@@ -10,6 +10,12 @@
         <CustomButton text="创建会议" :onPressed="navigateToCreateMeeting" />
         <CustomButton text="加入会议" :onPressed="navigateToJoinMeeting" />
       </div>
+
+        <!-- 使用日历和待办事项组件 -->
+        <CalendarTodoList />
+        <Mood/>
+        <MeetingOption/>
+
     </main>
     <footer>
       <nav>
@@ -22,11 +28,18 @@
 
 <script>
 import CustomButton from '../components/CustomButton.vue'
+import CalendarTodoList from '../components/CalendarTodoList.vue' 
+import MeetingOption from '../components/MeetingOption.vue';
+import Mood from '../components/Mood.vue';
+
 
 export default {
   name: 'Home',
   components: {
-    CustomButton
+    CustomButton,
+    CalendarTodoList,
+    Mood,
+    MeetingOption
   },
   methods: {
     // 导航到创建会议
