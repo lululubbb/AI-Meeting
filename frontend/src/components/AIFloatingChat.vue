@@ -2,7 +2,7 @@
 <template>
   <div>
     <button class="ai-float-button" @click="toggleChat">
-      <img src="@/assets/ai-icon.png" alt="AI Chat" />
+      <img src="@/assets/AI.png" alt="AI Chat" />
     </button>
 
     <div v-if="isChatOpen" class="chat-container">
@@ -229,12 +229,12 @@ export default {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background-color: #feb2a5e0; /* 更改按钮背景颜色 */
+  background-color:transparent; /* 更改按钮背景颜色 */
   border: none;
   cursor: pointer;
   width: 60px;
   height: 60px;
-  z-index: 1000;
+  z-index: 0;
   border-radius: 50%; /* 圆形按钮 */
   display: flex;
   justify-content: center;
@@ -278,8 +278,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: white;
+  background-color: #dfe3e8; /* 更亮的绿色 */
+  color: #434040;
   padding: 12px;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
@@ -288,7 +288,7 @@ export default {
 .chat-header button {
   background: none;
   border: none;
-  color: white;
+  color: #434040;
   font-size: 20px;
   cursor: pointer;
 }
@@ -297,14 +297,14 @@ export default {
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background-color: #bcd9ffe0; /* 深色背景 */
-  color: #d1d5db; /* 浅灰色文字 */
+  background-color: white; /* 深色背景 */
+  color: #434040; /* 浅灰色文字 */
 }
 
 .user-message {
   text-align: right;
   background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: white;
+  color: d1d5db;
   padding: 10px 16px;
   border-radius: 20px;
   margin-bottom: 10px;
@@ -316,7 +316,7 @@ export default {
 .ai-message {
   text-align: left;
   background-color: #bcd9ffe0; /* 中等灰色背景 */
-  color: #d1d5db; /* 浅灰色文字 */
+  color: #434040; /* 浅灰色文字 */
   padding: 10px 16px;
   border-radius: 20px;
   margin-bottom: 10px;
@@ -333,7 +333,7 @@ export default {
 
 .chat-input {
   display: flex;
-  border-top: 1px solid #bcd9ffe0; /* 深灰色边框 */
+  border-top: 1px solid white; /* 深灰色边框 */
 }
 
 .chat-input input {
@@ -343,8 +343,8 @@ export default {
   border-bottom-left-radius: 12px;
   outline: none;
   font-size: 16px;
-  background-color: #bcd9ffe0; /* 深色背景 */
-  color: #d1d5db; /* 浅灰色文字 */
+  background-color: white; /* 深色背景 */
+  color: #434040; /* 浅灰色文字 */
 }
 
 .chat-input input::placeholder {
@@ -353,8 +353,8 @@ export default {
 
 .chat-input button {
   padding: 12px 20px;
-  background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: white;
+  background-color:#bcd9ffe0; /* 更亮的绿色 */
+  color: #434040;
   border: none;
   cursor: pointer;
   border-bottom-right-radius: 12px;

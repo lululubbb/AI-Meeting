@@ -5,7 +5,7 @@
       <!-- 左侧标题和搜索栏 -->
       <div class="left-section">
         <div class="title">
-          AI zoom<br />
+          AI Meeting<br />
           workplace
         </div>
         <div class="search-bar">
@@ -25,40 +25,40 @@
           active-class="active"
         >
           <i :class="item.icon"></i>
-          {{ item.label }}
+          <span class="nav-label">{{ item.label }}</span>
         </router-link>
       </nav>
 
       <!-- 右侧按钮 -->
-      <div class="flex space-x-4">
+      <div class="right-section">
         <!-- 减号按钮 -->
-        <button class="bg-transparent hover:text-blue-700 flex items-center justify-center transition-colors duration-300">
-          <i class="fa-solid fa-minus text-black"></i>
+        <button class="icon-button">
+          <i class="fa-solid fa-minus"></i>
         </button>
 
         <!-- 铃铛按钮 -->
-        <button class="bg-transparent hover:text-green-700 flex items-center justify-center transition-colors duration-300">
-          <i class="fa-solid fa-bell text-black"></i>
+        <button class="icon-button">
+          <i class="fa-solid fa-bell"></i>
         </button>
 
         <!-- 用户按钮 -->
-        <button class="bg-transparent hover:text-green-700 flex items-center justify-center transition-colors duration-300">
-          <i class="fa-solid fa-user text-black"></i>
+        <button class="icon-button">
+          <i class="fa-solid fa-user"></i>
         </button>
 
         <!-- 问号按钮 -->
-        <button class="bg-transparent hover:text-yellow-700 flex items-center justify-center transition-colors duration-300">
-          <i class="fa-solid fa-question text-black"></i>
+        <button class="icon-button">
+          <i class="fa-solid fa-question"></i>
         </button>
 
         <!-- 扩展按钮 -->
-        <button class="bg-transparent hover:text-yellow-700 flex items-center justify-center transition-colors duration-300">
-          <i class="fa-solid fa-expand text-black"></i>
+        <button class="icon-button">
+          <i class="fa-solid fa-expand"></i>
         </button>
 
         <!-- 关闭按钮 -->
-        <button   @click="logout" class="bg-transparent hover:text-yellow-700 flex items-center justify-center transition-colors duration-300">
-          <i class="fa-solid fa-xmark text-black"></i>
+        <button @click="logout" class="icon-button">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
     </div>
@@ -91,35 +91,41 @@ const logout = async () => {
 };
 </script>
 
-
 <style scoped>
+/* 根字体大小，可根据需要调整 */
+:root {
+  font-size: 16px;
+}
+
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   background-color: #dfe3e8; /* 与按钮底部边框颜色一致 */
-  padding: 20px 36px 3px 36px;
+  padding: 1.25rem 2.25rem 0.1875rem 2.25rem; /* 20px 36px 3px 36px */
   box-sizing: border-box;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1); /* 0 2px 4px rgba(0, 0, 0, 0.1) */
 }
 
 .header-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
 }
 
 .left-section {
   display: flex;
   align-items: center;
-  gap: 59px;
+  gap: 3.6875rem; /* 59px */
+  flex-shrink: 1;
 }
 
 .title {
   color: #000;
-  font-size: 24px;
+  font-size: 1.5rem; /* 24px */
   line-height: 1.2;
   font-weight: bold;
   white-space: pre-line;
@@ -127,39 +133,41 @@ const logout = async () => {
 
 .search-bar {
   position: relative;
-  width: 271px;
-  height: 29px;
+  width: 16.9375rem; /* 271px */
+  height: 1.8125rem; /* 29px */
   background-color: #f7f7f7;
-  border-radius: 16px;
+  border-radius: 1rem; /* 16px */
   display: flex;
   align-items: center;
-  padding-left: 12px;
+  padding-left: 0.75rem; /* 12px */
 }
 
 .search-icon {
-  color: #f8f7f7;
-  margin-right: 8px;
+  color: #bfbfbf;
+  margin-right: 0.5rem; /* 8px */
+  font-size: 1rem; /* 16px */
 }
 
 .search-bar input {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px */
   color: #bfbfbf;
   outline: none;
 }
 
 .search-divider {
-  width: 1px;
-  height: 18px;
+  width: 0.0625rem; /* 1px */
+  height: 1.125rem; /* 18px */
   background-color: #dfe3e8;
-  margin-left: 8px;
+  margin-left: 0.5rem; /* 8px */
 }
 
 .nav {
   display: flex;
-  gap: 59px;
+  gap: 3.6875rem; /* 59px */
+  flex-shrink: 1;
 }
 
 .nav-link {
@@ -168,14 +176,14 @@ const logout = async () => {
   align-items: center;
   text-decoration: none;
   color: #434040;
-  font-size: 24px;
+  font-size: 1.5rem; /* 24px */
   position: relative;
   transition: color 0.3s, transform 0.3s;
 }
 
 .nav-link i {
-  margin-bottom: 5px;
-  font-size: 18px;
+  margin-bottom: 0.3125rem; /* 5px */
+  font-size: 1.125rem; /* 18px */
   color: inherit; /* 继承父元素的颜色 */
 }
 
@@ -183,12 +191,12 @@ const logout = async () => {
 .nav-link:hover::after {
   content: '';
   position: absolute;
-  bottom: -5px;
+  bottom: -0.3125rem; /* -5px */
   left: 0;
   width: 100%;
-  height: 2px;
+  height: 0.125rem; /* 2px */
   background-color: #434040;
-  border-radius: 2px;
+  border-radius: 0.125rem; /* 2px */
 }
 
 .nav-link:hover {
@@ -196,40 +204,314 @@ const logout = async () => {
   transform: scale(1.05);
 }
 
-/* 移除默认的按钮边框和背景色 */
-button {
-  border: none;
-  outline: none;
-  cursor: pointer;
-  background-color: transparent; /* 确保背景透明 */
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* 16px */
+  flex-shrink: 1;
 }
 
-/* 确保图标颜色与按钮背景透明 */
-button i {
-  color: #000; /* 图标初始颜色为黑色 */
-  font-size: 1.25rem; /* 根据需要调整图标大小 */
+.icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-size: 1.25rem; /* 20px */
+  color: #000;
+}
+
+.icon-button:hover {
+  color: #434040;
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
-  .header-container {
-    flex-direction: column;
-    align-items: flex-start;
+@media (max-width: 1200px) {
+  .header {
+    padding: 1rem 1.5rem 0.125rem 1.5rem; /* 16px 24px 2px 24px */
   }
 
   .left-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
+    gap: 2.5rem; /* 40px */
+  }
+
+  .title {
+    font-size: 1.375rem; /* 22px */
+  }
+
+  .search-bar {
+    width: 15rem; /* 240px */
+    height: 1.75rem; /* 28px */
+    padding-left: 0.625rem; /* 10px */
+  }
+
+  .search-icon {
+    margin-right: 0.4rem; /* 6.4px */
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .search-bar input {
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .search-divider {
+    height: 1rem; /* 16px */
+    margin-left: 0.4rem; /* 6.4px */
   }
 
   .nav {
-    flex-wrap: wrap;
-    gap: 20px;
+    gap: 2.5rem; /* 40px */
   }
 
-  .content {
-    padding-top: 150px; /* 根据调整后的 Header 高度调整 */
+  .nav-link {
+    font-size: 1.375rem; /* 22px */
+  }
+
+  .nav-link i {
+    font-size: 1rem; /* 16px */
+  }
+
+  .nav-link .nav-label {
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .right-section {
+    gap: 0.75rem; /* 12px */
+  }
+
+  .icon-button {
+    font-size: 1.125rem; /* 18px */
+  }
+}
+
+@media (max-width: 992px) {
+  .header {
+    padding: 0.875rem 1.25rem 0.1rem 1.25rem; /* 14px 20px 1.6px 20px */
+  }
+
+  .left-section {
+    gap: 2rem; /* 32px */
+  }
+
+  .title {
+    font-size: 1.25rem; /* 20px */
+  }
+
+  .search-bar {
+    width: 14rem; /* 224px */
+    height: 1.625rem; /* 26px */
+    padding-left: 0.5rem; /* 8px */
+  }
+
+  .search-icon {
+    margin-right: 0.3rem; /* 4.8px */
+    font-size: 0.75rem; /* 12px */
+  }
+
+  .search-bar input {
+    font-size: 0.75rem; /* 12px */
+  }
+
+  .search-divider {
+    height: 0.9375rem; /* 15px */
+    margin-left: 0.3rem; /* 4.8px */
+  }
+
+  .nav {
+    gap: 2rem; /* 32px */
+  }
+
+  .nav-link {
+    font-size: 1.25rem; /* 20px */
+  }
+
+  .nav-link i {
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .nav-link .nav-label {
+    font-size: 0.75rem; /* 12px */
+  }
+
+  .right-section {
+    gap: 0.5rem; /* 8px */
+  }
+
+  .icon-button {
+    font-size: 1rem; /* 16px */
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem 0.1rem 1rem; /* 12px 16px 1.6px 16px */
+  }
+
+  .left-section {
+    gap: 1.5rem; /* 24px */
+  }
+
+  .title {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .search-bar {
+    width: 13rem; /* 208px */
+    height: 1.5rem; /* 24px */
+    padding-left: 0.4rem; /* 6.4px */
+  }
+
+  .search-icon {
+    margin-right: 0.25rem; /* 4px */
+    font-size: 0.7rem; /* 11.2px */
+  }
+
+  .search-bar input {
+    font-size: 0.7rem; /* 11.2px */
+  }
+
+  .search-divider {
+    height: 0.875rem; /* 14px */
+    margin-left: 0.25rem; /* 4px */
+  }
+
+  .nav {
+    gap: 1.75rem; /* 28px */
+  }
+
+  .nav-link {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .nav-link i {
+    font-size: 0.75rem; /* 12px */
+  }
+
+  .nav-link .nav-label {
+    font-size: 0.6875rem; /* 11px */
+  }
+
+  .right-section {
+    gap: 0.4rem; /* 6.4px */
+  }
+
+  .icon-button {
+    font-size: 0.875rem; /* 14px */
+  }
+}
+
+@media (max-width: 576px) {
+  .header {
+    padding: 0.625rem 0.75rem 0.1rem 0.75rem; /* 10px 12px 1.6px 12px */
+  }
+
+  .left-section {
+    gap: 1rem; /* 16px */
+  }
+
+  .title {
+    font-size: 1rem; /* 16px */
+  }
+
+  .search-bar {
+    width: 12rem; /* 192px */
+    height: 1.375rem; /* 22px */
+    padding-left: 0.3rem; /* 4.8px */
+  }
+
+  .search-icon {
+    margin-right: 0.2rem; /* 3.2px */
+    font-size: 0.625rem; /* 10px */
+  }
+
+  .search-bar input {
+    font-size: 0.625rem; /* 10px */
+  }
+
+  .search-divider {
+    height: 0.8125rem; /* 13px */
+    margin-left: 0.2rem; /* 3.2px */
+  }
+
+  .nav {
+    gap: 1.5rem; /* 24px */
+  }
+
+  .nav-link {
+    font-size: 1rem; /* 16px */
+  }
+
+  .nav-link i {
+    font-size: 0.625rem; /* 10px */
+  }
+
+  .nav-link .nav-label {
+    font-size: 0.625rem; /* 10px */
+  }
+
+  .right-section {
+    gap: 0.3rem; /* 4.8px */
+  }
+
+  .icon-button {
+    font-size: 0.75rem; /* 12px */
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.5rem 0.5rem 0.1rem 0.5rem; /* 8px 8px 1.6px 8px */
+  }
+
+  .left-section {
+    gap: 0.75rem; /* 12px */
+  }
+
+  .title {
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .search-bar {
+    width: 11rem; /* 176px */
+    height: 1.25rem; /* 20px */
+    padding-left: 0.2rem; /* 3.2px */
+  }
+
+  .search-icon {
+    margin-right: 0.15rem; /* 2.4px */
+    font-size: 0.5rem; /* 8px */
+  }
+
+  .search-bar input {
+    font-size: 0.5rem; /* 8px */
+  }
+
+  .search-divider {
+    height: 0.75rem; /* 12px */
+    margin-left: 0.15rem; /* 2.4px */
+  }
+
+  .nav {
+    gap: 1.25rem; /* 20px */
+  }
+
+  .nav-link {
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .nav-link i {
+    font-size: 0.5rem; /* 8px */
+  }
+
+  .nav-link .nav-label {
+    font-size: 0.5rem; /* 8px */
+  }
+
+  .right-section {
+    gap: 0.2rem; /* 3.2px */
+  }
+
+  .icon-button {
+    font-size: 0.625rem; /* 10px */
   }
 }
 

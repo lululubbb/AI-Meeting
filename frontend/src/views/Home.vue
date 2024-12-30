@@ -1,17 +1,17 @@
 <template>
   <div class="home-container">
- <!-- 主体布局 -->
- <main class="main-layout">
+    <!-- 主体布局 -->
+    <main class="main-layout">
       <!-- 左侧区域 -->
       <div class="left-section">
-        <Mood/>
+        <Mood />
         <div class="options">
-        <MeetingOption 
-          @new-meeting="navigateToCreateMeeting" 
-          @join-meeting="navigateToJoinMeeting" 
-          @history-meeting="navigateToHistoryMeeting" 
-        />
-      </div>
+          <MeetingOption 
+            @new-meeting="navigateToCreateMeeting" 
+            @join-meeting="navigateToJoinMeeting" 
+            @history-meeting="navigateToHistoryMeeting" 
+          />
+        </div>
       </div>
 
       <!-- 中间部分 -->
@@ -26,6 +26,8 @@
         <div class="top-right">
           <!-- 放置右上组件 -->
           <ActivityChart />
+          <!-- 集成 FileAttachmentContainer，内部已包含 FileAttachment -->
+          <!-- <FileAttachmentContainer /> -->
         </div>
         <!-- 下半部分 -->
         <div class="bottom-right">
@@ -36,7 +38,7 @@
     </main>
 
     <footer>
-        <p>&copy; 慧议先锋.</p>
+      <p>&copy; 慧议先锋.</p>
     </footer>
   </div>
 </template>
@@ -44,10 +46,14 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';  // 如果你使用 vuex 来管理状态
+
+// 导入组件
 import MeetingOption from '../components/MeetingOption.vue'; 
-import CustomButton from '../components/CustomButton.vue';
 import CalendarTodoList from '../components/CalendarTodoList.vue'; 
 import Mood from '../components/Mood.vue';
+// import ActivityChart from '../components/ActivityChart.vue';
+// import RecentActivity from '../components/RecentActivity.vue';
+// import FileAttachmentContainer from '../components/FileAttachmentContainer.vue'; // 引入容器组件
 
 // 获取路由实例
 const router = useRouter();
@@ -167,6 +173,4 @@ footer {
   justify-content: center;
   border-top: 1px solid #ddd;
 }
-
-
 </style>
