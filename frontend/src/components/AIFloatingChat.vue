@@ -83,12 +83,12 @@ export default {
             {
               role: "system",
               content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）：
-{
-  "action": "create_meeting",
-  "meetingName": "会议名称",
-  "password": "密码"
-}
-如果不是创建会议的请求，请正常回复。`
+              {
+                "action": "create_meeting",
+                "meetingName": "会议名称",
+                "password": "密码"
+              }
+              如果不是创建会议的请求，请正常回复。`
             },
             {
               role: "user",
@@ -243,8 +243,8 @@ export default {
 }
 
 .ai-float-button img {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
@@ -281,6 +281,7 @@ export default {
   background-color: #dfe3e8; /* 更亮的绿色 */
   color: #434040;
   padding: 12px;
+  font-size: 22px;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
@@ -327,7 +328,7 @@ export default {
 
 .loading {
   text-align: center;
-  color: #a0aec0;
+  color: #000000;
   margin-bottom: 10px;
 }
 
@@ -348,7 +349,7 @@ export default {
 }
 
 .chat-input input::placeholder {
-  color: #6b7280; /* 中灰色占位符 */
+  color: #656565; /* 中灰色占位符 */
 }
 
 .chat-input button {
@@ -363,6 +364,6 @@ export default {
 }
 
 .chat-input button:hover {
-  background-color: #feb2a5e0; /* 更深的绿色 */
+  background-color: #bababae0; /* 更深的绿色 */
 }
 </style>
