@@ -12,7 +12,7 @@
 
       <!-- 中间部分 -->
       <div class="middle-section">
-        <AllMeeting/>
+        <HistoryMeeting/>
     
       </div>
 
@@ -44,8 +44,7 @@ import MeetingOption from '../components/MeetingOption.vue';
 import CustomButton from '../components/CustomButton.vue';
 import CalendarTodoList from '../components/CalendarTodoList.vue'; 
 import Mood from '../components/Mood.vue';
-import AllMeeting from '../components/AllMeeting.vue'
-//import HistoryMeeting from '../views/HistoryMeeting.vue'
+import HistoryMeeting from '../views/HistoryMeeting.vue'
 // 获取路由实例
 const router = useRouter();
 

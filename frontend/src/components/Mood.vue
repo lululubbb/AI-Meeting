@@ -59,10 +59,19 @@
         }
       }
     },
+    mounted() {
+    // 页面加载时触发选中的心情更新逻辑
+    this.updateMood();
+    },
     methods: {
       updateMood() {
         console.log('当前选中的心情:', this.selectedMood);
-        this.$refs.moodSelect.blur();
+        const selected = this.moods.find(mood => mood.name === this.selectedMood);
+      if (selected) {
+        this.selectedMoodImage = selected.image;
+        this.updateSelectBackground(selected.image);
+      }
+      this.$refs.moodSelect.blur(); // 隐藏选择框文本
       },
       onSelectFocus() {
       // 恢复文本显示
@@ -99,7 +108,7 @@
  .mood-select {
     display: inline-block;
     padding: 8px;
-    font-size: 16px;
+    font-size: 18px;
     margin-left: 5px;
     border: none;
     background-color: #fff;

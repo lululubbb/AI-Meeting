@@ -50,13 +50,40 @@
       <CustomButton :text="buttonText" :onPressed="handleSession" />
     </div>
 
-    <!-- 用于嵌入视频会议的容器 -->
-    <div id="sessionContainer" ref="sessionContainer" v-else></div>
+ <!-- 用于嵌入视频会议的容器 -->
+ <div id="sessionContainer" ref="sessionContainer" v-else></div>
+      <!-- 显示音频转录结果 -->
+      <div v-if="sessionJoined" id="transcriptionContainer">
+        <!-- 搜索框 -->
+  <div class="search-container">
+      <div class="input-wrapper">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="搜索会议相关信息"
+          class="search-input"
+        />
+        <img
+          src="@/assets/search.png"
+          alt="Search"
+          class="search-icon"
+        />
+      </div>
+    </div>
+        <h2>会议转录</h2>
+        <ul>
+          <!-- 搜索框搜索出来高亮显示 -->
+          <li v-for="(transcript, index) in filteredTranscriptionList" :key="index">
+          <span v-html="highlightMatch(transcript)"></span>
+        </li>
+        </ul>
+      </div>
+
   </main>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import uitoolkit from '@zoom/videosdk-ui-toolkit';
 import '@zoom/videosdk-ui-toolkit/dist/videosdk-ui-toolkit.css';
 import { useStore } from 'vuex';
@@ -243,6 +270,8 @@ const joinSession = async () => {
     console.log('调用 uitoolkit.joinSession 成功');
     console.log(uitoolkit);
 
+    // 启动音频转录
+    startTranscription();
 
     // 监听会议加入成功事件
     uitoolkit.onSessionJoined(() => {
@@ -285,9 +314,64 @@ const joinSession = async () => {
   }
 };
 
+
+//此处用来写呈现转录和翻译结果的代码
+//存储转录文本
+const searchQuery = ref('');  // 搜索框的输入
+const transcriptionList = ref([]);  // 存储转录的内容
+const filteredTranscriptionList = ref([]);  // 存储经过过滤后的转录内容
+
+
+// 模拟音频转录过程
+const startTranscription = () => {
+  // 使用 Web Speech API 或其他转录服务进行音频转录
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'zh-CN';
+  recognition.interimResults = true;
+
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    transcriptionList.value.push(transcript);  // 将转录文本加入列表
+  };
+
+  recognition.start();
+};
+
+// 模糊搜索函数
+const filterTranscriptions = () => {
+  const query = searchQuery.value.trim().toLowerCase();
+  if (query === '') {
+    filteredTranscriptionList.value = transcriptionList.value; // 如果没有搜索词，显示所有转录内容
+  } else {
+    filteredTranscriptionList.value = transcriptionList.value.filter(transcript =>
+      transcript.toLowerCase().includes(query)  // 如果转录文本包含搜索词
+    );
+  }
+};
+
+// 高亮显示匹配的部分
+const highlightMatch = (text) => {
+  const query = searchQuery.value.trim();
+  if (!query) return text;  // 如果没有搜索内容，直接返回原文本
+
+  const regex = new RegExp(`(${query})`, 'gi');  // 使用正则表达式匹配搜索词
+  return text.replace(regex, '<span class="highlight">$1</span>');  // 高亮显示匹配部分
+};
+
+// 监听搜索框的变化，实时过滤转录内容
+watch(searchQuery, filterTranscriptions);
+
+
 // 生命周期钩子
 onMounted(() => {
   checkRouteParams();
+// 当会议开始时启动音频转录
+    if (sessionJoined.value) {
+    startTranscription();
+  }
 });
 
 onBeforeUnmount(() => {
@@ -309,8 +393,9 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #c8c8c8;
+  height: 90vh;
+  background-color: #ffffff;
+  margin: 0; 
 }
 
 #action-flow {
@@ -357,8 +442,87 @@ main {
 }
 
 #sessionContainer {
-  width: 100%;
-  height: 100vh;
-  background-color: #eaeaea;
+  width: 75%;
+  height: 90vh;
+  margin-top: 0px;
+  display: flex;
+  justify-content: space-between;
+  background-color: rgb(255, 255, 255);
+}
+
+#transcriptionContainer {
+  width:22%; 
+  height:75vh;
+  background-color: rgb(255, 255, 255);
+  padding: 5px;
+  color: rgb(0, 0, 0);
+  border-radius: 8px;
+  overflow-y: auto;
+  border: solid;
+  border-color: #b9b9b9;
+  margin-left: 10px;
+  margin-top: 140px;
+}
+#transcriptionContainer ul {
+  list-style-type: none; 
+  padding: 0;
+  margin: 0;
+}
+
+#transcriptionContainer li {
+  background-color: #f0f0f0; 
+  color: #000; 
+  padding: 10px;
+  margin-bottom: 10px; 
+  border-radius: 12px; 
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 14px; 
+  word-wrap: break-word; 
+}
+
+.search-container {
+    position: relative;
+    margin-bottom: 20px;
+  }
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  width: 95%; 
+} 
+.search-input {
+    width: 70%;
+    padding: 10px 40px 10px 40px;
+    border-radius: 25px;
+    border-width: 2px;
+    font-size: 16px;
+    outline: none;
+    border-color: #d7d7d7;
+  
+  }
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  margin-left: 10px;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  pointer-events: none; 
+}
+.search-input:focus {
+    border-color: #b1b1b1;
+}
+  
+.search-input::placeholder {
+    color: #bbb;
+    font-style: italic;
+}
+/* 高亮显示搜索出来的部分 */
+.highlight {
+  background-color: yellow;
+  font-weight: bold;
 }
 </style>

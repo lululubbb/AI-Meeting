@@ -20,8 +20,8 @@ alendar<template>
             <input type="checkbox" v-model="todo.isCompleted" class="checkbox"/>
   
             <div class="todo-text">
-              <span :class="{'completed-text': todo.isCompleted}">{{ todo.text }}</span>
-              <span class="date">{{ todo.date }}</span>
+              <div :class="{'completed-text': todo.isCompleted}">{{ todo.text }}</div>
+              <div class="date">{{ todo.date }}</div>
             </div>
             <div class="button-container">
             <!-- 编辑按钮 -->
@@ -86,8 +86,8 @@ alendar<template>
         contentHeight: 'auto', // 自动高度
         minWidth: '300px',
         maxWidth: '1000px',
-        height: '600px',  // 设置日历的固定高度
-        contentHeight: '500px',  // 设置日历内容区域的高度
+        height: '470px',  // 设置日历的固定高度
+        contentHeight: '800px',  // 设置日历内容区域的高度
           buttonText: {
             today: '今天',
             month: '月',
@@ -156,8 +156,9 @@ alendar<template>
     justify-content: center;
     width: 95%; 
     margin: 10px; 
+    margin-left: 5px;
     max-width: 800px;
-    padding: 10px;
+    padding: 5px;
   }
 
   .calendar {
@@ -184,7 +185,7 @@ alendar<template>
   
   .todo-list {
     width: 90%;
-    margin-top: -10px;
+    margin-top: -15px;
   }
   
   .todo-list li {
@@ -210,19 +211,20 @@ alendar<template>
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
+    flex-direction: column;
     flex-grow: 1;
     white-space: nowrap;
     flex-shrink: 0;
   }
   
-  .todo-list li .todo-text span {
+  .todo-list li .todo-text div {
     color: #333;
     font-size: 17px;
     margin-right: 10px;
     white-space: nowrap;
   }
   
-  .todo-list li .todo-text span.completed-text {
+  .todo-list li .todo-text div.completed-text {
     text-decoration: line-through;
     color: #676767;
   }
@@ -231,13 +233,14 @@ alendar<template>
     font-size: 12px;
     color: #525252;
     font-size: 16px;
+    margin-top: 2px; 
   }
   .todo-list li .button-container {
   display: flex;
-  flex-direction: row; /* 垂直排列 */
-  align-items: center; /* 垂直居中 */
-  margin-left: auto; /* 将按钮容器推到最右边 */
-  justify-content: center; /* 垂直居中 */
+  flex-direction: row; 
+  align-items: center; 
+  margin-left: auto; 
+  justify-content: center;
 }
   .todo-list li .edit-button {
     background: none;
