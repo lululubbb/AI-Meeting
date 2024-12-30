@@ -83,12 +83,12 @@ export default {
             {
               role: "system",
               content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）：
-{
-  "action": "create_meeting",
-  "meetingName": "会议名称",
-  "password": "密码"
-}
-如果不是创建会议的请求，请正常回复。`
+              {
+                "action": "create_meeting",
+                "meetingName": "会议名称",
+                "password": "密码"
+              }
+              如果不是创建会议的请求，请正常回复。`
             },
             {
               role: "user",
@@ -229,11 +229,11 @@ export default {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background-color: #feb2a5e0; /* 更改按钮背景颜色 */
+  background-color: #ebebebe0; /* 更改按钮背景颜色 */
   border: none;
   cursor: pointer;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   z-index: 1000;
   border-radius: 50%; /* 圆形按钮 */
   display: flex;
@@ -243,8 +243,8 @@ export default {
 }
 
 .ai-float-button img {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
@@ -278,9 +278,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: white;
+  background-color: #ebebebe0; /* 更亮的绿色 */
+  color: rgb(0, 0, 0);
   padding: 12px;
+  font-size: 22px;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
@@ -288,8 +289,8 @@ export default {
 .chat-header button {
   background: none;
   border: none;
-  color: white;
-  font-size: 20px;
+  color: rgb(0, 0, 0);
+  font-size: 26px;
   cursor: pointer;
 }
 
@@ -297,14 +298,14 @@ export default {
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background-color: #bcd9ffe0; /* 深色背景 */
-  color: #d1d5db; /* 浅灰色文字 */
+  background-color: #ffffff; /* 深色背景 */
+  color: #000000; /* 浅灰色文字 */
 }
 
 .user-message {
   text-align: right;
-  background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: white;
+  background-color: #dff5ff; /* 更亮的绿色 */
+  color: rgb(0, 0, 0);
   padding: 10px 16px;
   border-radius: 20px;
   margin-bottom: 10px;
@@ -315,8 +316,8 @@ export default {
 
 .ai-message {
   text-align: left;
-  background-color: #bcd9ffe0; /* 中等灰色背景 */
-  color: #d1d5db; /* 浅灰色文字 */
+  background-color: #f1f1f1e0; /* 中等灰色背景 */
+  color: #000000; /* 浅灰色文字 */
   padding: 10px 16px;
   border-radius: 20px;
   margin-bottom: 10px;
@@ -327,13 +328,13 @@ export default {
 
 .loading {
   text-align: center;
-  color: #a0aec0;
+  color: #000000;
   margin-bottom: 10px;
 }
 
 .chat-input {
   display: flex;
-  border-top: 1px solid #bcd9ffe0; /* 深灰色边框 */
+  border-top: 1px solid #969696e0; /* 深灰色边框 */
 }
 
 .chat-input input {
@@ -343,18 +344,18 @@ export default {
   border-bottom-left-radius: 12px;
   outline: none;
   font-size: 16px;
-  background-color: #bcd9ffe0; /* 深色背景 */
-  color: #d1d5db; /* 浅灰色文字 */
+  background-color: #ebebebe0; /* 深色背景 */
+  color: #000000; /* 浅灰色文字 */
 }
 
 .chat-input input::placeholder {
-  color: #6b7280; /* 中灰色占位符 */
+  color: #656565; /* 中灰色占位符 */
 }
 
 .chat-input button {
   padding: 12px 20px;
-  background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: white;
+  background-color: #d4d4d4e0; /* 更亮的绿色 */
+  color: rgb(0, 0, 0);
   border: none;
   cursor: pointer;
   border-bottom-right-radius: 12px;
@@ -363,6 +364,6 @@ export default {
 }
 
 .chat-input button:hover {
-  background-color: #feb2a5e0; /* 更深的绿色 */
+  background-color: #bababae0; /* 更深的绿色 */
 }
 </style>

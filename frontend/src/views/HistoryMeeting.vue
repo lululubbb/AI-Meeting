@@ -62,14 +62,17 @@
         <p><strong>发起人:</strong> {{ selectedMeeting.host }}</p>
         <p><strong>开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
         <p><strong>结束时间:</strong> {{ selectedMeeting.endedAt ? formatDate(selectedMeeting.endedAt) : '正在进行中' }}</p>
-        <div class="meeting-actions">
-        <p><strong>参会人员:</strong></p>
+        
+        <!-- <div class="meeting-actions"> -->
+    <!-- 只在当前用户是会议的host时显示以下内容 -->
+    <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">          <p><strong>参会人员:</strong></p>
         <button @click="downloadData" class="download-btn">
           <img src="@/assets/download.png" alt="Download" />
         </button>
         </div>
-        <div class="meeting-actions">
-        <p><strong>参会度:</strong></p>
+        <!-- <div class="meeting-actions"> -->
+    <!-- 只在当前用户是会议的host时显示以下内容 -->
+    <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">        <p><strong>参会度:</strong></p>
         <button @click="downloadData" class="download-btn">
           <img src="@/assets/download.png" alt="Download" />
         </button>
@@ -130,6 +133,14 @@ import { ElMessage } from 'element-plus';
 const store = useStore();
 const router = useRouter();
 const route = useRoute ();
+
+// 获取当前用户的邮箱
+const getUserEmail = () => {
+  const user = store.getters.getUser;
+  console.log('当前用户邮箱:', user.email); // 调试信息
+  return user.email || 'unknown@domain.com';
+};
+
 // 获取会议列表
 const meetings = computed(() => store.getters.getMeetings);
 
