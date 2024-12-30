@@ -7,7 +7,8 @@
   <div class="history-container">
     <h2>会议历史记录</h2>
 <!-- 关闭按钮 -->
-<div v-if="route.name === 'HistoryMeeting'" class="close-btn-wrapper">      <button @click="goHome" class="close-btn">
+<div v-if="route.name === 'HistoryMeeting'" class="close-btn-wrapper">      
+  <button @click="goHome" class="close-btn">
       <img src="@/assets/exit.png"  alt="exit"/>
       </button>
 </div>
@@ -84,22 +85,34 @@
     <!-- 动态切换显示内容 -->
     <div v-if="activeSection === 'record'" class="section-content">
       <!-- 会议记录的内容 -->
-      <p>会议记录内容...</p>
+      <!-- 判断会议状态是否为已结束 -->
+      <p v-if="selectedMeeting.status === 'finished'">
+        会议记录内容...
+      </p>
     </div>
 
     <div v-if="activeSection === 'keywords'" class="section-content">
       <!-- 关键提取的内容 -->
-      <p>关键提取内容...</p>
+      <!-- 判断会议状态是否为已结束 -->
+      <p v-if="selectedMeeting.status === 'finished'">
+        关键提取内容...
+      </p>
     </div>
 
     <div v-if="activeSection === 'sentiment'" class="section-content">
       <!-- 情感分析&词云图的内容 -->
-      <p>情感分析&词云图内容...</p>
+      <!-- 判断会议状态是否为已结束 -->
+      <p v-if="selectedMeeting.status === 'finished'">
+        情感分析&词云图内容...
+      </p>
     </div>
 
     <div v-if="activeSection === 'statistics'" class="section-content">
       <!-- 参会统计的内容 -->
-      <p>参会统计内容...</p>
+      <!-- 判断会议状态是否为已结束 -->
+      <p v-if="selectedMeeting.status === 'finished'">
+        参会统计内容...
+      </p>
     </div>
 
       </div>
@@ -111,6 +124,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter,useRoute  } from 'vue-router'; // 引入 useRouter
+import { ElMessage } from 'element-plus';
 
 // 获取 Vuex store
 const store = useStore();
@@ -197,7 +211,12 @@ const downloadData = () => {
 
 // 切换功能区域
 const showSection = (section) => {
-  activeSection.value = section;
+   // 确保只有在会议已结束时才允许切换到具体功能部分
+  if (selectedMeeting.value && selectedMeeting.value.status === 'finished') {
+    activeSection.value = section;
+  } else {
+    ElMessage.warning("请等会议结束后再进行查看");  
+  }
 };
 
 const goHome = () => {
@@ -357,7 +376,7 @@ div h3{
   padding-top: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 10;
-  width: 450px;
+  width: 1000px;
   max-height: 80%;
   overflow-y: auto;
   border-radius: 10px;

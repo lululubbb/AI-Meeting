@@ -3,6 +3,7 @@
   <main>
     <!-- 根据 mode 显示创建或加入会议的表单 -->
     <div id="action-flow" v-if="!autoJoin">
+      <span class="closeBtn" @click="goHome">×</span>
       <h1>视频会议</h1>
 
       <!-- 创建会议表单 -->
@@ -99,6 +100,11 @@ const store = useStore();
 const route = useRoute();
 const router = useRouter();
 const sessionContainer = ref(null);
+
+
+const goHome = () => {
+  router.push({ name: 'Home' });
+};
 
 // Initialize participantStatistics
 // let participantStatistics = null;
@@ -398,6 +404,19 @@ main {
   margin: 0; 
 }
 
+.closeBtn {
+  position: absolute;  /* 设置为绝对定位 */
+  top: 5px;           /* 调整顶部间距 */
+  right: 20px;   
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+}
+.closeBtn:hover {
+  color: red;
+}
+
 #action-flow {
   background-color: #ffffff;
   padding: 40px;
@@ -406,6 +425,7 @@ main {
   text-align: center;
   max-width: 500px;
   width: 100%;
+  position: relative; /* 设置父容器为相对定位 */
 }
 
 #action-flow h1 {
