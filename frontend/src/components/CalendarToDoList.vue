@@ -43,7 +43,7 @@ alendar<template>
       <div v-if="isDialogVisible" class="todo-dialog">
         <div class="dialog-content">
           <h3>{{ isEditing ? '编辑' : '新建' }}待办事项</h3>
-          <input v-model="newTodoText" placeholder="输入待办事项" />
+          <input v-model="newTodoText" placeholder="输入待办事项"  @keyup.enter="saveTodo"/>
           <button @click="saveTodo">{{ isEditing ? '保存' : '添加' }}</button>
           <button @click="closeDialog">取消</button>
         </div>
@@ -86,7 +86,7 @@ alendar<template>
         contentHeight: 'auto', // 自动高度
         minWidth: '300px',
         maxWidth: '1000px',
-        height: '470px',  // 设置日历的固定高度
+        height: '480px',  // 设置日历的固定高度
         contentHeight: '800px',  // 设置日历内容区域的高度
           buttonText: {
             today: '今天',
@@ -157,15 +157,15 @@ alendar<template>
     width: 95%; 
     margin: 10px; 
     margin-left: 5px;
-    max-width: 800px;
+    max-width: 100%;
     padding: 5px;
+    margin-top: 40px;
   }
 
   .calendar {
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px;
   border-radius: 8px; 
   width:90%;
-  height: 70vh;
 }
   .header {
     display: flex;
@@ -176,16 +176,20 @@ alendar<template>
   .header h2 {
     margin-top: 50px;
     margin-bottom: 1px;
+    margin-left: 30px;
   }
   
   .header h3 {
-    margin-top: 5px;
+    margin-top: 10px;
     color: #787878;
+    margin-left: 30px;
+    margin-bottom: 10px;
   }
   
   .todo-list {
     width: 90%;
     margin-top: -15px;
+    max-width: 100%;
   }
   
   .todo-list li {
@@ -196,11 +200,12 @@ alendar<template>
     padding: 10px 0;
     border-bottom: 1px solid #ccc;
     position: relative;
+
   }
   
   .todo-list li input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
     cursor: pointer;
     position: relative;
     margin-right: 20px;
@@ -222,6 +227,7 @@ alendar<template>
     font-size: 17px;
     margin-right: 10px;
     white-space: nowrap;
+    font-size: 20px;
   }
   
   .todo-list li .todo-text div.completed-text {
@@ -232,7 +238,7 @@ alendar<template>
   .todo-list li .todo-text .date {
     font-size: 12px;
     color: #525252;
-    font-size: 16px;
+    font-size: 18px;
     margin-top: 2px; 
   }
   .todo-list li .button-container {

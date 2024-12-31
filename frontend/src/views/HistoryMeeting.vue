@@ -262,14 +262,13 @@ const goHome = () => {
 .history-container {
   padding: 20px;
   width: 90%;
-  max-width: 1000px;
+  max-width: 800px;
+  max-height: 87vh;
   margin: 0 auto;
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   position: relative;
-  
-  max-height: 100%;  
   overflow-y: auto;  
 }
 

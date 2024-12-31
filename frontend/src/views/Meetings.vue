@@ -18,16 +18,7 @@
 
       <!-- 右侧部分 -->
       <div class="right-section">
-        <!-- 上半部分 -->
-        <div class="top-right">
-          <!-- 放置右上组件 -->
-          <ActivityChart />
-        </div>
-        <!-- 下半部分 -->
-        <div class="bottom-right">
-          <!-- 放置右下组件 -->
-          <RecentActivity />
-        </div>
+        <RecentActivity />
       </div>
     </main>
 
@@ -45,6 +36,8 @@ import CustomButton from '../components/CustomButton.vue';
 import CalendarTodoList from '../components/CalendarTodoList.vue'; 
 import Mood from '../components/Mood.vue';
 import HistoryMeeting from '../views/HistoryMeeting.vue'
+import RecentActivity from '../components/RecentActivityCard.vue';
+
 // 获取路由实例
 const router = useRouter();
 
@@ -74,9 +67,9 @@ const store = useStore();
 
 /* 左侧部分 */
 .left-section {
-  flex:0.7;
+  flex:0.8;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
@@ -85,36 +78,18 @@ const store = useStore();
 .middle-section {
   flex: 1.3;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
 
 /* 右侧部分 */
 .right-section {
-  flex: 0.7;
+  flex: 0.8;
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
-  padding: 0;
-  overflow: auto; 
-}
-
-/* 右上部分：占右侧高度 50% */
-.top-right {
-  flex: 1;
-  background-color: #ffffff;
-  padding: 20px;
-  box-shadow: inset 0 -1px 0 #ddd;
-  overflow: auto; 
-}
-
-/* 右下部分：占右侧高度 50% */
-.bottom-right {
-  flex: 1;
-  background-color: #ffffff;
-  padding: 20px;
-  box-shadow: inset 0 -1px 0 #ddd;
+  padding: 10px;
   overflow: auto; 
 }
 

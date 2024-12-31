@@ -73,9 +73,9 @@ const store = useStore();
 
 /* 左侧部分 */
 .left-section {
-  flex:0.7;
+  flex:0.8;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
@@ -84,20 +84,21 @@ const store = useStore();
 .middle-section {
   flex: 1.3;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
 
 /* 右侧部分 */
 .right-section {
-  flex: 0.7;
+  flex: 0.8;
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
-  padding: 0;
+  padding: 10px;
   overflow: auto; 
 }
+
 
 /* 右上部分：占右侧高度 50% */
 .top-right {
