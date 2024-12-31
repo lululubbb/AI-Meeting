@@ -10,18 +10,41 @@
         <span>AI助手</span>
         <button @click="toggleChat">×</button>
       </div>
+      <!-- 消息列表 -->
       <div class="chat-messages" ref="chatMessages">
+        <!-- 使用统一的 .message-row 包裹单条消息，根据 msg.from 动态添加 ai-row / user-row 控制布局 -->
         <div
           v-for="(msg, index) in messages"
           :key="index"
-          :class="{'user-message': msg.from === 'user', 'ai-message': msg.from === 'ai'}"
+          class="message-row"
+          :class="[msg.from === 'ai' ? 'ai-row' : 'user-row']"
         >
-          <span v-html="msg.text"></span>
+          <!-- AI 消息：左侧头像 -->
+          <div v-if="msg.from === 'ai'" class="avatar-container">
+            <img src="@/assets/AI.png" alt="AI Avatar" class="avatar" />
+          </div>
+
+          <!-- 气泡 -->
+          <div
+            class="message-bubble"
+            :class="[msg.from === 'user' ? 'user-message' : 'ai-message']"
+          >
+            <span v-html="msg.text"></span>
+          </div>
+
+          <!-- 用户消息：右侧头像 -->
+          <div v-if="msg.from === 'user'" class="avatar-container">
+            <img src="@/assets/user.png" alt="User Avatar" class="avatar" />
+          </div>
         </div>
+
+        <!-- AI 正在思考提示 -->
         <div v-if="isLoading" class="loading">
           <span>AI 正在思考...</span>
         </div>
       </div>
+
+      <!-- 输入框 -->
       <div class="chat-input">
         <input
           v-model="userInput"
@@ -202,12 +225,10 @@ export default {
       } catch (error) {
         console.error('获取 JWT 失败:', error.response ? error.response.data : error.message);
         showSnackBar('获取 JWT 失败: ' + (error.response?.data?.error?.message || error.message));
-        // 更新聊天窗口信息
         this.messages.push({ from: 'ai', text: '抱歉，创建会议失败。' });
         this.scrollToBottom();
       }
     },
-
     // 获取当前用户的邮箱
     getUserEmail() {
       const user = this.$store.getters.getUser;
@@ -225,17 +246,18 @@ export default {
 </script>
 
 <style scoped>
+/* ======= 悬浮按钮 ======= */
 .ai-float-button {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background-color:transparent; /* 更改按钮背景颜色 */
+  background-color: transparent;
   border: none;
   cursor: pointer;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   z-index: 0;
-  border-radius: 50%; /* 圆形按钮 */
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -243,18 +265,19 @@ export default {
 }
 
 .ai-float-button img {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 
+/* ======= 聊天窗口容器 ======= */
 .chat-container {
   position: fixed;
   bottom: 100px;
   right: 30px;
-  width: 400px; /* 增大聊天窗口宽度 */
+  width: 400px;
   max-height: 500px;
-  background-color: #bcd9ffe0; /* 深色背景 */
+  background-color: #bcd9ffe0;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   display: flex;
@@ -274,11 +297,12 @@ export default {
   }
 }
 
+/* ======= 头部 ======= */
 .chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #dfe3e8; /* 更亮的绿色 */
+  background-color: #dfe3e8;
   color: #434040;
   padding: 12px;
   font-size: 22px;
@@ -294,47 +318,19 @@ export default {
   cursor: pointer;
 }
 
+/* ======= 消息列表 ======= */
 .chat-messages {
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background-color: white; /* 深色背景 */
-  color: #434040; /* 浅灰色文字 */
+  background-color: white;
+  color: #434040;
 }
 
-.user-message {
-  text-align: right;
-  background-color: #feb2a5e0; /* 更亮的绿色 */
-  color: d1d5db;
-  padding: 10px 16px;
-  border-radius: 20px;
-  margin-bottom: 10px;
-  max-width: 80%;
-  align-self: flex-end;
-  word-wrap: break-word;
-}
-
-.ai-message {
-  text-align: left;
-  background-color: #bcd9ffe0; /* 中等灰色背景 */
-  color: #434040; /* 浅灰色文字 */
-  padding: 10px 16px;
-  border-radius: 20px;
-  margin-bottom: 10px;
-  max-width: 80%;
-  align-self: flex-start;
-  word-wrap: break-word;
-}
-
-.loading {
-  text-align: center;
-  color: #000000;
-  margin-bottom: 10px;
-}
-
+/* ======= 输入框 ======= */
 .chat-input {
   display: flex;
-  border-top: 1px solid white; /* 深灰色边框 */
+  border-top: 1px solid white;
 }
 
 .chat-input input {
@@ -344,17 +340,17 @@ export default {
   border-bottom-left-radius: 12px;
   outline: none;
   font-size: 16px;
-  background-color: white; /* 深色背景 */
-  color: #434040; /* 浅灰色文字 */
+  background-color: white;
+  color: #434040;
 }
 
 .chat-input input::placeholder {
-  color: #656565; /* 中灰色占位符 */
+  color: #656565;
 }
 
 .chat-input button {
   padding: 12px 20px;
-  background-color:#bcd9ffe0; /* 更亮的绿色 */
+  background-color: #bcd9ffe0;
   color: #434040;
   border: none;
   cursor: pointer;
@@ -364,6 +360,70 @@ export default {
 }
 
 .chat-input button:hover {
-  background-color: #bababae0; /* 更深的绿色 */
+  background-color: #bababae0;
+}
+
+/* ======= AI 正在思考 ======= */
+.loading {
+  text-align: center;
+  color: #000000;
+  margin-bottom: 10px;
+}
+
+/* 
+  ======= 消息 + 头像的布局 =======
+  每条消息用 .message-row 包裹，通过 .ai-row / .user-row 决定左右对齐 
+*/
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.ai-row {
+  justify-content: flex-start; /* AI放左侧 */
+}
+
+.user-row {
+  justify-content: flex-end;   /* 用户放右侧 */
+}
+
+/* 头像容器 */
+.avatar-container {
+  width: 30px;
+  height: 30px;
+  margin: 0 8px;
+}
+
+/* 头像 */
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* 消息气泡的基础样式 */
+.message-bubble {
+  max-width: 60%;
+  padding: 10px 16px;
+  border-radius: 20px;
+  word-wrap: break-word;
+}
+
+/* AI 消息气泡 */
+.ai-message {
+  background-color: #bcd9ffe0;
+  color: #434040;
+  text-align: left;
+  align-self: flex-start; /* 让气泡自己也贴左边 */
+}
+
+/* 用户消息气泡 */
+.user-message {
+  background-color: #feb2a5e0;
+  color: #434040;
+  text-align: right;
+  align-self: flex-end;  /* 让气泡贴右边 */
 }
 </style>

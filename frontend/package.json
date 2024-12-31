@@ -24,6 +24,9 @@
     "axios": "^1.7.9",
     "element-plus": "^2.9.1",
     "firebase": "^11.1.0",
+    "remark": "^15.0.1",
+    "remark-parse": "^11.0.0",
+    "strip-markdown": "^6.0.0",
     "vue": "^3.3.4",
     "vue-router": "^4.5.0",
     "vuex": "^4.1.0"
