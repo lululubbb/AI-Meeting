@@ -8,7 +8,7 @@
 
       <!-- 创建会议表单 -->
       <div v-if="mode === 'create'" class="input-group">
-        <label for="sessionName">会话名称:</label>
+        <label for="sessionName">会议名称:</label>
         <input id="sessionName" v-model="config.sessionName" placeholder="请输入会话名称" />
       </div>
 
@@ -24,7 +24,7 @@
 
       <!-- 加入会议表单 -->
       <div v-if="mode === 'join'" class="input-group">
-        <label for="sessionName">会话名称:</label>
+        <label for="sessionName">会议名称:</label>
         <input id="sessionName" v-model="config.sessionName" placeholder="请输入会话名称" />
       </div>
 

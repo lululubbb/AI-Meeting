@@ -232,8 +232,8 @@ export default {
   background-color:transparent; /* 更改按钮背景颜色 */
   border: none;
   cursor: pointer;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   z-index: 0;
   border-radius: 50%; /* 圆形按钮 */
   display: flex;
@@ -243,8 +243,8 @@ export default {
 }
 
 .ai-float-button img {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 

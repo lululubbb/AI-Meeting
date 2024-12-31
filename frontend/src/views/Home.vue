@@ -22,18 +22,7 @@
 
       <!-- 右侧部分 -->
       <div class="right-section">
-        <!-- 上半部分 -->
-        <div class="top-right">
-          <!-- 放置右上组件 -->
-          <ActivityChart />
-          <!-- 集成 FileAttachmentContainer，内部已包含 FileAttachment -->
-          <!-- <FileAttachmentContainer /> -->
-        </div>
-        <!-- 下半部分 -->
-        <div class="bottom-right">
-          <!-- 放置右下组件 -->
-          <RecentActivity />
-        </div>
+        <RecentActivity />
       </div>
     </main>
 
@@ -51,9 +40,8 @@ import { useStore } from 'vuex';  // 如果你使用 vuex 来管理状态
 import MeetingOption from '../components/MeetingOption.vue'; 
 import CalendarTodoList from '../components/CalendarTodoList.vue'; 
 import Mood from '../components/Mood.vue';
-// import ActivityChart from '../components/ActivityChart.vue';
-// import RecentActivity from '../components/RecentActivity.vue';
-// import FileAttachmentContainer from '../components/FileAttachmentContainer.vue'; // 引入容器组件
+import RecentActivity from '../components/RecentActivityCard.vue';
+import FileAttachmentContainer from '../components/FileAttachmentContainer.vue'; // 引入容器组件
 
 // 获取路由实例
 const router = useRouter();
@@ -84,11 +72,6 @@ const navigateToHistoryMeeting = () => {
   });
 };
 
-// 用户登出
-const logout = async () => {
-  await store.dispatch('signOutUser');
-  router.push('/');
-};
 </script>
 
 <style scoped>
@@ -104,7 +87,7 @@ const logout = async () => {
   display: flex;
   flex: 1;
   overflow: hidden;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   overflow: auto; 
 }
 
@@ -142,28 +125,11 @@ const logout = async () => {
   flex: 1 1 400px;
   display: flex;
   flex-direction: column;
-  background-color: #f3f3f3;
+  background-color: #ffffff;
   padding: 0;
   overflow: auto; 
 }
 
-/* 右上部分：占右侧高度 50% */
-.top-right {
-  flex: 1;
-  background-color: #ffffff;
-  padding: 20px;
-  box-shadow: inset 0 -1px 0 #ddd;
-  overflow: auto; 
-}
-
-/* 右下部分：占右侧高度 50% */
-.bottom-right {
-  flex: 1;
-  background-color: #ffffff;
-  padding: 20px;
-  box-shadow: inset 0 -1px 0 #ddd;
-  overflow: auto; 
-}
 
 footer {
   height: 30px;

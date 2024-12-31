@@ -46,7 +46,7 @@ export default {
     },
     fileType: {
       type: String,
-      required: true, // 例如 'PDF', 'XLS'
+      required: true, // 例如 'PDF', 'XLS','DOX'
     },
     fileSizeMB: {
       type: Number,
@@ -66,7 +66,7 @@ export default {
     },
     progress: {
       type: Number,
-      default: 0, // 百分比 (0 到 100)
+      default: 45, // 百分比 (0 到 100)
     },
   },
   computed: {
@@ -76,8 +76,20 @@ export default {
           return "#d13e2a";
         case "XLS":
           return "#258858";
+        case "DOC":
+          return "#4271c9"
+          case "PPTX":
+          return "#dc7168"; 
+        case "TXT":
+          return "#88b8d6";
+        case "JPG":
+          return "#e09942"; 
+        case "PNG":
+          return "#c684d2"; 
+        case "MD":
+          return "#bebebe"
         default:
-          return "#999999";
+          return "#999999"; // 默认颜色
       }
     },
   },
@@ -100,8 +112,8 @@ export default {
 }
 
 .file-icon {
-  width: 35px;
-  height: 40px;
+  width: 45px;
+  height: 50px;
   border-radius: 8px;
   position: relative;
   display: flex;
@@ -121,7 +133,7 @@ export default {
 
 .file-type {
   color: #ffffff;
-  font-size: 10px;
+  font-size: 12px;
   font-family: "Poppins", sans-serif;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -134,6 +146,27 @@ export default {
 .file-icon.xls {
   background-color: #34a770;
 }
+.file-icon.doc {
+  background-color: #518af4;
+}
+.file-icon.pptx {
+  background-color: #fd8277; 
+}
+.file-icon.txt {
+  background-color: #9dd9fe; 
+}
+.file-icon.jpg {
+  background-color: #fdb256; 
+}
+.file-icon.png {
+  background-color: #efadfb; 
+}
+.file-icon.md {
+  background-color: #e0e0e0; 
+}
+.file-icon.unknown {
+  background-color: #b0b0b0;
+}
 
 .file-details {
   flex: 1;
@@ -142,9 +175,10 @@ export default {
 
 .file-name {
   color: #121212;
-  font-size: 13px;
+  font-size: 15px;
   font-family: "Poppins", sans-serif;
   font-weight: 500;
+
 }
 
 .uploader {
@@ -152,6 +186,7 @@ export default {
   font-size: 11px;
   opacity: 0.5;
   margin-top: 5px;
+  font-size: 14px;
 }
 
 .file-info {
@@ -162,7 +197,7 @@ export default {
 
 .file-size {
   color: #121212;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .action {

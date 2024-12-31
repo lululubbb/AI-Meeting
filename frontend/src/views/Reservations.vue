@@ -12,7 +12,7 @@
 
       <!-- 中间部分 -->
       <div class="middle-section">
-        <!-- 中间区域的组件 -->
+        <ReserveMeeting/>
       </div>
 
       <!-- 右侧部分 -->
@@ -30,8 +30,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';  // 如果你使用 vuex 来管理状态
-import MeetingOption from '../components/MeetingOption.vue'; 
-import CustomButton from '../components/CustomButton.vue';
+import ReserveMeeting from '../components/ReserveMeeting.vue';
 import CalendarTodoList from '../components/CalendarTodoList.vue'; 
 import Mood from '../components/Mood.vue';
 
@@ -49,9 +48,10 @@ const store = useStore();
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100%;
+  width: 98%;
   background-color: #ffffff;
   overflow: hidden; 
+  margin: 10px;
 }
 
 .main-layout {
@@ -62,11 +62,12 @@ const store = useStore();
   overflow: auto; 
 }
 
+
 /* 左侧部分 */
 .left-section {
-  flex:0.7;
+  flex:0.8;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
@@ -78,14 +79,18 @@ const store = useStore();
   padding: 20px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
+  display: flex;
+  justify-content: center;  
+  align-items: flex-start; 
 }
 
 /* 右侧部分 */
 .right-section {
-  flex: 0.7;
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
   background-color: #ffffff;
   padding: 10px;
-  box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
 

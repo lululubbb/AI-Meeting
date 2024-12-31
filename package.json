@@ -10,12 +10,14 @@
   "license": "ISC",
   "keywords": [],
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
     "@mdi/font": "^7.4.47",
+    "element-plus": "^2.9.1",
     "vue-router": "^4.5.0",
     "vue3-select": "^0.1.2"
   }
