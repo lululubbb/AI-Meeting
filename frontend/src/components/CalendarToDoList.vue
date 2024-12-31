@@ -86,7 +86,7 @@ alendar<template>
         contentHeight: 'auto', // 自动高度
         minWidth: '300px',
         maxWidth: '1000px',
-        height: '470px',  // 设置日历的固定高度
+        height: '480px',  // 设置日历的固定高度
         contentHeight: '800px',  // 设置日历内容区域的高度
           buttonText: {
             today: '今天',
@@ -166,7 +166,6 @@ alendar<template>
   box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px;
   border-radius: 8px; 
   width:90%;
-  height: 70vh;
 }
   .header {
     display: flex;
