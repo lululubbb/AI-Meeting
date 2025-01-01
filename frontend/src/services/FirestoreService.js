@@ -1,7 +1,7 @@
 // src/services/FirestoreService.js
 
-import { db } from './FirebaseService.js'
-import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore'
+import { db } from './FirebaseService.js';
+import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { getFirestore, getDoc } from "firebase/firestore";
 
 class FirestoreService {
@@ -11,14 +11,14 @@ class FirestoreService {
       console.error("userId 必须是字符串");
       return;
     }
-    const q = query(collection(db, 'users', userId, 'meetings'), orderBy('createdAt', 'desc'))
+    const q = query(collection(db, 'users', userId, 'meetings'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (querySnapshot) => {
-      const meetings = []
+      const meetings = [];
       querySnapshot.forEach((doc) => {
-        meetings.push({ id: doc.id, ...doc.data() })
-      })
-      callback(meetings)
-    })
+        meetings.push({ id: doc.id, ...doc.data() });
+      });
+      callback(meetings);
+    });
   }
 
   // 添加会议历史记录，返回 meetingId
@@ -49,23 +49,36 @@ class FirestoreService {
       throw error;
     }
   }
-  // 获取用户信息的方法
-async getUserInfo(uid) {
-  try {
-    const db = getFirestore();
-    const userDocRef = doc(db, "users", uid);
-    const userDoc = await getDoc(userDocRef);
 
-    if (userDoc.exists()) {
-      return userDoc.data();
-    } else {
-      throw new Error("用户不存在");
+  // 保存会议的转录文本
+  async saveTranscriptions(userId, meetingId, transcriptions) {
+    try {
+      const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+      await updateDoc(meetingDocRef, {
+        transcriptions: transcriptions
+      });
+      console.log('转录文本已保存');
+    } catch (error) {
+      console.error('保存转录文本失败:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error("获取用户信息失败:", error);
-    throw error;
+  }
+
+  // 获取会议的转录文本
+  async getTranscriptions(userId, meetingId) {
+    try {
+      const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+      const meetingDoc = await getDoc(meetingDocRef);
+      if (meetingDoc.exists() && meetingDoc.data().transcriptions) {
+        return meetingDoc.data().transcriptions;
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('获取转录文本失败:', error);
+      throw error;
+    }
   }
 }
-}
 
-export default new FirestoreService()
+export default new FirestoreService();
