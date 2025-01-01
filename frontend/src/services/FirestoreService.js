@@ -2,7 +2,6 @@
 
 import { db } from './FirebaseService.js';
 import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
-import { getFirestore, getDoc } from "firebase/firestore";
 
 class FirestoreService {
   // 监听用户的会议历史记录
@@ -14,8 +13,11 @@ class FirestoreService {
     const q = query(collection(db, 'users', userId, 'meetings'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (querySnapshot) => {
       const meetings = [];
-      querySnapshot.forEach((doc) => {
-        meetings.push({ id: doc.id, ...doc.data() });
+      querySnapshot.forEach((docSnapshot) => {
+        meetings.push({ 
+          meetingId: docSnapshot.id, // 使用 meetingId 代替 id
+          ...docSnapshot.data() 
+        });
       });
       callback(meetings);
     });
@@ -72,7 +74,7 @@ class FirestoreService {
       if (meetingDoc.exists() && meetingDoc.data().transcriptions) {
         return meetingDoc.data().transcriptions;
       } else {
-        return [];
+        return ''; // 返回空字符串而不是空数组
       }
     } catch (error) {
       console.error('获取转录文本失败:', error);

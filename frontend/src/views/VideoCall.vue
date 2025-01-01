@@ -76,6 +76,8 @@
   </main>
 </template>
 
+
+<!-- src/views/VideoCall.vue -->
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch, computed } from 'vue';
 import uitoolkit from '@zoom/videosdk-ui-toolkit';
@@ -378,9 +380,11 @@ const startRecording = async () => {
             console.log('收到转录文本:', fullTranscription.value); // 调试信息
           }
         } catch (e) {
+          // 如果解析失败，假设消息是纯文本字符
+          console.warn('无效的 JSON 消息，尝试作为纯文本处理:', event.data);
           fullTranscription.value += event.data;
-          // 更新字幕，限制长度为30个字符
-          subtitle.value = fullTranscription.value.slice(-30);
+          // 更新字幕，限制长度为50个字符
+          subtitle.value = fullTranscription.value.slice(-50);
           console.log('收到转录文本:', fullTranscription.value); // 调试信息
         }
       }
@@ -464,6 +468,7 @@ onBeforeUnmount(() => {
   stopRecording();
 });
 </script>
+
 
 
 
