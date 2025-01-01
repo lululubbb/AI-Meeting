@@ -51,101 +51,106 @@ alendar<template>
     </div>
   </template>
   
-  <script>
+  <script setup>
+  import { ref, computed } from 'vue';
   import FullCalendar from '@fullcalendar/vue3';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import interactionPlugin from '@fullcalendar/interaction';
-  import zhCnLocale from '@fullcalendar/core/locales/zh-cn'; 
+  import zhCnLocale from '@fullcalendar/core/locales/zh-cn';
+  import { useStore } from 'vuex';
   
-  export default {
-    components: {
-      FullCalendar
+  const store = useStore();
+  
+  // 从 Vuex 中获取当前用户的信息
+  const user = ref(store.state.user);
+  console.log("用户信息", user.value); // 打印整个用户对象
+  console.log("userTodoList",user.value.todolist)
+
+  // State variables
+  const selectedDate = ref('');
+  const todos = ref([
+    { id: 1, text: 'Design layout', date: '2024-12-01', isCompleted: true },
+    { id: 2, text: 'Push on Github', date: '2024-12-05', isCompleted: false },
+    { id: 3, text: 'Deploy with Firebase', date: '2024-12-09', isCompleted: false }
+  ]);
+  const newTodoText = ref('');
+  const isEditing = ref(false);
+  const editingTodo = ref(null);
+  const isDialogVisible = ref(false);
+  
+  // Calendar options
+  const calendarOptions = computed(() => ({
+    plugins: [dayGridPlugin, interactionPlugin],
+    locale: zhCnLocale,
+    height: 'auto',
+    contentHeight: 'auto', // 自动高度
+    minWidth: '300px',
+    maxWidth: '1000px',
+    height: '480px',  // 设置日历的固定高度
+    contentHeight: '800px',  // 设置日历内容区域的高度
+    buttonText: {
+      today: '今天',
+      month: '月',
     },
-    data() {
-      return {
-        selectedDate: '',
-        calendarOptions: {
-        },
-        todos: [
-          { id: 1, text: 'Design layout', date: '2024-12-01', isCompleted: true },
-          { id: 2, text: 'Push on Github', date: '2024-12-05', isCompleted: false },
-          { id: 3, text: 'Deploy with Firebase', date: '2024-12-09', isCompleted: false }
-        ],
-        newTodoText: '',
-        isEditing: false,
-        editingTodo: null,
-        isDialogVisible: false
-      };
-    },  
-    computed: {
-    calendarOptions() {
-        return {
-        plugins: [dayGridPlugin, interactionPlugin],
-        locale: zhCnLocale,
-        height: 'auto',  
-        contentHeight: 'auto', // 自动高度
-        minWidth: '300px',
-        maxWidth: '1000px',
-        height: '480px',  // 设置日历的固定高度
-        contentHeight: '800px',  // 设置日历内容区域的高度
-          buttonText: {
-            today: '今天',
-            month: '月',
-          },
-        initialView: 'dayGridMonth',
-        dateClick: this.handleDateClick,
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: ''
-        }
-        };
+    initialView: 'dayGridMonth',
+    dateClick: handleDateClick,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: ''
     }
-    },
-    methods: {
-      handleDateClick(info) {
-        this.selectedDate = info.dateStr;
-        this.openAddTodoDialog();
-      },
-      openAddTodoDialog() {
-        this.isDialogVisible = true;
-        this.isEditing = false;
-        this.newTodoText = '';
-      },
-      closeDialog() {
-        this.isDialogVisible = false;
-        this.isEditing = false;
-        this.newTodoText = '';
-      },
-      saveTodo() {
-        if (this.isEditing) {
-          this.editingTodo.text = this.newTodoText;
-        } else {
-          const newTodo = {
-            id: Date.now(),
-            text: this.newTodoText,
-            date: this.selectedDate,
-            isCompleted: false
-          };
-          this.todos.push(newTodo);
-        }
-        this.closeDialog();
-      },
-      editTodo(todo) {
-        this.isEditing = true;
-        this.newTodoText = todo.text;
-        this.editingTodo = todo;
-        this.isDialogVisible = true;
-      },
-      // 删除待办事项
-      deleteTodo(todo) {
-        const index = this.todos.findIndex(t => t.id === todo.id);
-        if (index !== -1) {
-          this.todos.splice(index, 1);
-        }
-      }
-    }
+  }));
+  
+  // Methods
+  const handleDateClick = (info) => {
+    selectedDate.value = info.dateStr;
+    openAddTodoDialog();
   };
+  
+  const openAddTodoDialog = () => {
+    isDialogVisible.value = true;
+    isEditing.value = false;
+    newTodoText.value = '';
+  };
+  
+  const closeDialog = () => {
+    isDialogVisible.value = false;
+    isEditing.value = false;
+    newTodoText.value = '';
+  };
+  
+  const saveTodo =() => {
+    if (isEditing.value) {
+      editingTodo.value.text = newTodoText.value;
+    } else {
+      const newTodo = {
+        id: Date.now(),
+        text: newTodoText.value,
+        date: selectedDate.value,
+        isCompleted: false
+      };
+      todos.value.push(newTodo);
+    }
+    closeDialog();
+  };
+  
+  const editTodo = (todo) => {
+    isEditing.value = true;
+    newTodoText.value = todo.text;
+    editingTodo.value = todo;
+    isDialogVisible.value = true;
+  };
+  
+  const deleteTodo = (todo) => {
+    const index = todos.value.findIndex(t => t.id === todo.id);
+    if (index !== -1) {
+      todos.value.splice(index, 1);
+    }
+    store.dispatch('updateTodoList', todos.value); // Update Firestore
+  };
+
+
+
   </script>
   
   <style scoped>

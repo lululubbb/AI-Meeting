@@ -2,6 +2,7 @@
 
 import { db } from './FirebaseService.js'
 import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore'
+import { getFirestore, getDoc } from "firebase/firestore";
 
 class FirestoreService {
   // 监听用户的会议历史记录
@@ -48,6 +49,23 @@ class FirestoreService {
       throw error;
     }
   }
+  // 获取用户信息的方法
+async getUserInfo(uid) {
+  try {
+    const db = getFirestore();
+    const userDocRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      return userDoc.data();
+    } else {
+      throw new Error("用户不存在");
+    }
+  } catch (error) {
+    console.error("获取用户信息失败:", error);
+    throw error;
+  }
+}
 }
 
 export default new FirestoreService()

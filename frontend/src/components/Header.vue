@@ -41,13 +41,36 @@
           <i class="fa-solid fa-bell"></i>
         </button>
 
-        <!-- 用户按钮 -->
-        <button class="icon-button">
+          <!-- 用户按钮 -->
+
+        <button class="icon-button" @click="showUserProfile">
           <i class="fa-solid fa-user"></i>
         </button>
+        <!-- 显示用户信息卡片 -->
+        <UserProfileCard v-if="isUserCardVisible" @close="toggleUserCardVisibility" />
+        
+
+        <!-- 用户信息卡片
+        <div v-if="isUserCardVisible" class="user-card">
+          <img :src="user.avatarUrl" alt="User Avatar" class="user-avatar" />
+          <p class="user-name">{{ user.name }}</p>
+          <p class="user-email">{{ user.email }}</p>
+          <p>状态信息
+            <el-select v-model="user.status" placeholder="选择状态">
+              <el-option label="在线" value="在线"></el-option>
+              <el-option label="离线" value="离线"></el-option>
+              <el-option label="请勿打扰" value="请勿打扰"></el-option>
+              <el-option label="离开" value="离开"></el-option>
+            </el-select>
+          </p>
+          <p>工作位置：{{ user.workLocation }}</p>
+          <el-button type="text" @click="goToHelpPage">帮助</el-button>
+          <el-button type="text" @click="goToSettingsPage">设置</el-button>
+          <el-button type="text" @click="logout">退出登录</el-button>
+        </div> -->
 
         <!-- 问号按钮 -->
-        <button class="icon-button">
+        <button class="icon-button"  @click="goToHelpPage">
           <i class="fa-solid fa-question"></i>
         </button>
 
@@ -69,6 +92,8 @@
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { ElButton, ElSelect, ElOption } from 'element-plus';
+import UserProfileCard from './UserProfileCard.vue';  // 引入用户信息卡片组件
 
 // 定义导航项
 const navItems = ref([
@@ -84,15 +109,34 @@ const navItems = ref([
 const store = useStore();
 const router = useRouter();
 
+// 控制用户信息卡片的显示与隐藏
+const isUserCardVisible = ref(false);
+
+// 显示用户信息卡片
+const showUserProfile = () => {
+  isUserCardVisible.value = true;
+};
+// 切换用户卡片的显示状态
+const toggleUserCardVisibility = () => {
+  isUserCardVisible.value = !isUserCardVisible.value;
+  console.log('isUserCardVisible:', isUserCardVisible.value);
+};
+
+
+// 跳转到帮助页面
+const goToHelpPage = () => {
+  router.push('/help'); 
+};
+
 // 登出功能
 const logout = async () => {
   await store.dispatch('signOutUser');
   router.push('/');
 };
+
 </script>
 
 <style scoped>
-/* 根字体大小，可根据需要调整 */
 :root {
   font-size: 16px;
 }

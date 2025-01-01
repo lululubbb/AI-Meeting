@@ -481,7 +481,7 @@ main {
   border: solid;
   border-color: #b9b9b9;
   margin-left: 10px;
-  margin-top: 140px;
+  margin-top: 90px;
 }
 #transcriptionContainer ul {
   list-style-type: none; 

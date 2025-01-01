@@ -11,7 +11,8 @@ import Reservations from '../views/Reservations.vue';
 import Files from '../views/Files.vue';
 import More from '../views/More.vue';
 import Chat from '../views/Chat.vue';
-
+import Helpview from '../views/Helpview.vue';
+import Settingview from '../views/Settingview.vue';
 // 定义路由规则
 const routes = [
   {
@@ -61,6 +62,16 @@ const routes = [
   { path: '/chat',
     name: 'Chat', 
     component: Chat,
+    meta: { requiresAuth: true }
+  },
+  { path: '/help',
+    name: 'Help', 
+    component: Helpview,
+    meta: { requiresAuth: true }
+  },
+  { path: '/settings',
+    name: 'Settings', 
+    component: Settingview,
     meta: { requiresAuth: true }
   },
   // 处理未定义的路径
