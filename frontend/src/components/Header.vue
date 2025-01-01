@@ -160,6 +160,9 @@ const logout = async () => {
   flex-wrap: nowrap;
 }
 
+/* ---------------------- */
+/* 左侧标题和搜索栏区域   */
+/* ---------------------- */
 .left-section {
   display: flex;
   align-items: center;
@@ -208,12 +211,19 @@ const logout = async () => {
   margin-left: 0.5rem; /* 8px */
 }
 
+/* ---------------------- */
+/* 中间导航区域           */
+/* ---------------------- */
 .nav {
+  /* 导航容器：水平排列每个按钮 */
   display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 3.6875rem; /* 59px */
   flex-shrink: 1;
 }
 
+/* 每个链接：图标在上，文字在下 */
 .nav-link {
   display: flex;
   flex-direction: column;
@@ -223,14 +233,23 @@ const logout = async () => {
   font-size: 1.5rem; /* 24px */
   position: relative;
   transition: color 0.3s, transform 0.3s;
+  /* 关键：防止中文字符如“会议”断行成竖排 */
+  white-space: nowrap;
 }
 
 .nav-link i {
-  margin-bottom: 0.3125rem; /* 5px */
-  font-size: 1.125rem; /* 18px */
-  color: inherit; /* 继承父元素的颜色 */
+  margin-bottom: 0.3125rem; /* 图标与文字间的距离 5px */
+  font-size: 1.125rem;      /* 18px */
+  color: inherit;           /* 继承父元素的颜色 */
 }
 
+/* 避免中文断行成竖排, 额外在文字上也可加 white-space */
+.nav-label {
+  font-size: inherit;
+  white-space: nowrap; /* 防止中文换行 */
+}
+
+/* 悬停或选中时的下划线效果 */
 .nav-link.active::after,
 .nav-link:hover::after {
   content: '';
@@ -248,6 +267,9 @@ const logout = async () => {
   transform: scale(1.05);
 }
 
+/* ---------------------- */
+/* 右侧按钮区域           */
+/* ---------------------- */
 .right-section {
   display: flex;
   align-items: center;
@@ -268,7 +290,10 @@ const logout = async () => {
   color: #434040;
 }
 
-/* 响应式设计 */
+/* ---------------------- */
+/* 以下为响应式设计，通过媒体查询缩小字号等，不改变「图标在上、文字在下」的结构 */
+/* 并保留 white-space: nowrap; 以防止中文断行            */
+/* ---------------------- */
 @media (max-width: 1200px) {
   .header {
     padding: 1rem 1.5rem 0.125rem 1.5rem; /* 16px 24px 2px 24px */
@@ -314,7 +339,7 @@ const logout = async () => {
     font-size: 1rem; /* 16px */
   }
 
-  .nav-link .nav-label {
+  .nav-label {
     font-size: 0.8125rem; /* 13px */
   }
 
@@ -372,7 +397,7 @@ const logout = async () => {
     font-size: 0.875rem; /* 14px */
   }
 
-  .nav-link .nav-label {
+  .nav-label {
     font-size: 0.75rem; /* 12px */
   }
 
@@ -430,8 +455,9 @@ const logout = async () => {
     font-size: 0.75rem; /* 12px */
   }
 
-  .nav-link .nav-label {
+  .nav-label {
     font-size: 0.6875rem; /* 11px */
+    white-space: nowrap;
   }
 
   .right-section {
@@ -482,13 +508,14 @@ const logout = async () => {
 
   .nav-link {
     font-size: 1rem; /* 16px */
+    white-space: nowrap;
   }
 
   .nav-link i {
     font-size: 0.625rem; /* 10px */
   }
 
-  .nav-link .nav-label {
+  .nav-label {
     font-size: 0.625rem; /* 10px */
   }
 
@@ -540,13 +567,14 @@ const logout = async () => {
 
   .nav-link {
     font-size: 0.875rem; /* 14px */
+    white-space: nowrap;
   }
 
   .nav-link i {
     font-size: 0.5rem; /* 8px */
   }
 
-  .nav-link .nav-label {
+  .nav-label {
     font-size: 0.5rem; /* 8px */
   }
 
