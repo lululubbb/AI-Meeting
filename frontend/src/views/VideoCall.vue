@@ -61,25 +61,27 @@
         </div>
       </div>
 
-      <!-- 转录文本容器 -->
-      <div id="transcriptionContainer" v-if="sessionJoined">
-        <h2>会议转录</h2>
-        <p>{{ fullTranscription }}</p>
+    <!-- 转录文本容器 -->
+    <div id="transcriptionContainer" v-if="sessionJoined">
+      <h2>会议转录</h2>
+      <p>{{ fullTranscription }}</p>
+      
+      <!-- 录音控制图标 -->
+      <div class="recording-controls">
+        <img 
+        :src="isRecording ? stopIcon : startIcon" 
+          alt="语音转录" 
+          @click="toggleRecording" 
+          class="recording-icon" 
+        />
       </div>
     </div>
-
-    <!-- 录音控制按钮 -->
-    <div class="recording-controls" v-if="sessionJoined">
-      <button @click="startRecording" :disabled="isRecording">开始录音</button>
-      <button @click="stopRecording" :disabled="!isRecording">停止录音</button>
-    </div>
+  </div>
   </main>
 </template>
 
-
-<!-- src/views/VideoCall.vue -->
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch, computed } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import uitoolkit from '@zoom/videosdk-ui-toolkit';
 import '@zoom/videosdk-ui-toolkit/dist/videosdk-ui-toolkit.css';
 import { useStore } from 'vuex';
@@ -89,6 +91,8 @@ import CustomButton from '../components/CustomButton.vue';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
 import ZoomVideo from '@zoom/videosdk';
+import startIcon from '@/assets/start-icon.png';
+import stopIcon from '@/assets/stop-icon.png';
 
 const store = useStore();
 const route = useRoute();
@@ -98,17 +102,17 @@ const sessionContainer = ref(null);
 // 录音状态
 const isRecording = ref(false);
 // WebSocket 连接
-const socket = ref(null);
+const ws8000 = ref(null); // ASR服务器 WebSocket (8000)
+const ws8001 = ref(null); // 标点处理服务器 WebSocket (8001)
 // 存储转录文本（作为单个字符串）
 const fullTranscription = ref('');
 // 存储字幕文本
 const subtitle = ref('');
-// 错误消息
-const errorMessage = ref('');
+// 累计无标点字符
+const accumulatedText = ref('');
+// 定时器 ID
+const intervalId = ref(null);
 
-const goHome=()=>{
- router.push('/home');
-}
 // 定义响应式状态
 const config = reactive({
   videoSDKJWT: '',
@@ -135,11 +139,25 @@ const sessionJoined = ref(false);
 const autoJoin = ref(false);
 const buttonText = ref(mode.value === 'create' ? '创建会议' : '加入会议');
 
+// 路由导航回主页方法
+const goHome = () => {
+  router.push('/home');
+};
+
 // 获取当前用户的邮箱
 const getUserEmail = () => {
   const user = store.getters.getUser;
   console.log('当前用户邮箱:', user.email); // 调试信息
   return user.email || 'unknown@domain.com';
+};
+
+// 更新滚动字幕的方法
+const updateSubtitle = (char) => {
+  subtitle.value += char;
+  // 限制滚动字幕长度 (只显示最后 50 个字符)
+  if (subtitle.value.length > 50) {
+    subtitle.value = subtitle.value.slice(-30)
+  }
 };
 
 // 读取路由参数并自动加入会议
@@ -322,9 +340,9 @@ const joinSession = async () => {
 
 // 录音控制方法
 const startRecording = async () => {
-  try {
-    if (isRecording.value) return;
+  if (isRecording.value) return;
 
+  try {
     // 请求麦克风权限
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -338,26 +356,29 @@ const startRecording = async () => {
     source.connect(audioWorkletNode);
     audioWorkletNode.connect(audioContext.destination);
 
-    // 建立 WebSocket 连接
-    socket.value = new WebSocket('ws://192.168.79.63:8000/ws'); // 修改为实际服务器地址
-    socket.value.binaryType = 'arraybuffer';
+    // 建立 ASR WebSocket 连接 (8000)
+    ws8000.value = new WebSocket('ws://192.168.243.63:8000/ws'); // 修改为实际服务器地址
+    ws8000.value.binaryType = 'arraybuffer';
 
-    socket.value.onopen = () => {
-      console.log('WebSocket 连接已打开');
-      showSnackBar('WebSocket 连接已打开，开始录音...');
+    // 全局累计文本
+    const fullAccumulatedText = ref(''); // 从开始到现在所有的累计字符
+
+    ws8000.value.onopen = () => {
+      console.log('8000端口 WebSocket 连接已打开');
+      showSnackBar('ASR 服务器连接已打开，开始录音...');
       isRecording.value = true;
     };
 
-    socket.value.onerror = (error) => {
-      console.error('WebSocket 错误:', error);
-      showSnackBar('WebSocket 连接错误，停止录音。');
+    ws8000.value.onerror = (error) => {
+      console.error('8000端口 WebSocket 错误:', error);
+      showSnackBar('ASR 服务器连接错误，停止录音。');
       isRecording.value = false;
       stopRecording();
     };
 
-    socket.value.onclose = () => {
-      console.log('WebSocket 连接已关闭');
-      showSnackBar('WebSocket 连接已关闭，停止录音。');
+    ws8000.value.onclose = () => {
+      console.log('8000端口 WebSocket 连接已关闭');
+      showSnackBar('ASR 服务器连接已关闭，停止录音。');
       isRecording.value = false;
     };
 
@@ -365,54 +386,95 @@ const startRecording = async () => {
     audioWorkletNode.port.onmessage = (event) => {
       const audioBuffer = event.data;
       console.log('发送音频块大小:', audioBuffer.byteLength); // 调试信息
-      if (socket.value && socket.value.readyState === WebSocket.OPEN) {
-        socket.value.send(audioBuffer);
+      if (ws8000.value && ws8000.value.readyState === WebSocket.OPEN) {
+        ws8000.value.send(audioBuffer);
       }
     };
 
-    // 监听来自服务器的消息（转录文本）
-    socket.value.onmessage = (event) => {
+    // 建立标点处理 WebSocket 连接 (8001)
+    ws8001.value = new WebSocket('ws://192.168.243.63:8001/ws'); // 修改为实际服务器地址
+    ws8001.value.binaryType = 'arraybuffer';
+
+    ws8001.value.onopen = () => {
+      console.log('8001端口 WebSocket 连接已打开');
+      showSnackBar('标点处理服务器连接已打开。');
+    };
+
+    ws8001.value.onerror = (error) => {
+      console.error('8001端口 WebSocket 错误:', error);
+      showSnackBar('标点处理服务器连接错误。');
+    };
+
+    ws8001.value.onclose = () => {
+      console.log('8001端口 WebSocket 连接已关闭');
+      showSnackBar('标点处理服务器连接已关闭。');
+    };
+
+    // 监听 8000 的消息（逐字无标点字符）
+    ws8000.value.onmessage = (event) => {
       if (typeof event.data === 'string') {
-        try {
-          // 尝试解析为 JSON
-          const message = JSON.parse(event.data);
-          if (message.type === 'transcription' && message.text) {
-            fullTranscription.value += message.text;
-            // 更新字幕，限制长度为50个字符
-            subtitle.value = fullTranscription.value.slice(-50);
-            console.log('收到转录文本:', fullTranscription.value); // 调试信息
-          }
-        } catch (e) {
-          // 如果解析失败，假设消息是纯文本字符
-          console.warn('无效的 JSON 消息，尝试作为纯文本处理:', event.data);
-          fullTranscription.value += event.data;
-          // 更新字幕，限制长度为50个字符
-          subtitle.value = fullTranscription.value.slice(-50);
-          console.log('收到转录文本:', fullTranscription.value); // 调试信息
-        }
+        const char = event.data; // 接收到的单个字符
+        fullAccumulatedText.value += char; // 更新从开始到目前为止的累计文本
+        updateSubtitle(char); // 更新滚动字幕
       }
     };
+
+    // 监听 8001 的消息（带标点的文本）
+    ws8001.value.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        const punctuatedText = event.data; // 接收到带标点的文本
+        fullTranscription.value = punctuatedText; // 更新转录文本
+        console.log('收到带标点文本:', punctuatedText);
+      }
+    };
+
+    // 每隔 3 秒发送累计无标点字符到 8001
+    intervalId.value = setInterval(() => {
+      if (fullAccumulatedText.value.length > 0 && ws8001.value && ws8001.value.readyState === WebSocket.OPEN) {
+        ws8001.value.send(fullAccumulatedText.value); // 发送完整累计文本
+        console.log('发送到 8001 的完整累计文本:', fullAccumulatedText.value);
+      }
+    }, 3000);
 
     // 保存引用以便后续清理
     config.audioContext = audioContext;
     config.audioWorkletNode = audioWorkletNode;
     config.stream = stream;
-
   } catch (error) {
     console.error('录音启动失败:', error);
     showSnackBar('无法启动录音，请检查麦克风权限或浏览器支持情况。');
   }
 };
-
+// 切换录音状态的方法
+const toggleRecording = () => {
+  if (isRecording.value) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+};
+// 停止录音方法
 const stopRecording = async () => {
   if (!isRecording.value) return;
 
   isRecording.value = false;
 
-  // 关闭 WebSocket 连接
-  if (socket.value) {
-    socket.value.close();
-    socket.value = null;
+  // 关闭 ASR WebSocket 连接 (8000)
+  if (ws8000.value) {
+    ws8000.value.close();
+    ws8000.value = null;
+  }
+
+  // 关闭 标点处理 WebSocket 连接 (8001)
+  if (ws8001.value) {
+    ws8001.value.close();
+    ws8001.value = null;
+  }
+
+  // 清除定时器
+  if (intervalId.value) {
+    clearInterval(intervalId.value);
+    intervalId.value = null;
   }
 
   // 关闭 AudioWorklet 和 AudioContext
@@ -428,11 +490,12 @@ const stopRecording = async () => {
   }
 
   if (config.stream) {
-    config.stream.getTracks().forEach(track => track.stop());
+    config.stream.getTracks().forEach((track) => track.stop());
     config.stream = null;
   }
 
   showSnackBar('已停止录音');
+
 
   // 保存转录文本到 Firestore
   if (config.meetingId && fullTranscription.value.length > 0) {
@@ -471,10 +534,6 @@ onBeforeUnmount(() => {
   stopRecording();
 });
 </script>
-
-
-
-
 <style scoped>
 main {
   display: flex;
@@ -577,16 +636,29 @@ main {
   border-radius: 5px;
   max-width: 80%;
   text-align: center;
-  font-size: 16px;
+  font-size: 20px;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 
 /* 可选：调整录音控制按钮的样式 */
+/* 录音控制图标的容器样式 */
 .recording-controls {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+}
+
+/* 录音控制图标的样式 */
+.recording-icon {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.recording-icon:hover {
+  transform: scale(1.1);
 }
 
 .recording-controls button {
@@ -667,6 +739,7 @@ main {
 }
 
 #transcriptionContainer {
+  position: relative;
   width: 22%; 
   height: 80vh;
   background-color: rgb(255, 255, 255);
@@ -678,16 +751,27 @@ main {
   margin-left: 10px;
   margin-top: 10px;
 }
-
+/* 美化转录文本区域标题 */
 #transcriptionContainer h2 {
-  text-align: center;
-  margin-bottom: 10px;
+  font-family: 'Arial', sans-serif; /* 更换字体 */
+  font-size: 24px; /* 增大字体大小 */
+  color: #333333; /* 深灰色字体 */
+  text-align: center; /* 居中对齐 */
+  margin-bottom: 15px; /* 增加底部间距 */
 }
-
+/* 美化转录文本内容 */
 #transcriptionContainer p {
   white-space: pre-wrap; /* 保留换行 */
   word-wrap: break-word; /* 自动换行 */
-  font-size: 14px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #555555;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 #transcriptionContainer ul {
