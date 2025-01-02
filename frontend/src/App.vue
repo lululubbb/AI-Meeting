@@ -1,9 +1,11 @@
 <!-- src/App.vue -->
 <template>
   <div id="app">
+    
   
   <!-- 只有在非 Login 页面时才显示 AIFloatingChat -->
   <AIFloatingChat v-if="!isLoginPage" />
+  <!-- <AudioRecorder v-if="!isLoginPage" /> -->
   <Header v-if="!isLoginPage" />
   <div :class="['content', { 'no-header': isLoginPage }]">
       <transition name="fade" mode="out-in">
@@ -19,12 +21,14 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
 import Header from './components/Header.vue';
+// import AudioRecorder from './components/AudioRecorder.vue';
 
 export default {
   name: 'App',
   components: {
     AIFloatingChat,
-    Header
+    Header,
+    // AudioRecorder
   },
   setup() {
     const route = useRoute();

@@ -52,9 +52,10 @@ const store = useStore();
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100%;
+  width:98%;
   background-color: #ffffff;
   overflow: hidden; 
+  margin:10px
 }
 
 .main-layout {

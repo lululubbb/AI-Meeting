@@ -51,40 +51,35 @@
       <CustomButton :text="buttonText" :onPressed="handleSession" />
     </div>
 
- <!-- 用于嵌入视频会议的容器 -->
- <div id="sessionContainer" ref="sessionContainer" v-else></div>
-      <!-- 显示音频转录结果 -->
-      <div v-if="sessionJoined" id="transcriptionContainer">
-        <!-- 搜索框 -->
-  <div class="search-container">
-      <div class="input-wrapper">
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="搜索会议相关信息"
-          class="search-input"
-        />
-        <img
-          src="@/assets/search.png"
-          alt="Search"
-          class="search-icon"
-        />
-      </div>
-    </div>
-        <h2>会议转录</h2>
-        <ul>
-          <!-- 搜索框搜索出来高亮显示 -->
-          <li v-for="(transcript, index) in filteredTranscriptionList" :key="index">
-          <span v-html="highlightMatch(transcript)"></span>
-        </li>
-        </ul>
+    <!-- 视频和转录区域 -->
+    <div v-else class="video-and-transcription">
+      <!-- 视频会议容器 -->
+      <div id="sessionContainer" ref="sessionContainer">
+        <!-- 字幕容器 -->
+        <div class="subtitle">
+          {{ subtitle }}
+        </div>
       </div>
 
+      <!-- 转录文本容器 -->
+      <div id="transcriptionContainer" v-if="sessionJoined">
+        <h2>会议转录</h2>
+        <p>{{ fullTranscription }}</p>
+      </div>
+    </div>
+
+    <!-- 录音控制按钮 -->
+    <div class="recording-controls" v-if="sessionJoined">
+      <button @click="startRecording" :disabled="isRecording">开始录音</button>
+      <button @click="stopRecording" :disabled="!isRecording">停止录音</button>
+    </div>
   </main>
 </template>
 
+
+<!-- src/views/VideoCall.vue -->
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch, computed } from 'vue';
 import uitoolkit from '@zoom/videosdk-ui-toolkit';
 import '@zoom/videosdk-ui-toolkit/dist/videosdk-ui-toolkit.css';
 import { useStore } from 'vuex';
@@ -93,7 +88,6 @@ import { showSnackBar } from '../utils/utils.js';
 import CustomButton from '../components/CustomButton.vue';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
-import ParticipantStatistics from '../services/ParticipantStatistics.js';
 import ZoomVideo from '@zoom/videosdk';
 
 const store = useStore();
@@ -101,17 +95,20 @@ const route = useRoute();
 const router = useRouter();
 const sessionContainer = ref(null);
 
+// 录音状态
+const isRecording = ref(false);
+// WebSocket 连接
+const socket = ref(null);
+// 存储转录文本（作为单个字符串）
+const fullTranscription = ref('');
+// 存储字幕文本
+const subtitle = ref('');
+// 错误消息
+const errorMessage = ref('');
 
-const goHome = () => {
-  router.push({ name: 'Home' });
-};
-
-// Initialize participantStatistics
-// let participantStatistics = null;
-
-// 获取 mode from query
-const mode = ref(route.query.mode || 'join'); // 默认模式为加入会议
-
+const goHome=()=>{
+ router.push('/home');
+}
 // 定义响应式状态
 const config = reactive({
   videoSDKJWT: '',
@@ -127,12 +124,23 @@ const config = reactive({
     virtualBackgrounds: [
       'https://images.unsplash.com/photo-1715490187538-30a365fa05bd?q=80&w=1945&auto=format&fit=crop'
     ]
-  }
+  },
+  audioContext: null,
+  audioWorkletNode: null,
+  stream: null
 });
+const mode = ref(route.query.mode || 'join'); // 默认模式为加入会议
 const role = ref(mode.value === 'create' ? 1 : 0);
 const sessionJoined = ref(false);
-const autoJoin = ref(false)
+const autoJoin = ref(false);
 const buttonText = ref(mode.value === 'create' ? '创建会议' : '加入会议');
+
+// 获取当前用户的邮箱
+const getUserEmail = () => {
+  const user = store.getters.getUser;
+  console.log('当前用户邮箱:', user.email); // 调试信息
+  return user.email || 'unknown@domain.com';
+};
 
 // 读取路由参数并自动加入会议
 const checkRouteParams = async () => {
@@ -257,12 +265,6 @@ const joinSession = async () => {
       throw new Error('sessionContainer 元素未找到');
     }
 
-    //初始化——要用不是组件形式的？
-    // participantStatistics = new ParticipantStatistics(ZoomVideo.createClient()); 
-
-    // participantStatistics.initializeEventListeners(); 
-    // participantStatistics.startPeriodicSave(store.getters.getUser.uid, config.meetingId); 
-
     // 使用 UI Toolkit 加入会议
     uitoolkit.joinSession(sc, {
       videoSDKJWT: config.videoSDKJWT,
@@ -276,9 +278,6 @@ const joinSession = async () => {
     console.log('调用 uitoolkit.joinSession 成功');
     console.log(uitoolkit);
 
-    // 启动音频转录
-    startTranscription();
-
     // 监听会议加入成功事件
     uitoolkit.onSessionJoined(() => {
       sessionJoined.value = true;
@@ -290,7 +289,8 @@ const joinSession = async () => {
       console.log('会议已关闭');
       uitoolkit.closeSession(sc);
       sessionJoined.value = false;
-      // participantStatistics = null; 
+      // 停止录音并保存转录文本
+      stopRecording();
       // 更新会议历史记录（状态为已完成）
       const user = store.getters.getUser;
       if (user && config.meetingId) {
@@ -320,64 +320,139 @@ const joinSession = async () => {
   }
 };
 
+// 录音控制方法
+const startRecording = async () => {
+  try {
+    if (isRecording.value) return;
 
-//此处用来写呈现转录和翻译结果的代码
-//存储转录文本
-const searchQuery = ref('');  // 搜索框的输入
-const transcriptionList = ref([]);  // 存储转录的内容
-const filteredTranscriptionList = ref([]);  // 存储经过过滤后的转录内容
+    // 请求麦克风权限
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
 
+    // 添加 AudioWorklet 处理器
+    await audioContext.audioWorklet.addModule('/processor.js'); // 确保路径正确
+    const audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
 
-// 模拟音频转录过程
-const startTranscription = () => {
-  // 使用 Web Speech API 或其他转录服务进行音频转录
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = 'zh-CN';
-  recognition.interimResults = true;
+    // 连接音频节点
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(audioWorkletNode);
+    audioWorkletNode.connect(audioContext.destination);
 
-  recognition.onresult = (event) => {
-    let transcript = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      transcript += event.results[i][0].transcript;
-    }
-    transcriptionList.value.push(transcript);  // 将转录文本加入列表
-  };
+    // 建立 WebSocket 连接
+    socket.value = new WebSocket('ws://192.168.79.63:8000/ws'); // 修改为实际服务器地址
+    socket.value.binaryType = 'arraybuffer';
 
-  recognition.start();
-};
+    socket.value.onopen = () => {
+      console.log('WebSocket 连接已打开');
+      showSnackBar('WebSocket 连接已打开，开始录音...');
+      isRecording.value = true;
+    };
 
-// 模糊搜索函数
-const filterTranscriptions = () => {
-  const query = searchQuery.value.trim().toLowerCase();
-  if (query === '') {
-    filteredTranscriptionList.value = transcriptionList.value; // 如果没有搜索词，显示所有转录内容
-  } else {
-    filteredTranscriptionList.value = transcriptionList.value.filter(transcript =>
-      transcript.toLowerCase().includes(query)  // 如果转录文本包含搜索词
-    );
+    socket.value.onerror = (error) => {
+      console.error('WebSocket 错误:', error);
+      showSnackBar('WebSocket 连接错误，停止录音。');
+      isRecording.value = false;
+      stopRecording();
+    };
+
+    socket.value.onclose = () => {
+      console.log('WebSocket 连接已关闭');
+      showSnackBar('WebSocket 连接已关闭，停止录音。');
+      isRecording.value = false;
+    };
+
+    // 监听来自 AudioWorklet 的音频数据
+    audioWorkletNode.port.onmessage = (event) => {
+      const audioBuffer = event.data;
+      console.log('发送音频块大小:', audioBuffer.byteLength); // 调试信息
+      if (socket.value && socket.value.readyState === WebSocket.OPEN) {
+        socket.value.send(audioBuffer);
+      }
+    };
+
+    // 监听来自服务器的消息（转录文本）
+    socket.value.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        try {
+          // 尝试解析为 JSON
+          const message = JSON.parse(event.data);
+          if (message.type === 'transcription' && message.text) {
+            fullTranscription.value += message.text;
+            // 更新字幕，限制长度为50个字符
+            subtitle.value = fullTranscription.value.slice(-50);
+            console.log('收到转录文本:', fullTranscription.value); // 调试信息
+          }
+        } catch (e) {
+          // 如果解析失败，假设消息是纯文本字符
+          console.warn('无效的 JSON 消息，尝试作为纯文本处理:', event.data);
+          fullTranscription.value += event.data;
+          // 更新字幕，限制长度为50个字符
+          subtitle.value = fullTranscription.value.slice(-50);
+          console.log('收到转录文本:', fullTranscription.value); // 调试信息
+        }
+      }
+    };
+
+    // 保存引用以便后续清理
+    config.audioContext = audioContext;
+    config.audioWorkletNode = audioWorkletNode;
+    config.stream = stream;
+
+  } catch (error) {
+    console.error('录音启动失败:', error);
+    showSnackBar('无法启动录音，请检查麦克风权限或浏览器支持情况。');
   }
 };
 
-// 高亮显示匹配的部分
-const highlightMatch = (text) => {
-  const query = searchQuery.value.trim();
-  if (!query) return text;  // 如果没有搜索内容，直接返回原文本
+const stopRecording = async () => {
+  if (!isRecording.value) return;
 
-  const regex = new RegExp(`(${query})`, 'gi');  // 使用正则表达式匹配搜索词
-  return text.replace(regex, '<span class="highlight">$1</span>');  // 高亮显示匹配部分
+  isRecording.value = false;
+
+  // 关闭 WebSocket 连接
+  if (socket.value) {
+    socket.value.close();
+    socket.value = null;
+  }
+
+  // 关闭 AudioWorklet 和 AudioContext
+  if (config.audioWorkletNode) {
+    config.audioWorkletNode.port.postMessage({ command: 'stop' });
+    config.audioWorkletNode.disconnect();
+    config.audioWorkletNode = null;
+  }
+
+  if (config.audioContext) {
+    await config.audioContext.close();
+    config.audioContext = null;
+  }
+
+  if (config.stream) {
+    config.stream.getTracks().forEach(track => track.stop());
+    config.stream = null;
+  }
+
+  showSnackBar('已停止录音');
+
+  // 保存转录文本到 Firestore
+  if (config.meetingId && fullTranscription.value.length > 0) {
+    const user = store.getters.getUser;
+    if (user) {
+      try {
+        await FirestoreService.saveTranscriptions(user.uid, config.meetingId, fullTranscription.value);
+        console.log('转录文本已保存到 Firestore');
+        showSnackBar('转录文本已保存');
+      } catch (error) {
+        console.error('保存转录文本失败:', error);
+        showSnackBar('保存转录文本失败: ' + error.message);
+      }
+    }
+  }
 };
-
-// 监听搜索框的变化，实时过滤转录内容
-watch(searchQuery, filterTranscriptions);
-
 
 // 生命周期钩子
 onMounted(() => {
   checkRouteParams();
-// 当会议开始时启动音频转录
-    if (sessionJoined.value) {
-    startTranscription();
-  }
 });
 
 onBeforeUnmount(() => {
@@ -391,15 +466,22 @@ onBeforeUnmount(() => {
       router.push('/home');
     }
   }
+
+  // 确保停止录音并清理资源
+  stopRecording();
 });
 </script>
+
+
+
 
 <style scoped>
 main {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 90vh;
+  height: 95vh;
   background-color: #ffffff;
   margin: 0; 
 }
@@ -420,6 +502,7 @@ main {
 #action-flow {
   background-color: #ffffff;
   padding: 40px;
+  margin: 0px;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   text-align: center;
@@ -434,6 +517,7 @@ main {
 }
 
 .input-group {
+
   margin-bottom: 20px;
   text-align: left;
 }
@@ -444,7 +528,11 @@ main {
   color: #333333;
   font-weight: bold;
 }
-
+.input-group input:focus,
+.input-group select:focus {
+  border-color: #1a73e8;
+  outline: none;
+}
 .input-group input,
 .input-group select {
   width: 100%;
@@ -461,49 +549,63 @@ main {
   outline: none;
 }
 
-#sessionContainer {
-  width: 75%;
-  height: 90vh;
-  margin-top: 0px;
+.video-and-transcription {
   display: flex;
-  justify-content: space-between;
-  background-color: rgb(255, 255, 255);
+  justify-content: center;
+  align-items: flex-start;
+  width: 90%;
+  height: 100vh;
+  margin-top: 50px;
 }
-
-#transcriptionContainer {
-  width:22%; 
-  height:75vh;
+#sessionContainer {
+  position: relative;
+  width: 80%;
+  height: 100%;
   background-color: rgb(255, 255, 255);
-  padding: 5px;
-  color: rgb(0, 0, 0);
   border-radius: 8px;
-  overflow-y: auto;
-  border: solid;
-  border-color: #b9b9b9;
-  margin-left: 10px;
-  margin-top: 140px;
-}
-#transcriptionContainer ul {
-  list-style-type: none; 
-  padding: 0;
-  margin: 0;
+  overflow: hidden;
 }
 
-#transcriptionContainer li {
-  background-color: #f0f0f0; 
-  color: #000; 
-  padding: 10px;
-  margin-bottom: 10px; 
-  border-radius: 12px; 
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-  font-size: 14px; 
-  word-wrap: break-word; 
+.subtitle {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  max-width: 80%;
+  text-align: center;
+  font-size: 16px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* 可选：调整录音控制按钮的样式 */
+.recording-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.recording-controls button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.recording-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .search-container {
     position: relative;
     margin-bottom: 20px;
   }
+
 .input-wrapper {
   display: flex;
   align-items: center;
@@ -545,4 +647,64 @@ main {
   background-color: yellow;
   font-weight: bold;
 }
+/* 添加录音控制按钮的样式 */
+.recording-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.recording-controls button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.recording-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+#transcriptionContainer {
+  width: 22%; 
+  height: 80vh;
+  background-color: rgb(255, 255, 255);
+  padding: 10px;
+  color: rgb(0, 0, 0);
+  border-radius: 8px;
+  overflow-y: auto;
+  border: solid 1px #b9b9b9;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+#transcriptionContainer h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#transcriptionContainer p {
+  white-space: pre-wrap; /* 保留换行 */
+  word-wrap: break-word; /* 自动换行 */
+  font-size: 14px;
+}
+
+#transcriptionContainer ul {
+  list-style-type: none; 
+  padding: 0;
+  margin: 0;
+}
+
+#transcriptionContainer li {
+  background-color: #f0f0f0; 
+  color: #000; 
+  padding: 10px;
+  margin-bottom: 10px; 
+  border-radius: 12px; 
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 14px; 
+  word-wrap: break-word; 
+}
+
 </style>

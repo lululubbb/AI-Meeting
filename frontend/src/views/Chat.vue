@@ -50,9 +50,10 @@ const store = useStore();
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100%;
+  width: 98%;
   background-color: #ffffff;
   overflow: hidden; 
+  margin:10px
 }
 
 .main-layout {
@@ -63,11 +64,12 @@ const store = useStore();
   overflow: auto; 
 }
 
+
 /* 左侧部分 */
 .left-section {
-  flex:0.7;
+  flex:0.8;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
@@ -76,17 +78,23 @@ const store = useStore();
 .middle-section {
   flex: 1.3;
   background-color: #ffffff;
-  padding: 20px;
+  padding: 0px;
   box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
+  align-items: center;
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+  margin: 0px;
 }
 
 /* 右侧部分 */
 .right-section {
-  flex: 0.7;
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
   background-color: #ffffff;
   padding: 10px;
-  box-shadow: inset -1px 0 0 #ddd;
   overflow: auto; 
 }
 footer {

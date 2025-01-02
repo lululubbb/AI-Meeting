@@ -1,20 +1,16 @@
 <!-- src/views/HistoryMeeting.vue -->
-<!-- 先当成历史会议，在考虑如果将其做成头部组件“会议”页面最中间的组件，然后点击“历史会议”按钮只弹出中间组件部分 -->
-<!-- 因为头部组件“会议”页面最中间的组包括已结束、正在和未开始的所有会议 -->
-<!-- 都是读取meetings数据库中的会议数据，如果后续加了日程就可以得到未开始的会议数据 -->
-<!-- 然后再根据会议状态对于不同状态的会议给予不同颜色的标注吧 -->
 <template>
   <div class="history-container">
     <h2>会议历史记录</h2>
-<!-- 关闭按钮 -->
-<div v-if="route.name === 'HistoryMeeting'" class="close-btn-wrapper">      
-  <button @click="goHome" class="close-btn">
-      <img src="@/assets/exit.png"  alt="exit"/>
+    <!-- 关闭按钮 -->
+    <div v-if="route.name === 'HistoryMeeting'" class="close-btn-wrapper">      
+      <button @click="goHome" class="close-btn">
+        <img src="@/assets/exit.png" alt="exit"/>
       </button>
-</div>
+    </div>
 
-  <!-- 搜索框 -->
-  <div class="search-container">
+    <!-- 搜索框 -->
+    <div class="search-container">
       <div class="input-wrapper">
         <input
           type="text"
@@ -35,104 +31,110 @@
     </div>
 
     <ul v-else>
-      <li v-for="meeting in filteredMeetings" :key="meeting.id"
-      :class="{
-      'ongoing': meeting.status === 'ongoing',
-      'finished': meeting.status === 'finished',
-      'not-started': meeting.status !== 'finished' && meeting.status !== 'ongoing'
-    }"
-    @click="showMeetingDetails(meeting)"
-    >
-        <!-- 这里存在的问题就是创建时间是按照插入数据库的时间算的，如果是日程安排的话怎么处理 -->
-        <strong>会议名称: </strong> {{ meeting.meetingName }} <br />
-        <strong>创建人员: </strong> {{ meeting.host}} <br />
+      <li v-for="meeting in filteredMeetings" :key="meeting.meetingId"
+        :class="{
+          'ongoing': meeting.status === 'ongoing',
+          'finished': meeting.status === 'finished',
+          'not-started': meeting.status !== 'finished' && meeting.status !== 'ongoing'
+        }"
+        @click="showMeetingDetails(meeting)"
+      >
+        <strong>会议名称: </strong> {{ meeting.sessionName }} <br />
+        <strong>创建人员: </strong> {{ meeting.host }} <br />
         <strong>创建时间: </strong> {{ formatDate(meeting.createdAt) }} <br />
         <strong>会议状态: </strong> {{ meeting.status }}<br />
         <strong>结束时间: </strong> {{ meeting.endedAt ? formatDate(meeting.endedAt) : '正在进行中' }}
       </li>
     </ul>
 
-     <!-- 会议详情 -->
-     <div v-if="showModal" class="meeting-detail-modal">
+    <!-- 会议详情 -->
+    <div v-if="showModal" class="meeting-detail-modal">
       <div id="meetingDetails">
         <span class="closeBtn" @click="closeModal">×</span>
         <h3>会议详情</h3>
-        <p><strong>会议名称:</strong> {{ selectedMeeting.meetingName }}</p>
+        <p><strong>会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>会议号:</strong> {{ selectedMeeting.meetingId }}</p>
         <p><strong>发起人:</strong> {{ selectedMeeting.host }}</p>
         <p><strong>开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
         <p><strong>结束时间:</strong> {{ selectedMeeting.endedAt ? formatDate(selectedMeeting.endedAt) : '正在进行中' }}</p>
         
-        <!-- <div class="meeting-actions"> -->
-    <!-- 只在当前用户是会议的host时显示以下内容 -->
-    <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">          <p><strong>参会人员:</strong></p>
-        <button @click="downloadData" class="download-btn">
-          <img src="@/assets/download.png" alt="Download" />
-        </button>
+        <!-- 只在当前用户是会议的host时显示以下内容 -->
+        <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">
+          <p><strong>参会人员:</strong></p>
+          <button @click="downloadData" class="download-btn">
+            <img src="@/assets/download.png" alt="Download" />
+          </button>
         </div>
-        <!-- <div class="meeting-actions"> -->
-    <!-- 只在当前用户是会议的host时显示以下内容 -->
-    <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">        <p><strong>参会度:</strong></p>
-        <button @click="downloadData" class="download-btn">
-          <img src="@/assets/download.png" alt="Download" />
-        </button>
-      </div>
-    <!-- 添加四个功能按钮 -->
-    <div class="function-buttons">
-      <button @click="showSection('record')">会议记录</button>
-      <button @click="showSection('keywords')">关键提取</button>
-      <button @click="showSection('sentiment')">情感分析&词云图</button>
-      <button @click="showSection('statistics')">参会统计</button>
-    </div>
+        <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">
+          <p><strong>参会度:</strong></p>
+          <button @click="downloadData" class="download-btn">
+            <img src="@/assets/download.png" alt="Download" />
+          </button>
+        </div>
+        
+        <!-- 添加四个功能按钮 -->
+        <div class="function-buttons">
+          <button @click="showSection('record')">会议记录</button>
+          <button @click="showSection('keywords')">关键提取</button>
+          <button @click="showSection('sentiment')">情感分析&词云图</button>
+          <button @click="showSection('statistics')">参会统计</button>
+        </div>
 
-    <!-- 动态切换显示内容 -->
-    <div v-if="activeSection === 'record'" class="section-content">
-      <!-- 会议记录的内容 -->
-      <!-- 判断会议状态是否为已结束 -->
-      <p v-if="selectedMeeting.status === 'finished'">
-        会议记录内容...
-      </p>
-    </div>
+        <!-- 动态切换显示内容 -->
+        <div v-if="activeSection === 'record'" class="section-content">
+          <!-- 会议记录的内容 -->
+          <!-- 判断会议状态是否为已结束 -->
+          <div v-if="selectedMeeting.status === 'finished'">
+            <p>{{ meetingTranscriptions }}</p>
+          </div>
+          <div v-else>
+            会议未结束，无法查看记录。
+          </div>
+        </div>
 
-    <div v-if="activeSection === 'keywords'" class="section-content">
-      <!-- 关键提取的内容 -->
-      <!-- 判断会议状态是否为已结束 -->
-      <p v-if="selectedMeeting.status === 'finished'">
-        关键提取内容...
-      </p>
-    </div>
+        <div v-if="activeSection === 'keywords'" class="section-content">
+          <!-- 关键提取的内容 -->
+          <!-- 判断会议状态是否为已结束 -->
+          <div v-if="selectedMeeting.status === 'finished'">
+            关键提取内容...
+          </div>
+        </div>
 
-    <div v-if="activeSection === 'sentiment'" class="section-content">
-      <!-- 情感分析&词云图的内容 -->
-      <!-- 判断会议状态是否为已结束 -->
-      <p v-if="selectedMeeting.status === 'finished'">
-        情感分析&词云图内容...
-      </p>
-    </div>
+        <div v-if="activeSection === 'sentiment'" class="section-content">
+          <!-- 情感分析&词云图的内容 -->
+          <!-- 判断会议状态是否为已结束 -->
+          <div v-if="selectedMeeting.status === 'finished'">
+            情感分析&词云图内容...
+          </div>
+        </div>
 
-    <div v-if="activeSection === 'statistics'" class="section-content">
-      <!-- 参会统计的内容 -->
-      <!-- 判断会议状态是否为已结束 -->
-      <p v-if="selectedMeeting.status === 'finished'">
-        参会统计内容...
-      </p>
-    </div>
-
+        <div v-if="activeSection === 'statistics'" class="section-content">
+          <!-- 参会统计的内容 -->
+          <!-- 判断会议状态是否为已结束 -->
+          <div v-if="selectedMeeting.status === 'finished'">
+            参会统计内容...
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
+
+
+
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter,useRoute  } from 'vue-router'; // 引入 useRouter
+import { useRouter, useRoute } from 'vue-router'; // 引入 useRouter
 import { ElMessage } from 'element-plus';
+import FirestoreService from '../services/FirestoreService.js'; // 导入 FirestoreService
+import { showSnackBar } from '../utils/utils.js'; // 导入 showSnackBar
 
 // 获取 Vuex store
 const store = useStore();
 const router = useRouter();
-const route = useRoute ();
+const route = useRoute();
 
 // 获取当前用户的邮箱
 const getUserEmail = () => {
@@ -151,6 +153,9 @@ const selectedMeeting = ref(null);
 const showModal = ref(false);
 const activeSection = ref(''); // 用于控制显示哪个区域
 
+// 转录文本
+const meetingTranscriptions = ref('');
+
 // 创建一个 ref 来控制是否显示关闭按钮
 const showCloseButton = ref(false);
 
@@ -160,34 +165,12 @@ watch(() => route.path, (newPath) => {
   showCloseButton.value = newPath === '/history';
 });
 
-
 // 格式化日期
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 };
-
-// 获取会议数据
-onMounted(() => {
-  if (store.state.user) {
-    store.dispatch('listenToMeetings');
-  }
-});
-// 根据搜索条件过滤会议列表
-const filteredMeetings = computed(() => {
-  if (!searchQuery.value) return meetings.value;
-
-  const query = searchQuery.value;
-  return meetings.value.filter((meeting) => {
-    const meetingNameMatch = meeting.meetingName && meeting.meetingName.includes(query);
-    const statusMatch = meeting.status && meeting.status.includes(query);
-    const createdAtMatch = meeting.createdAt && formatDate(meeting.createdAt).includes(query);
-    const endedAtMatch = meeting.endedAt && formatDate(meeting.endedAt).includes(query);
-
-    return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
-  });
-});
 
 // 显示会议详情
 const showMeetingDetails = (meeting) => {
@@ -206,37 +189,82 @@ const downloadData = () => {
   if (selectedMeeting.value) {
     // 这里模拟一个下载数据的功能，实际中可以根据需要生成数据并下载
     const data = {
-      meetingId: selectedMeeting.value.meetingId,
+      meetingId: selectedMeeting.value.meetingId, // 确保使用 meetingId
       participants: selectedMeeting.value.participants,
       participationRate: selectedMeeting.value.participationRate,
+      transcriptions: selectedMeeting.value.transcriptions, // 添加转录文本
     };
 
-    const json = JSON.stringify(data);
+    const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${selectedMeeting.value.meetingName}-data.json`;
+    link.download = `${selectedMeeting.value.sessionName}-data.json`;
     link.click();
   }
 };
 
 // 切换功能区域
-const showSection = (section) => {
-   // 确保只有在会议已结束时才允许切换到具体功能部分
+const showSection = async (section) => {
+  // 确保只有在会议已结束时才允许切换到具体功能部分
   if (selectedMeeting.value && selectedMeeting.value.status === 'finished') {
     activeSection.value = section;
+
+    if (section === 'record') {
+      // 获取转录文本
+      const user = store.getters.getUser;
+      if (user && selectedMeeting.value.meetingId) { // 确认使用正确的字段名
+        try {
+          const transcription = await FirestoreService.getTranscriptions(user.uid, selectedMeeting.value.meetingId);
+          meetingTranscriptions.value = transcription; // 转录文本为字符串
+          console.log('获取到的转录文本:', transcription); // 调试信息
+        } catch (error) {
+          console.error('获取转录文本失败:', error);
+          showSnackBar('获取转录文本失败: ' + error.message);
+        }
+      } else {
+        console.warn('用户信息或 meetingId 不存在');
+      }
+    }
   } else {
     ElMessage.warning("请等会议结束后再进行查看");  
   }
-};
+}; 
 
-const goHome = () => {
-  router.push({ name: 'Home' });
-};
+// 生命周期钩子
+onMounted(() => {
+  if (store.state.user) {
+    store.dispatch('listenToMeetings');
+  }
+});
 
+// 根据搜索条件过滤会议列表
+const filteredMeetings = computed(() => {
+  if (!searchQuery.value) return meetings.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return meetings.value.filter((meeting) => {
+    const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query);
+    const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query);
+    const createdAtMatch = meeting.createdAt && formatDate(meeting.createdAt).toLowerCase().includes(query);
+    const endedAtMatch = meeting.endedAt && formatDate(meeting.endedAt).toLowerCase().includes(query);
+
+    return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
+  });
+});
+
+const goHome=()=>{
+ router.push('/home');
+}
 </script>
 
+
+
+
+
 <style scoped>
+/* 清理重复的样式定义，保留一次 */
+
 .close-btn-wrapper {
   position: absolute;
   top: 15px;
@@ -280,8 +308,8 @@ const goHome = () => {
 .history-container ul {
   list-style-type: none;
   padding: 0;
-
 }
+
 .history-container li {
   background-color: #ffffff;
   padding: 5px;
@@ -356,7 +384,7 @@ strong{
   border: none;
   border-radius: 4px;
   padding: 5px 10px;
-  width: 90% 
+  width: 90%; 
 } 
 .search-icon {
   position: absolute;
@@ -367,13 +395,6 @@ strong{
   width: 30px;
   height: 30px;
   pointer-events: none; 
-}
-div h3{
-  font-size: 26px; 
-  font-weight: bold;
-  margin: 0px;
-  margin-top: 10px;
-  margin-bottom: 20px;
 }
 
 .meeting-detail-modal {
@@ -386,7 +407,7 @@ div h3{
   padding-top: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 10;
-  width: 1000px;
+  width: 800px;
   max-height: 80%;
   overflow-y: auto;
   border-radius: 10px;
