@@ -17,7 +17,9 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
     "@mdi/font": "^7.4.47",
+    "dompurify": "^3.2.3",
     "element-plus": "^2.9.1",
+    "marked": "^15.0.4",
     "vue-router": "^4.5.0",
     "vue3-select": "^0.1.2"
   }

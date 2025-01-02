@@ -98,14 +98,30 @@ app.post('/api/zoom-jwt', (req, res) => {
 // AI聊天代理路由
 app.post('/api/chat/completions', async (req, res) => {
   try {
-    const response = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', req.body, {
+    const { stream } = req.body;
+
+    const axiosConfig = {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.XF_API_PASSWORD}` // 将APIPassword存储在环境变量中
+        'Authorization': `Bearer ${process.env.XF_API_PASSWORD}`
       }
-    });
+    };
 
-    res.json(response.data);
+    if (stream) {
+      axiosConfig.responseType = 'stream';
+    }
+
+    const response = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', req.body, axiosConfig);
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      response.data.pipe(res);
+    } else {
+      res.json(response.data);
+    }
   } catch (error) {
     console.error('Error calling AI API:', error.response ? error.response.data : error.message);
     res.status(error.response ? error.response.status : 500).json({

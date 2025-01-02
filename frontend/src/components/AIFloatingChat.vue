@@ -29,7 +29,7 @@
             class="message-bubble"
             :class="[msg.from === 'user' ? 'user-message' : 'ai-message']"
           >
-            <span v-html="msg.text"></span>
+            <span v-html="msg.renderedText"></span>
           </div>
 
           <!-- 用户消息：右侧头像 -->
@@ -39,7 +39,7 @@
         </div>
 
         <!-- AI 正在思考提示 -->
-        <div v-if="isLoading" class="loading">
+        <div v-if="isLoading && !isCreatingMeeting" class="loading">
           <span>AI 正在思考...</span>
         </div>
       </div>
@@ -59,10 +59,11 @@
 
 <script>
 import axios from 'axios';
-import ZoomVideoService from '../services/ZoomVideoService.js'; // 引入 ZoomVideoService
-import { showSnackBar } from '../utils/utils.js';
+import { showSnackBar } from '../utils/utils.js'; // 确保有一个显示消息的工具函数
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router'; // 引入 useRouter
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 export default {
   name: 'AIFloatingChat',
@@ -91,7 +92,11 @@ export default {
       if (message === '') return;
 
       // 添加用户消息
-      this.messages.push({ from: 'user', text: message });
+      this.messages.push({
+        from: 'user',
+        text: message,
+        renderedText: this.escapeHTML(message),
+      });
       this.userInput = '';
       this.scrollToBottom();
 
@@ -99,38 +104,109 @@ export default {
         this.isLoading = true;
         console.log('发送消息到AI:', message); // 调试信息
 
-        // 调用后端代理API
-        const response = await axios.post('/api/chat/completions', { // 使用相对路径，Vite代理会自动转发
-          model: "lite",
+        // 准备请求数据
+        const requestData = {
+          model: 'lite', // 指定请求的模型
+          user: this.getUserEmail(), // 可选：添加用户唯一ID
           messages: [
             {
-              role: "system",
-              content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）：
+              role: 'system',
+              content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）并确保指令与其他回复分开发送：
               {
                 "action": "create_meeting",
                 "meetingName": "会议名称",
                 "password": "密码"
               }
-              如果不是创建会议的请求，请正常回复。`
+              如果不是创建会议的请求，请正常回复。`,
             },
             {
-              role: "user",
-              content: message
-            }
+              role: 'user',
+              content: message,
+            },
           ],
-          stream: false
+          stream: true, // 设置为流式请求
+        };
+
+        // 发送流式请求 using fetch
+        const response = await fetch('/api/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 123456', // 替换为实际的APIPassword
+          },
+          body: JSON.stringify(requestData),
         });
 
-        console.log('AI响应:', response.data); // 调试信息
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        if (response.data.code === 0 && response.data.choices.length > 0) {
-          const aiReply = response.data.choices[0].message.content.trim();
-          
-          // 尝试解析AI回复为JSON
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let done = false;
+        let aiMessage = '';
+
+        // 添加一个新的AI消息，用于动态更新
+        this.messages.push({ from: 'ai', text: '', renderedText: '' });
+        const aiMessageIndex = this.messages.length - 1;
+
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+            for (const line of lines) {
+              if (line.startsWith('data:')) {
+                const dataStr = line.replace(/^data:/, '').trim();
+                if (dataStr === '[DONE]') {
+                  done = true;
+                  break;
+                }
+                try {
+                  const data = JSON.parse(dataStr);
+                  if (data.code !== 0) {
+                    // 处理API错误
+                    this.messages[aiMessageIndex].text += '抱歉，我无法回答你的问题。';
+                    this.messages[aiMessageIndex].renderedText = this.escapeHTML(
+                      this.messages[aiMessageIndex].text
+                    );
+                    this.scrollToBottom();
+                    continue;
+                  }
+                  if (data.choices && data.choices.length > 0) {
+                    const delta = data.choices[0].delta;
+                    if (delta && delta.content) {
+                      aiMessage += delta.content;
+
+                      // 调节显示速度：每个字符后延迟30毫秒
+                      for (const char of delta.content) {
+                        this.messages[aiMessageIndex].text += char;
+                        this.messages[aiMessageIndex].renderedText = this.renderMarkdown(
+                          this.messages[aiMessageIndex].text
+                        );
+                        this.scrollToBottom();
+                        await this.sleep(30); // 每个字符延迟30毫秒，可根据需求调整
+                      }
+                    }
+                    // 处理指令（在流式模式下，指令通常作为完整消息发送）
+                    // 这里暂时不处理，因为指令可能在多个delta中分开发送
+                  }
+                } catch (err) {
+                  console.error('解析数据失败:', err);
+                }
+              }
+            }
+          }
+        }
+
+        // 完成流式响应后的最终更新（尝试解析为指令）
+        if (aiMessage.trim() !== '') {
+          // 尝试解析AI消息为JSON
           let isCommand = false;
           let commandData = null;
           try {
-            commandData = JSON.parse(aiReply);
+            commandData = JSON.parse(aiMessage);
             if (commandData.action === 'create_meeting') {
               isCommand = true;
             }
@@ -141,32 +217,28 @@ export default {
           if (isCommand) {
             // 处理创建会议指令
             this.isCreatingMeeting = true;
-            this.messages.push({ from: 'ai', text: '正在创建会议...' });
+            // 更新AI消息显示为正在创建会议
+            this.messages[aiMessageIndex].text = '正在创建会议...';
+            this.messages[aiMessageIndex].renderedText = this.escapeHTML(
+              this.messages[aiMessageIndex].text
+            );
             this.scrollToBottom();
 
             await this.handleAIDirectives(commandData);
 
             this.isCreatingMeeting = false;
-          } else {
-            // 正常AI回复，添加到聊天
-            this.messages.push({ from: 'ai', text: aiReply });
-            this.scrollToBottom();
           }
-        } else {
-          this.messages.push({
-            from: 'ai',
-            text: '抱歉，我无法回答你的问题。'
-          });
         }
       } catch (error) {
-        console.error('AI聊天失败:', error.response ? error.response.data : error.message);
+        console.error('AI聊天失败:', error.message);
         this.messages.push({
           from: 'ai',
-          text: '抱歉，我无法回答你的问题。'
+          text: '抱歉，我无法回答你的问题。',
+          renderedText: this.escapeHTML('抱歉，我无法回答你的问题。'),
         });
+        this.scrollToBottom();
       } finally {
         this.isLoading = false;
-        this.scrollToBottom();
       }
     },
     // 滚动到聊天底部
@@ -181,7 +253,9 @@ export default {
       console.log('处理AI指令:', commandData); // 调试信息
 
       const meetingName = commandData.meetingName.trim();
-      const meetingPassword = commandData.password ? commandData.password.trim() : '';
+      const meetingPassword = commandData.password
+        ? commandData.password.trim()
+        : '';
 
       console.log(`解析出的会议名称: ${meetingName}, 密码: ${meetingPassword}`); // 调试信息
 
@@ -196,7 +270,7 @@ export default {
           sessionName: meetingName,
           role: 1, // 主持人角色
           userIdentity: userEmail, // 使用用户邮箱作为身份标识
-          sessionPasscode: meetingPassword
+          sessionPasscode: meetingPassword,
         });
 
         console.log('后端JWT响应:', jwtResponse.data); // 调试信息
@@ -212,8 +286,8 @@ export default {
               userName: userName, // 现在是用户邮箱
               sessionPasscode: meetingPassword,
               videoSDKJWT: jwt,
-              role: 1 // 添加 role 参数
-            }
+              role: 1, // 添加 role 参数
+            },
           });
 
           showSnackBar(`已创建会议 "${meetingName}" 并加入`);
@@ -223,9 +297,19 @@ export default {
           showSnackBar('获取 JWT 失败');
         }
       } catch (error) {
-        console.error('获取 JWT 失败:', error.response ? error.response.data : error.message);
-        showSnackBar('获取 JWT 失败: ' + (error.response?.data?.error?.message || error.message));
-        this.messages.push({ from: 'ai', text: '抱歉，创建会议失败。' });
+        console.error(
+          '获取 JWT 失败:',
+          error.response ? error.response.data : error.message
+        );
+        showSnackBar(
+          '获取 JWT 失败: ' +
+            (error.response?.data?.error?.message || error.message)
+        );
+        this.messages.push({
+          from: 'ai',
+          text: '抱歉，创建会议失败。',
+          renderedText: this.escapeHTML('抱歉，创建会议失败。'),
+        });
         this.scrollToBottom();
       }
     },
@@ -240,8 +324,24 @@ export default {
       const user = this.$store.getters.getUser;
       console.log('当前用户名:', user.email); // 调试信息
       return user.email || `Host_${Date.now()}`;
-    }
-  }
+    },
+    // Helper function to sleep
+    sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    },
+    // Render markdown to HTML
+    renderMarkdown(markdownText) {
+      if (!markdownText) return '';
+      const rawHtml = marked(markdownText);
+      return DOMPurify.sanitize(rawHtml);
+    },
+    // Escape HTML to prevent XSS
+    escapeHTML(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    },
+  },
 };
 </script>
 
@@ -256,7 +356,7 @@ export default {
   cursor: pointer;
   width: 80px;
   height: 80px;
-  z-index: 0;
+  z-index: 1000; /* 确保在最上层 */
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -385,7 +485,7 @@ export default {
 }
 
 .user-row {
-  justify-content: flex-end;   /* 用户放右侧 */
+  justify-content: flex-end; /* 用户放右侧 */
 }
 
 /* 头像容器 */
@@ -424,6 +524,6 @@ export default {
   background-color: #feb2a5e0;
   color: #434040;
   text-align: right;
-  align-self: flex-end;  /* 让气泡贴右边 */
+  align-self: flex-end; /* 让气泡贴右边 */
 }
 </style>
