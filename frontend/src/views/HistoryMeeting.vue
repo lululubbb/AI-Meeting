@@ -93,18 +93,33 @@
         </div>
 
         <div v-if="activeSection === 'keywords'" class="section-content">
-          <!-- 关键提取的内容 -->
-          <!-- 判断会议状态是否为已结束 -->
-          <div v-if="selectedMeeting.status === 'finished'">
-            关键提取内容...
-          </div>
-        </div>
+  <!-- 关键提取的内容 -->
+  <div v-if="activeSection === 'keywords'" class="section-content">
+  <!-- 关键提取的内容 -->
+  <div v-if="selectedMeeting.status === 'finished'">
+    <!-- 表情点击触发摘要生成 -->
+    <div class="icon-container" @click="generateStreamedSummary">
+      <!-- 显示不同状态的表情 -->
+      <span class="summary-icon">
+        {{ isLoadingSummary ? '⏳ 生成中...' : '✨ 点击生成摘要' }}
+      </span>
+    </div>
+
+    <!-- 展示流式摘要 -->
+    <div v-if="summary" class="summary-output">
+      <p><strong>摘要:</strong></p>
+      <p>{{ summary }}</p>
+    </div>
+  </div>
+</div>
+
+</div>
 
         <div v-if="activeSection === 'sentiment'" class="section-content">
           <!-- 情感分析&词云图的内容 -->
           <!-- 判断会议状态是否为已结束 -->
           <div v-if="selectedMeeting.status === 'finished'">
-            情感分析&词云图内容...
+            <p>{{ meetingTranscriptions }}</p>
           </div>
         </div>
 
@@ -130,6 +145,70 @@ import { useRouter, useRoute } from 'vue-router'; // 引入 useRouter
 import { ElMessage } from 'element-plus';
 import FirestoreService from '../services/FirestoreService.js'; // 导入 FirestoreService
 import { showSnackBar } from '../utils/utils.js'; // 导入 showSnackBar
+
+// import { ref } from 'vue';
+import { generateSummaryAPI } from '../api/chat.js'; // 假设这个是封装的流式调用大模型的API
+const isLoadingSummary = ref(false); // 是否加载中
+const summary = ref(''); // 存放生成的摘要
+
+// 调用大模型生成摘要
+const generateStreamedSummary = async () => {
+  if (isLoadingSummary.value) {
+    return; // 如果已经在生成中，防止重复点击
+  }
+
+  if (!meetingTranscriptions.value) {
+    summary.value = '会议记录为空，无法生成摘要。';
+    return;
+  }
+
+  isLoadingSummary.value = true; // 切换图标到加载状态
+  summary.value = '';
+
+  try {
+    const response = await generateSummaryAPI(meetingTranscriptions.value); // 调用API
+    summary.value = ''; // 清空内容，准备接收流式输出
+
+    // 处理流式响应
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const dataStr = line.replace(/^data:/, '').trim();
+            if (dataStr === '[DONE]') {
+              done = true;
+              break;
+            }
+            try {
+              const data = JSON.parse(dataStr);
+              const delta = data.choices[0].delta;
+              if (delta && delta.content) {
+                summary.value += delta.content; // 拼接流式输出
+              }
+            } catch (err) {
+              console.error('解析流式摘要失败:', err);
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('生成摘要失败:', error);
+    summary.value = '抱歉，生成摘要失败，请稍后重试。';
+  } finally {
+    isLoadingSummary.value = false; // 恢复图标到初始状态
+  }
+};
+
+
 
 // 获取 Vuex store
 const store = useStore();
@@ -508,4 +587,38 @@ strong{
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
+.icon-container {
+  display: inline-block;
+  cursor: pointer;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.summary-icon {
+  width: 40px;
+  height: 40px;
+  transition: transform 0.3s;
+}
+
+.icon-container:hover .summary-icon {
+  transform: scale(1.2); /* 鼠标悬停放大效果 */
+}
+
+.summary-output {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f0f8ff;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.summary-output p {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+button:disabled {
+  background-color: #eee;
+  cursor: not-allowed;
+}
+
 </style>
