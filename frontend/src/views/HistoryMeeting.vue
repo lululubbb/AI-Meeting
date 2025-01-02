@@ -1,11 +1,11 @@
 <!-- src/views/HistoryMeeting.vue -->
 <template>
   <div class="history-container">
-    <h2>会议历史记录</h2>
+    <h2>📜 会议历史记录</h2>
     <!-- 关闭按钮 -->
     <div v-if="route.name === 'HistoryMeeting'" class="close-btn-wrapper">      
-      <button @click="goHome" class="close-btn">
-        <img src="@/assets/exit.png" alt="exit"/>
+      <button @click="goHome" class="close-btn" aria-label="关闭">
+        <img src="@/assets/exit.png" alt="退出" />
       </button>
     </div>
 
@@ -15,22 +15,22 @@
         <input
           type="text"
           v-model="searchQuery"
-          placeholder="搜索会议相关信息"
+          placeholder="🔍 搜索会议相关信息"
           class="search-input"
         />
         <img
           src="@/assets/search.png"
-          alt="Search"
+          alt="搜索"
           class="search-icon"
         />
       </div>
     </div>
 
-    <div v-if="filteredMeetings.length === 0">
-      <p>没有找到符合条件的会议记录</p>
+    <div v-if="filteredMeetings.length === 0" class="no-results">
+      <p>😕 没有找到符合条件的会议记录</p>
     </div>
 
-    <ul v-else>
+    <ul v-else class="meeting-list">
       <li v-for="meeting in filteredMeetings" :key="meeting.meetingId"
         :class="{
           'ongoing': meeting.status === 'ongoing',
@@ -39,11 +39,11 @@
         }"
         @click="showMeetingDetails(meeting)"
       >
-        <strong>会议名称: </strong> {{ meeting.sessionName }} <br />
-        <strong>创建人员: </strong> {{ meeting.host }} <br />
-        <strong>创建时间: </strong> {{ formatDate(meeting.createdAt) }} <br />
-        <strong>会议状态: </strong> {{ meeting.status }}<br />
-        <strong>结束时间: </strong> {{ meeting.endedAt ? formatDate(meeting.endedAt) : '正在进行中' }}
+        <strong>📅 会议名称:</strong> {{ meeting.sessionName }} <br />
+        <strong>👤 创建人员:</strong> {{ meeting.host }} <br />
+        <strong>🕒 创建时间:</strong> {{ formatDate(meeting.createdAt) }} <br />
+        <strong>📊 会议状态:</strong> {{ meeting.status }}<br />
+        <strong>⏰ 结束时间:</strong> {{ meeting.endedAt ? formatDate(meeting.endedAt) : '正在进行中' }}
       </li>
     </ul>
 
@@ -51,33 +51,33 @@
     <div v-if="showModal" class="meeting-detail-modal">
       <div id="meetingDetails">
         <span class="closeBtn" @click="closeModal">×</span>
-        <h3>会议详情</h3>
-        <p><strong>会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
-        <p><strong>会议号:</strong> {{ selectedMeeting.meetingId }}</p>
-        <p><strong>发起人:</strong> {{ selectedMeeting.host }}</p>
-        <p><strong>开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
-        <p><strong>结束时间:</strong> {{ selectedMeeting.endedAt ? formatDate(selectedMeeting.endedAt) : '正在进行中' }}</p>
+        <h3>📋 会议详情</h3>
+        <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
+        <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
+        <p><strong>👤 发起人:</strong> {{ selectedMeeting.host }}</p>
+        <p><strong>🕒 开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
+        <p><strong>⏰ 结束时间:</strong> {{ selectedMeeting.endedAt ? formatDate(selectedMeeting.endedAt) : '正在进行中' }}</p>
         
         <!-- 只在当前用户是会议的host时显示以下内容 -->
         <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">
-          <p><strong>参会人员:</strong></p>
-          <button @click="downloadData" class="download-btn">
-            <img src="@/assets/download.png" alt="Download" />
+          <p><strong>👥 参会人员:</strong></p>
+          <button @click="downloadData" class="download-btn" aria-label="下载数据">
+            <img src="@/assets/download.png" alt="下载" />
           </button>
         </div>
         <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">
-          <p><strong>参会度:</strong></p>
-          <button @click="downloadData" class="download-btn">
-            <img src="@/assets/download.png" alt="Download" />
+          <p><strong>📈 参会度:</strong></p>
+          <button @click="downloadData" class="download-btn" aria-label="下载参会度">
+            <img src="@/assets/download.png" alt="下载" />
           </button>
         </div>
         
         <!-- 添加四个功能按钮 -->
         <div class="function-buttons">
-          <button @click="showSection('record')">会议记录</button>
-          <button @click="showSection('keywords')">关键提取</button>
-          <button @click="showSection('sentiment')">情感分析&词云图</button>
-          <button @click="showSection('statistics')">参会统计</button>
+          <button @click="showSection('record')">📝 会议记录</button>
+          <button @click="showSection('keywords')">🔑 关键提取</button>
+          <button @click="showSection('sentiment')">❤️ 情感分析&词云图</button>
+          <button @click="showSection('statistics')">📊 参会统计</button>
         </div>
 
         <!-- 动态切换显示内容 -->
@@ -87,77 +87,73 @@
           <div v-if="selectedMeeting.status === 'finished'">
             <p>{{ meetingTranscriptions }}</p>
           </div>
-          <div v-else>
-            会议未结束，无法查看记录。
+          <div v-else class="info-message">
+            🕒 会议未结束，无法查看记录。
           </div>
         </div>
 
         <div v-if="activeSection === 'keywords'" class="section-content">
-  <!-- 关键提取的内容 -->
-  <div v-if="activeSection === 'keywords'" class="section-content">
-  <!-- 关键提取的内容 -->
-  <div v-if="selectedMeeting.status === 'finished'">
-    <!-- 表情点击触发摘要生成 -->
-    <div class="icon-container" @click="generateStreamedSummary">
-      <!-- 显示不同状态的表情 -->
-      <span class="summary-icon">
-        {{ isLoadingSummary ? '⏳ 生成中...' : '✨ 点击生成摘要' }}
-      </span>
-    </div>
+          <!-- 关键提取的内容 -->
+          <div v-if="selectedMeeting.status === 'finished'">
+            <!-- 表情点击触发摘要生成 -->
+            <div class="icon-container" @click="generateStreamedSummary">
+              <!-- 显示不同状态的表情 -->
+              <span class="summary-icon">
+                {{ isLoadingSummary ? '⏳ 生成中...' : '✨ 点击生成摘要' }}
+              </span>
+            </div>
 
-    <!-- 展示流式摘要 -->
-    <div v-if="summary" class="summary-output">
-      <p><strong>摘要:</strong></p>
-      <p>{{ summary }}</p>
-    </div>
-  </div>
-</div>
-
-</div>
-
-<div v-if="activeSection === 'sentiment'" class="section-content">
-  <!-- 情感分析&词云图的内容 -->
-  <div v-if="selectedMeeting.status === 'finished'">
-    <!-- 展示转录文本（可选） -->
-    <!-- <p>{{ meetingTranscriptions }}</p> -->
-
-    <!-- 展示后端返回的图表 -->
-    <div v-if="sentimentImages.wordcloud">
-      <h4>词云图</h4>
-      <img :src="sentimentImages.wordcloud" alt="词云图" />
-    </div>
-    <div v-if="sentimentImages.bar_chart">
-      <h4>情绪分布条形图</h4>
-      <img :src="sentimentImages.bar_chart" alt="情绪分布条形图" />
-    </div>
-    <div v-if="sentimentImages.pie_chart">
-      <h4>情绪分布饼图</h4>
-      <img :src="sentimentImages.pie_chart" alt="情绪分布饼图" />
-    </div>
-    <div v-if="sentimentImages.radar_chart">
-      <h4>情绪分布雷达图</h4>
-      <img :src="sentimentImages.radar_chart" alt="情绪分布雷达图" />
-    </div>
-  </div>
-  <div v-else>
-    会议未结束，无法查看情感分析。
-  </div>
-</div>
+            <!-- 展示流式摘要 -->
+            <div v-if="summary" class="summary-output">
+              <p><strong>📝 摘要:</strong></p>
+              <p>{{ summary }}</p>
+            </div>
+          </div>
+          <div v-else class="info-message">
+            🕒 会议未结束，无法生成摘要。
+          </div>
+        </div>
+        
+        <div v-if="activeSection === 'sentiment'" class="section-content">
+          <!-- 情感分析&词云图的内容 -->
+          <div v-if="selectedMeeting.status === 'finished'">
+            <!-- 展示后端返回的图表 -->
+            <div v-if="sentimentImages.wordcloud" class="chart-container">
+              <h4>☁️ 词云图</h4>
+              <img :src="sentimentImages.wordcloud" alt="词云图" />
+            </div>
+            <div v-if="sentimentImages.bar_chart" class="chart-container">
+              <h4>📊 情绪分布条形图</h4>
+              <img :src="sentimentImages.bar_chart" alt="情绪分布条形图" />
+            </div>
+            <div v-if="sentimentImages.pie_chart" class="chart-container">
+              <h4>🥧 情绪分布饼图</h4>
+              <img :src="sentimentImages.pie_chart" alt="情绪分布饼图" />
+            </div>
+            <div v-if="sentimentImages.radar_chart" class="chart-container">
+              <h4>🕸️ 情绪分布雷达图</h4>
+              <img :src="sentimentImages.radar_chart" alt="情绪分布雷达图" />
+            </div>
+          </div>
+          <div v-else class="info-message">
+            🕒 会议未结束，无法查看情感分析。
+          </div>
+        </div>
 
         <div v-if="activeSection === 'statistics'" class="section-content">
           <!-- 参会统计的内容 -->
           <!-- 判断会议状态是否为已结束 -->
           <div v-if="selectedMeeting.status === 'finished'">
-            参会统计内容...
+            <p>📈 参会统计内容...</p>
+          </div>
+          <div v-else class="info-message">
+            🕒 会议未结束，无法查看参会统计。
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-
-
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
@@ -407,14 +403,13 @@ const fetchSentimentImages = async () => {
 };
 </script>
 
-
-
-
-
-
 <style scoped>
-/* 清理重复的样式定义，保留一次 */
+/* 通用样式 */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
+/* 关闭按钮样式 */
 .close-btn-wrapper {
   position: absolute;
   top: 15px;
@@ -422,252 +417,308 @@ const fetchSentimentImages = async () => {
   z-index: 1;
   border: none;
   cursor: pointer;
-  transition: color 0.3s;
+  transition: transform 0.3s;
 }
 
 .close-btn {
   background-color: transparent;
   border: none;
   cursor: pointer;
+  transition: transform 0.3s;
 }
-.close-btn img{
+
+.close-btn img {
   width: 30px;
   height: 30px;
 }
+
 .close-btn:hover {
-  background-color: #f0f0f0;
+  transform: rotate(90deg);
 }
+
+/* 容器样式 */
 .history-container {
-  padding: 20px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 87vh;
-  margin: 0 auto;
+  padding: 30px 20px;
+  width: 95%;
+  max-width: 900px;
+  max-height: 90vh;
+  margin: 20px auto;
   background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   position: relative;
-  overflow-y: auto;  
+  overflow-y: auto;
 }
 
 .history-container h2 {
   text-align: center;
-  color: #000000;
-  margin-bottom: 20px;
-}
-.history-container ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.history-container li {
-  background-color: #ffffff;
-  padding: 5px;
-  padding-left: 20px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  border-width: 1.5px ;
-  border-style: solid; 
-  border-color: #d2d2d2; 
-  transition: background-color 0.3s;
-  color: #000000;
-}
-.history-container li.ongoing {
-  background-color: #ddefff; 
-  border-color: #bdd8ff;
-  color: #000000;  
-}
-
-.history-container li.finished {
-  background-color: #f9f9f9;  
-  border-color: #c8c8c8; 
-  color: #000000; 
-}
-
-.history-container li.not-started {
-  background-color: #ffe7de; 
-  border-color: #ffcabc;  
-  color: #000000;  
-}
-.history-container li:hover {
-  /* background-color: #eeeeee56; */
-  border-color: #000000;  
-}
-.history-container strong {
-  color: #000000;
-}
-.history-container p {
-  color: #000000;
-  text-align: center;
-}
-strong{
-  margin-right: 5px;
+  color: #333333;
+  margin-bottom: 25px;
+  font-size: 28px;
 }
 
 /* 搜索框样式 */
 .search-container {
   position: relative;
-  margin-bottom: 20px;
-}
-.search-input {
-  width: 100%;
-  padding: 10px 40px 10px 40px;
-  border-radius: 25px;
-  border-width: 2px;
-  font-size: 16px;
-  outline: none;
-  border-color: #d7d7d7;
-}
-
-.search-input:focus {
-  border-color: #b1b1b1;
-}
-
-.search-input::placeholder {
-  color: #bbb;
-  font-style: italic;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: center;
 }
 
 .input-wrapper {
-  display: flex;
-  align-items: center;
-  border: none;
-  border-radius: 4px;
-  padding: 5px 10px;
-  width: 90%; 
-} 
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 50px 12px 40px;
+  border-radius: 30px;
+  border: 2px solid #ccc;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-input:focus {
+  border-color: #007BFF;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+}
+
+.search-input::placeholder {
+  color: #999999;
+  font-style: italic;
+}
+
 .search-icon {
   position: absolute;
   top: 50%;
-  left: 10px;
-  margin-left: 10px;
+  left: 12px;
   transform: translateY(-50%);
-  width: 30px;
-  height: 30px;
-  pointer-events: none; 
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
 }
 
+/* 无结果提示 */
+.no-results {
+  text-align: center;
+  color: #666666;
+  font-size: 18px;
+  margin-top: 20px;
+}
+
+/* 会议列表样式 */
+.meeting-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.meeting-list li {
+  background-color: #fdfdfd;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  transition: box-shadow 0.3s, border-color 0.3s;
+  cursor: pointer;
+}
+
+.meeting-list li:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #007BFF;
+}
+
+.meeting-list li.ongoing {
+  background-color: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.meeting-list li.finished {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.meeting-list li.not-started {
+  background-color: #fff1f0;
+  border-color: #ffa39e;
+}
+
+.meeting-list strong {
+  color: #333333;
+  display: inline-block;
+  width: 120px;
+}
+
+/* 会议详情弹窗样式 */
 .meeting-detail-modal {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: white;
-  padding: 20px;
-  padding-top: 5px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 10;
-  width: 800px;
-  max-height: 80%;
+  background-color: #ffffff;
+  padding: 25px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  width: 90%;
+  max-width: 900px;
+  max-height: 85%;
   overflow-y: auto;
-  border-radius: 10px;
-  box-sizing: border-box;
+  border-radius: 15px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
 #meetingDetails {
   padding: 10px;
   background-color: #ffffff;
-  border-radius: 8px;
+  border-radius: 10px;
+}
+
+#meetingDetails h3 {
+  text-align: center;
+  color: #007BFF;
+  margin-bottom: 20px;
+  font-size: 24px;
 }
 
 #meetingDetails p {
-  margin: 8px 0; /* 设置每个<p>的间距 */
+  margin: 12px 0;
   font-size: 16px;
-  color: #333; /* 设置字体颜色 */
-  text-align: left; /* 左对齐 */
+  color: #555555;
+  line-height: 1.6;
 }
 
 #meetingDetails strong {
   font-weight: bold;
-  color: #333;
+  color: #333333;
 }
 
+/* 会议操作按钮样式 */
 .meeting-actions {
   display: flex;
-  justify-content:flex-start; 
-  align-items: center; 
-  margin-top: 16px; 
+  align-items: center;
+  margin-top: 20px;
 }
 
 .meeting-actions p {
-  margin: 0;
-  font-size: 14px;
-  color: #000000; 
+  margin: 0 10px 0 0;
+  font-size: 16px;
+  color: #333333;
 }
 
-.closeBtn {
-  position: absolute;
-  top: 5px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 30px;
-  cursor: pointer;
-}
-.closeBtn:hover {
-  color: red;
-}
 .download-btn {
   background-color: #ffffff;
-  border: none;
-  border-radius: 5px;
+  border: 2px solid #007BFF;
+  border-radius: 8px;
   cursor: pointer;
+  padding: 8px;
+  transition: background-color 0.3s, transform 0.3s;
 }
 
 .download-btn img {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 
 .download-btn:hover {
-  background-color: #f1f1f1;
+  background-color: #007BFF;
+  transform: scale(1.05);
 }
 
+.download-btn:active {
+  transform: scale(0.95);
+}
+
+/* 功能按钮样式 */
 .function-buttons {
   display: flex;
   justify-content: space-around;
-  margin-top: 20px;
+  margin-top: 30px;
+  flex-wrap: wrap;
 }
 
 .function-buttons button {
   background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 8px;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  padding: 12px 20px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  font-size: 15px;
+  transition: background-color 0.3s, border-color 0.3s, transform 0.2s;
+  font-size: 16px;
+  margin: 10px;
+  flex: 1 1 40%;
+  max-width: 200px;
 }
 
 .function-buttons button:hover {
-  background-color: #ddd;
+  background-color: #e0e0e0;
+  border-color: #007BFF;
+  transform: translateY(-2px);
 }
 
+.function-buttons button:active {
+  transform: translateY(0);
+}
+
+/* 内容区域样式 */
 .section-content {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border-radius: 5px;
+  margin-top: 25px;
+  padding: 20px;
+  background-color: #fafafa;
+  border-radius: 10px;
   border: 1px solid #ddd;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .section-content p {
-  color: #333;
+  color: #444444;
   font-size: 16px;
-  margin: 10px 0;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  line-height: 1.8;
 }
-.icon-container {
-  display: inline-block;
-  cursor: pointer;
-  margin: 10px 0;
+
+.info-message {
   text-align: center;
+  color: #ff4d4f;
+  font-size: 18px;
+  margin-top: 15px;
+}
+
+/* 图表容器样式 */
+.chart-container {
+  margin-top: 20px;
+}
+
+.chart-container h4 {
+  color: #333333;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.chart-container img {
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 表情图标容器样式 */
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  margin-top: 15px;
 }
 
 .summary-icon {
-  width: 40px;
-  height: 40px;
+  font-size: 24px;
   transition: transform 0.3s;
 }
 
@@ -675,21 +726,47 @@ strong{
   transform: scale(1.2); /* 鼠标悬停放大效果 */
 }
 
+/* 摘要输出样式 */
 .summary-output {
-  margin-top: 20px;
-  padding: 10px;
+  margin-top: 25px;
+  padding: 15px;
   background-color: #f0f8ff;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid #cceeff;
 }
+
 .summary-output p {
   margin: 0;
-  font-size: 14px;
-  color: #333;
+  font-size: 16px;
+  color: #333333;
+  line-height: 1.8;
 }
+
+/* 禁用按钮样式 */
 button:disabled {
-  background-color: #eee;
+  background-color: #eeeeee;
   cursor: not-allowed;
 }
 
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .function-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .function-buttons button {
+    max-width: none;
+    width: 80%;
+  }
+
+  .meeting-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meeting-actions p {
+    margin-bottom: 10px;
+  }
+}
 </style>
