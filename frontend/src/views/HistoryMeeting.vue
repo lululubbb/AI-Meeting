@@ -252,6 +252,10 @@ const filteredMeetings = computed(() => {
     return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
   });
 });
+
+const goHome=()=>{
+ router.push('/home');
+}
 </script>
 
 
@@ -403,7 +407,7 @@ strong{
   padding-top: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 10;
-  width: 1000px;
+  width: 800px;
   max-height: 80%;
   overflow-y: auto;
   border-radius: 10px;

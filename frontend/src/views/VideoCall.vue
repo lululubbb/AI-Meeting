@@ -62,7 +62,7 @@
       </div>
 
       <!-- 转录文本容器 -->
-      <div id="transcriptionContainer">
+      <div id="transcriptionContainer" v-if="sessionJoined">
         <h2>会议转录</h2>
         <p>{{ fullTranscription }}</p>
       </div>
@@ -106,6 +106,9 @@ const subtitle = ref('');
 // 错误消息
 const errorMessage = ref('');
 
+const goHome=()=>{
+ router.push('/home');
+}
 // 定义响应式状态
 const config = reactive({
   videoSDKJWT: '',
@@ -476,8 +479,9 @@ onBeforeUnmount(() => {
 main {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 95vh;
   background-color: #ffffff;
   margin: 0; 
 }
@@ -498,6 +502,7 @@ main {
 #action-flow {
   background-color: #ffffff;
   padding: 40px;
+  margin: 0px;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   text-align: center;
@@ -512,6 +517,7 @@ main {
 }
 
 .input-group {
+
   margin-bottom: 20px;
   text-align: left;
 }
@@ -542,17 +548,18 @@ main {
   border-color: #1a73e8;
   outline: none;
 }
+
 .video-and-transcription {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  width: 100%;
-  height: 80vh;
-  margin-top: 20px;
+  width: 90%;
+  height: 100vh;
+  margin-top: 50px;
 }
 #sessionContainer {
   position: relative;
-  width: 70%;
+  width: 80%;
   height: 100%;
   background-color: rgb(255, 255, 255);
   border-radius: 8px;
@@ -575,28 +582,6 @@ main {
   word-wrap: break-word;
 }
 
-#transcriptionContainer {
-  width: 25%;
-  height: 100%;
-  background-color: rgb(255, 255, 255);
-  padding: 10px;
-  color: rgb(0, 0, 0);
-  border-radius: 8px;
-  overflow-y: auto;
-  border: solid 1px #b9b9b9;
-  margin-left: 20px;
-}
-
-#transcriptionContainer h2 {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-#transcriptionContainer p {
-  white-space: pre-wrap; /* 保留换行 */
-  word-wrap: break-word; /* 自动换行 */
-  font-size: 14px;
-}
 /* 可选：调整录音控制按钮的样式 */
 .recording-controls {
   display: flex;
@@ -615,40 +600,12 @@ main {
   background-color: #ccc;
   cursor: not-allowed;
 }
-#transcriptionContainer {
-  width:22%; 
-  height:75vh;
-  background-color: rgb(255, 255, 255);
-  padding: 5px;
-  color: rgb(0, 0, 0);
-  border-radius: 8px;
-  overflow-y: auto;
-  border: solid;
-  border-color: #b9b9b9;
-  margin-left: 10px;
-  margin-top: 90px;
-}
-#transcriptionContainer ul {
-  list-style-type: none; 
-  padding: 0;
-  margin: 0;
-}
-
-#transcriptionContainer li {
-  background-color: #f0f0f0; 
-  color: #000; 
-  padding: 10px;
-  margin-bottom: 10px; 
-  border-radius: 12px; 
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-  font-size: 14px; 
-  word-wrap: break-word; 
-}
 
 .search-container {
     position: relative;
     margin-bottom: 20px;
   }
+
 .input-wrapper {
   display: flex;
   align-items: center;
@@ -694,7 +651,7 @@ main {
 .recording-controls {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .recording-controls button {
@@ -711,7 +668,7 @@ main {
 
 #transcriptionContainer {
   width: 22%; 
-  height: 75vh;
+  height: 80vh;
   background-color: rgb(255, 255, 255);
   padding: 10px;
   color: rgb(0, 0, 0);
@@ -719,7 +676,7 @@ main {
   overflow-y: auto;
   border: solid 1px #b9b9b9;
   margin-left: 10px;
-  margin-top: 140px;
+  margin-top: 10px;
 }
 
 #transcriptionContainer h2 {
@@ -732,4 +689,22 @@ main {
   word-wrap: break-word; /* 自动换行 */
   font-size: 14px;
 }
+
+#transcriptionContainer ul {
+  list-style-type: none; 
+  padding: 0;
+  margin: 0;
+}
+
+#transcriptionContainer li {
+  background-color: #f0f0f0; 
+  color: #000; 
+  padding: 10px;
+  margin-bottom: 10px; 
+  border-radius: 12px; 
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 14px; 
+  word-wrap: break-word; 
+}
+
 </style>
