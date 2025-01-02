@@ -115,13 +115,34 @@
 
 </div>
 
-        <div v-if="activeSection === 'sentiment'" class="section-content">
-          <!-- 情感分析&词云图的内容 -->
-          <!-- 判断会议状态是否为已结束 -->
-          <div v-if="selectedMeeting.status === 'finished'">
-            <p>{{ meetingTranscriptions }}</p>
-          </div>
-        </div>
+<div v-if="activeSection === 'sentiment'" class="section-content">
+  <!-- 情感分析&词云图的内容 -->
+  <div v-if="selectedMeeting.status === 'finished'">
+    <!-- 展示转录文本（可选） -->
+    <!-- <p>{{ meetingTranscriptions }}</p> -->
+
+    <!-- 展示后端返回的图表 -->
+    <div v-if="sentimentImages.wordcloud">
+      <h4>词云图</h4>
+      <img :src="sentimentImages.wordcloud" alt="词云图" />
+    </div>
+    <div v-if="sentimentImages.bar_chart">
+      <h4>情绪分布条形图</h4>
+      <img :src="sentimentImages.bar_chart" alt="情绪分布条形图" />
+    </div>
+    <div v-if="sentimentImages.pie_chart">
+      <h4>情绪分布饼图</h4>
+      <img :src="sentimentImages.pie_chart" alt="情绪分布饼图" />
+    </div>
+    <div v-if="sentimentImages.radar_chart">
+      <h4>情绪分布雷达图</h4>
+      <img :src="sentimentImages.radar_chart" alt="情绪分布雷达图" />
+    </div>
+  </div>
+  <div v-else>
+    会议未结束，无法查看情感分析。
+  </div>
+</div>
 
         <div v-if="activeSection === 'statistics'" class="section-content">
           <!-- 参会统计的内容 -->
@@ -141,20 +162,31 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter, useRoute } from 'vue-router'; // 引入 useRouter
+import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import FirestoreService from '../services/FirestoreService.js'; // 导入 FirestoreService
-import { showSnackBar } from '../utils/utils.js'; // 导入 showSnackBar
+import FirestoreService from '../services/FirestoreService.js';
+import { showSnackBar } from '../utils/utils.js';
+import { generateSummaryAPI } from '../api/chat.js';
+import axios from 'axios'; // 导入 Axios
 
-// import { ref } from 'vue';
-import { generateSummaryAPI } from '../api/chat.js'; // 假设这个是封装的流式调用大模型的API
-const isLoadingSummary = ref(false); // 是否加载中
-const summary = ref(''); // 存放生成的摘要
+const isLoadingSummary = ref(false);
+const summary = ref('');
 
-// 调用大模型生成摘要
+// 初始化情感分析图片
+const sentimentImages = ref({
+  wordcloud: '',
+  bar_chart: '',
+  pie_chart: '',
+  radar_chart: ''
+});
+
+// 定义后端 API 地址
+const BACKEND_URL = 'http://localhost:8003'; // 根据实际情况修改
+
+// 函数：生成流式摘要（保持不变）
 const generateStreamedSummary = async () => {
   if (isLoadingSummary.value) {
-    return; // 如果已经在生成中，防止重复点击
+    return;
   }
 
   if (!meetingTranscriptions.value) {
@@ -162,36 +194,35 @@ const generateStreamedSummary = async () => {
     return;
   }
 
-  isLoadingSummary.value = true; // 切换图标到加载状态
+  isLoadingSummary.value = true;
   summary.value = '';
 
   try {
-    const response = await generateSummaryAPI(meetingTranscriptions.value); // 调用API
-    summary.value = ''; // 清空内容，准备接收流式输出
+    const response = await generateSummaryAPI(meetingTranscriptions.value);
+    summary.value = '';
 
-    // 处理流式响应
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
-    let done = false;
+    let doneReading = false;
 
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
+    while (!doneReading) {
+      const { value, done } = await reader.read();
+      doneReading = done;
       if (value) {
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
         for (const line of lines) {
           if (line.startsWith('data:')) {
             const dataStr = line.replace(/^data:/, '').trim();
             if (dataStr === '[DONE]') {
-              done = true;
+              doneReading = true;
               break;
             }
             try {
               const data = JSON.parse(dataStr);
               const delta = data.choices[0].delta;
               if (delta && delta.content) {
-                summary.value += delta.content; // 拼接流式输出
+                summary.value += delta.content;
               }
             } catch (err) {
               console.error('解析流式摘要失败:', err);
@@ -204,11 +235,9 @@ const generateStreamedSummary = async () => {
     console.error('生成摘要失败:', error);
     summary.value = '抱歉，生成摘要失败，请稍后重试。';
   } finally {
-    isLoadingSummary.value = false; // 恢复图标到初始状态
+    isLoadingSummary.value = false;
   }
 };
-
-
 
 // 获取 Vuex store
 const store = useStore();
@@ -218,7 +247,7 @@ const route = useRoute();
 // 获取当前用户的邮箱
 const getUserEmail = () => {
   const user = store.getters.getUser;
-  console.log('当前用户邮箱:', user.email); // 调试信息
+  console.log('当前用户邮箱:', user.email);
   return user.email || 'unknown@domain.com';
 };
 
@@ -240,7 +269,6 @@ const showCloseButton = ref(false);
 
 // 监听 route.path 变化
 watch(() => route.path, (newPath) => {
-  // 如果当前路径是 /history，则显示关闭按钮，否则隐藏
   showCloseButton.value = newPath === '/history';
 });
 
@@ -266,12 +294,11 @@ const closeModal = () => {
 // 下载数据
 const downloadData = () => {
   if (selectedMeeting.value) {
-    // 这里模拟一个下载数据的功能，实际中可以根据需要生成数据并下载
     const data = {
-      meetingId: selectedMeeting.value.meetingId, // 确保使用 meetingId
+      meetingId: selectedMeeting.value.meetingId,
       participants: selectedMeeting.value.participants,
       participationRate: selectedMeeting.value.participationRate,
-      transcriptions: selectedMeeting.value.transcriptions, // 添加转录文本
+      transcriptions: selectedMeeting.value.transcriptions,
     };
 
     const json = JSON.stringify(data, null, 2);
@@ -285,18 +312,17 @@ const downloadData = () => {
 
 // 切换功能区域
 const showSection = async (section) => {
-  // 确保只有在会议已结束时才允许切换到具体功能部分
   if (selectedMeeting.value && selectedMeeting.value.status === 'finished') {
     activeSection.value = section;
 
     if (section === 'record') {
       // 获取转录文本
       const user = store.getters.getUser;
-      if (user && selectedMeeting.value.meetingId) { // 确认使用正确的字段名
+      if (user && selectedMeeting.value.meetingId) {
         try {
           const transcription = await FirestoreService.getTranscriptions(user.uid, selectedMeeting.value.meetingId);
-          meetingTranscriptions.value = transcription; // 转录文本为字符串
-          console.log('获取到的转录文本:', transcription); // 调试信息
+          meetingTranscriptions.value = transcription;
+          console.log('获取到的转录文本:', transcription);
         } catch (error) {
           console.error('获取转录文本失败:', error);
           showSnackBar('获取转录文本失败: ' + error.message);
@@ -305,10 +331,15 @@ const showSection = async (section) => {
         console.warn('用户信息或 meetingId 不存在');
       }
     }
+
+    // 如果切换到 'sentiment'，则调用 fetchSentimentImages
+    if (section === 'sentiment') {
+      await fetchSentimentImages();
+    }
   } else {
-    ElMessage.warning("请等会议结束后再进行查看");  
+    ElMessage.warning("请等会议结束后再进行查看");
   }
-}; 
+};
 
 // 生命周期钩子
 onMounted(() => {
@@ -332,10 +363,50 @@ const filteredMeetings = computed(() => {
   });
 });
 
-const goHome=()=>{
- router.push('/home');
-}
+// 返回主页
+const goHome = () => {
+  router.push('/home');
+};
+
+// 函数：发送转录文本到后端并获取情感分析图表
+const fetchSentimentImages = async () => {
+  if (!meetingTranscriptions.value) {
+    ElMessage.error('会议转录文本为空，无法进行情感分析。');
+    return;
+  }
+
+  try {
+    // 发送 POST 请求到后端
+    const response = await axios.post(`${BACKEND_URL}/generate-charts/`, new URLSearchParams({
+      text: meetingTranscriptions.value
+    }), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    if (response.data.error) {
+      console.error('后端错误:', response.data.error);
+      ElMessage.error(`后端错误: ${response.data.error}`);
+      return;
+    }
+
+    // 更新情感分析图表
+    sentimentImages.value = {
+      wordcloud: response.data.wordcloud || '',
+      bar_chart: response.data.bar_chart || '',
+      pie_chart: response.data.pie_chart || '',
+      radar_chart: response.data.radar_chart || ''
+    };
+
+    console.log('接收到的情感分析图表:', sentimentImages.value);
+  } catch (error) {
+    console.error('获取情感分析图表失败:', error);
+    ElMessage.error('获取情感分析图表失败，请稍后重试。');
+  }
+};
 </script>
+
 
 
 
