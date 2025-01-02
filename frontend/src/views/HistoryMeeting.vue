@@ -195,11 +195,35 @@ const generateStreamedSummary = async () => {
 
   try {
     const response = await generateSummaryAPI(meetingTranscriptions.value);
-    summary.value = '';
+
+    if (!response.body) {
+      throw new Error('响应体为空');
+    }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let doneReading = false;
+
+    // 创建一个缓冲区来存储接收到的内容
+    const contentBuffer = [];
+
+    // 定义每次追加的时间间隔（毫秒）
+    const appendInterval = 50;
+
+    // 定义每次追加的内容长度
+    const chunkSize = 5;
+
+    // 定义一个定时器来定期追加内容
+    const intervalId = setInterval(() => {
+      if (contentBuffer.length > 0) {
+        // 从缓冲区中取出一部分内容
+        const chunk = contentBuffer.shift();
+        summary.value += chunk;
+      } else if (doneReading) {
+        // 如果读取已完成且缓冲区为空，清除定时器
+        clearInterval(intervalId);
+      }
+    }, appendInterval);
 
     while (!doneReading) {
       const { value, done } = await reader.read();
@@ -218,7 +242,11 @@ const generateStreamedSummary = async () => {
               const data = JSON.parse(dataStr);
               const delta = data.choices[0].delta;
               if (delta && delta.content) {
-                summary.value += delta.content;
+                // 将接收到的内容分割成更小的块并推入缓冲区
+                for (let i = 0; i < delta.content.length; i += chunkSize) {
+                  const subChunk = delta.content.substring(i, i + chunkSize);
+                  contentBuffer.push(subChunk);
+                }
               }
             } catch (err) {
               console.error('解析流式摘要失败:', err);
@@ -227,6 +255,24 @@ const generateStreamedSummary = async () => {
         }
       }
     }
+
+    // 确保所有内容都已追加
+    // 等待缓冲区清空
+    const waitUntilBufferEmpty = () => {
+      return new Promise(resolve => {
+        const checkBuffer = () => {
+          if (contentBuffer.length === 0) {
+            clearInterval(intervalId);
+            resolve();
+          } else {
+            setTimeout(checkBuffer, appendInterval);
+          }
+        };
+        checkBuffer();
+      });
+    };
+
+    await waitUntilBufferEmpty();
   } catch (error) {
     console.error('生成摘要失败:', error);
     summary.value = '抱歉，生成摘要失败，请稍后重试。';
@@ -234,6 +280,8 @@ const generateStreamedSummary = async () => {
     isLoadingSummary.value = false;
   }
 };
+
+
 
 // 获取 Vuex store
 const store = useStore();

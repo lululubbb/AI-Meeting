@@ -4,7 +4,7 @@ export const generateSummaryAPI = async (transcriptionText) => {
       messages: [
         {
           role: 'system',
-          content: '你是一个文本摘要生成器，请根据用户提供的文本生成简洁的摘要。',
+          content: '你是一个会议发言记录的阅读者、总结者，请根据用户提供的文本生成简洁的摘要。',
         },
         {
           role: 'user',
