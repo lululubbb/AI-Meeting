@@ -4,9 +4,11 @@
     <div class="header-container">
       <!-- 左侧标题和搜索栏 -->
       <div class="left-section">
+        <div class="logo">
+          <img src="../assets/logo.jpg" alt="AI Meeting workplace Logo" />
+        </div>
         <div class="title">
           AI Meeting<br />
-          workplace
         </div>
         <div class="search-bar">
           <i class="fas fa-search search-icon"></i>
@@ -122,7 +124,7 @@ const logout = async () => {
 .left-section {
   display: flex;
   align-items: center;
-  gap: 3.6875rem; /* 59px */
+  gap: 1rem; /* 59px */
   flex-shrink: 1;
 }
 
@@ -142,7 +144,7 @@ const logout = async () => {
   border-radius: 1rem; /* 16px */
   display: flex;
   align-items: center;
-  padding-left: 0.75rem; /* 12px */
+  padding-left: 0.5rem; /* 12px */
 }
 
 .search-icon {
@@ -175,8 +177,15 @@ const logout = async () => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 3.6875rem; /* 59px */
+  gap: 2rem; /* 59px */
   flex-shrink: 1;
+}
+.logo img {
+  height: 60px;       /* 你也可以根据需要调整大小 */
+  width: 60px;
+  object-fit: contain; /* 保持图片宽高比 */
+  margin :4px;
+  /* 可根据需求加上 margin、padding 等 */
 }
 
 /* 每个链接：图标在上，文字在下 */
@@ -264,10 +273,19 @@ const logout = async () => {
   }
 
   .search-bar {
-    width: 15rem; /* 240px */
-    height: 1.75rem; /* 28px */
-    padding-left: 0.625rem; /* 10px */
-  }
+  position: relative;
+  width: 16.9375rem; /* 271px */
+  height: 1.8125rem; /* 29px */
+  background-color: #f7f7f7;
+  border-radius: 1rem; /* 16px */
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem; /* 12px */
+
+  /* 新增：让搜索栏更靠近标题 */
+  margin-left:0; /* 负值让它更往左移动，自己调合适的数值 */
+}
+
 
   .search-icon {
     margin-right: 0.4rem; /* 6.4px */
@@ -314,8 +332,12 @@ const logout = async () => {
   }
 
   .left-section {
-    gap: 2rem; /* 32px */
-  }
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* 原本是 3.6875rem，可根据需要自行设置 */
+  flex-shrink: 1;
+}
+
 
   .title {
     font-size: 1.25rem; /* 20px */

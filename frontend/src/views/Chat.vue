@@ -12,11 +12,13 @@
       <!-- 中间部分 -->
       <div class="middle-section">
         <!-- 中间区域的组件 -->
+        <img src="../assets/chat1.png" />
       </div>
 
       <!-- 右侧部分 -->
       <div class="right-section">
         <!-- 通讯录组件 -->
+        <img src="../assets/chat2.png" />
       </div>
     </main>
 
@@ -31,7 +33,7 @@ import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';  // 如果你使用 vuex 来管理状态
 import MeetingOption from '../components/MeetingOption.vue'; 
 import CustomButton from '../components/CustomButton.vue';
-import CalendarTodoList from '../components/CalendarTodoList.vue'; 
+import CalendarTodoList from '../components/CalendarToDoList.vue'; 
 import Mood from '../components/Mood.vue';
 
 // 获取路由实例
