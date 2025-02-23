@@ -6,7 +6,3 @@
 
 
 
-文档：[Video SDK - web - Sessions - Zoom Developers](https://developers.zoom.us/docs/video-sdk/web/sessions/)（简要介绍版）
-
-详细所有功能文档：[Zoom Video SDK for Web - 1.12.14](https://marketplacefront.zoom.us/sdk/custom/web/modules.html)
-
