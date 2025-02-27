@@ -44,7 +44,10 @@ class FirestoreService {
   async updateMeetingHistory(userId, meetingId, data) {
     try {
       const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
-      await updateDoc(meetingDocRef, data);
+      // await updateDoc(meetingDocRef, data);
+      await updateDoc(meetingDocRef, {
+        status: status
+      });
       console.log('会议历史记录已更新，ID:', meetingId);
     } catch (error) {
       console.error('更新会议历史记录失败:', error);

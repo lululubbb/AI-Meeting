@@ -140,8 +140,10 @@ const closeCard = () => {
   top: 70px;
   width: 300px;
   padding: 25px;
-  background: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  /* background: #fff; */
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   border-radius: 10px;
   font-size: 18px;
 }
@@ -163,11 +165,11 @@ const closeCard = () => {
   font-size: 22px;
   margin-bottom: 0px;
   margin-top: 10px;
-
+  color: var(--text-color);
 }
 
 .user-email {
-  color: #777;
+  color: var(--text-color);
   font-size: 18px;
   font-weight: bold;
   margin-top: 10px;
@@ -177,7 +179,7 @@ const closeCard = () => {
   background: transparent;
   border: none;
   font-size: 16px;
-  color: #409eff;
+  color:rgba(0, 132, 255, 0.97);
   cursor: pointer;
 }
 

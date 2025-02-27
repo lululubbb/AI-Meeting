@@ -98,7 +98,7 @@ const handleHistoryMeeting = () => {
 span {
   margin-top: 10px;
   font-size: 24px;
-  color: #333;
+  color: var(--text-color);
   font-weight:bold;
 }
 </style>

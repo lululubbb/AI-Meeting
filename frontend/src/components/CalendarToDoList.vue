@@ -168,7 +168,8 @@ alendar<template>
   }
 
   .calendar {
-  box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px;
+  /* box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px; */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   border-radius: 8px; 
   width:90%;
 }
@@ -186,7 +187,7 @@ alendar<template>
   
   .header h3 {
     margin-top: 10px;
-    color: #787878;
+    color: var(--text-color);
     margin-left: 30px;
     margin-bottom: 10px;
   }
@@ -228,7 +229,7 @@ alendar<template>
   }
   
   .todo-list li .todo-text div {
-    color: #333;
+    color: var(--text-color);
     font-size: 17px;
     margin-right: 10px;
     white-space: nowrap;
@@ -237,12 +238,12 @@ alendar<template>
   
   .todo-list li .todo-text div.completed-text {
     text-decoration: line-through;
-    color: #676767;
+    color: var(--text-color);
   }
   
   .todo-list li .todo-text .date {
     font-size: 12px;
-    color: #525252;
+    color: var(--text-color);
     font-size: 18px;
     margin-top: 2px; 
   }
@@ -257,7 +258,7 @@ alendar<template>
     background: none;
     border: none;
     cursor: pointer;
-    color: #007BFF;
+    color: var(--text-color);
     font-size: 26px;
     font-weight: bolder;
     padding: 0 10px;

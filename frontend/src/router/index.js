@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Home from '../views/Home.vue'
 import HistoryMeeting from '../views/HistoryMeeting.vue'
+import ReserveMeeting from '../components/ReserveMeeting.vue'
 import VideoCall from '../views/VideoCall.vue'
 import Meetings from '../views/Meetings.vue';
 import store from '../store'
@@ -31,6 +32,12 @@ const routes = [
     path: '/history',
     name: 'HistoryMeeting',
     component: HistoryMeeting,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/reserveMeeting',
+    name: 'ReserveMeeting',
+    component: ReserveMeeting,
     meta: { requiresAuth: true }
   },
   {

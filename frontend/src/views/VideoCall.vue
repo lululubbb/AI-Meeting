@@ -1557,7 +1557,7 @@ main {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f7f7f7;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   position: relative;
   margin: 0;
 }
@@ -1570,11 +1570,11 @@ main {
   border: none;
   font-size: 28px;
   cursor: pointer;
-  color: #666;
+  color: var(--text-color);
 }
 
 .closeBtn:hover {
-  color: #e53935;
+  color: var(--text-color);
 }
 
 #action-flow {

@@ -135,7 +135,8 @@ const updateSelectBackground = (imageSrc) => {
   font-size: 18px;
   margin-left: 5px;
   border: none;
-  background-color: #fff;
+  /* background-color: #fff; */
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;

@@ -1,9 +1,15 @@
 <!-- src/components/ReserveMeeting.vue -->
 <!-- 仿照VideoCall的表单写的 -->
 <template>
+  <div class="reserve-container">
   <div id="reservation-form">
+    <div v-if="route.name === 'ReserveMeeting'" class="close-btn-wrapper">      
+      <button @click="goHome" class="close-btn" aria-label="关闭">
+        <img src="@/assets/exit.png" alt="退出" />
+      </button>
+    </div>
     <h1>预约会议</h1>
-
+    
     <!-- 会议名称 -->
     <div class="input-group">
       <label for="sessionName">会议名称:</label>
@@ -47,6 +53,7 @@
     <!-- 提交按钮 -->
     <CustomButton :text="'预约会议'" :onPressed="handleReservation" />
   </div>
+</div>
 </template>
 
 <script setup>
@@ -55,6 +62,14 @@ import { ElDatePicker } from 'element-plus';
 import CustomButton from '../components/CustomButton.vue';
 import { showSnackBar } from '../utils/utils.js';
 import { ElMessage } from 'element-plus';
+import { useRoute, useRouter } from 'vue-router';
+import FirestoreService from '../services/FirestoreService.js'; // 引入 FirestoreService
+import { useStore } from 'vuex'; // 引入 Vuex store
+
+// 获取当前路由和路由实例
+const route = useRoute();
+const router = useRouter();
+const store = useStore(); // 获取 Vuex store
 
 const config = reactive({
   sessionName: '',
@@ -74,7 +89,8 @@ const pickerOptions = {
 
 // 处理预约会议
 const handleReservation = async () => {
-  if (!config.sessionName || !config.userName ||!config.meetingDateRange || config.meetingDateRange.length !== 2) {
+  // 验证表单数据
+  if (!config.sessionName || !config.userName || !config.meetingDateRange || config.meetingDateRange.length !== 2) {
     showSnackBar('请填写完整的会议信息');
     return;
   }
@@ -85,22 +101,99 @@ const handleReservation = async () => {
   }
 
   try {
-    // 此处加入预约会议的实现逻辑，例如向后端发送请求保存会议预约信息
-    console.log('会议预约信息:', config);
-    ElMessage.success('会议预约成功！'); // 显示错误信息
+    // 获取当前用户信息
+    const user = store.getters.getUser;
+    if (!user) {
+      showSnackBar('用户未登录，请先登录');
+      return;
+    }
+
+    // 提取会议开始时间和结束时间
+    const [startTime, endTime] = config.meetingDateRange;
+
+    // 构建会议数据
+    const meetingData = {
+      sessionName: config.sessionName,
+      host: config.userName,
+      sessionPasscode: config.sessionPasscode,
+      role: role.value,
+      startTime: startTime,
+      endTime: endTime,
+      createdAt: startTime, 
+      status: 'not-started', // 会议状态：未开始
+    };
+
+    // 调用 FirestoreService 保存会议记录
+    const meetingId = await FirestoreService.addToMeetingHistory(user.uid, config.sessionName, meetingData);
+    console.log('会议预约成功，ID:', meetingId);
+
+    // 提示用户预约成功
+    ElMessage.success('会议预约成功！');
+
+    // 清空表单
+    config.sessionName = '';
+    config.userName = '';
+    config.sessionPasscode = '';
+    config.meetingDateRange = [];
   } catch (error) {
     console.error('预约失败:', error);
     showSnackBar('会议预约失败: ' + error.message);
   }
 };
+
+  // 返回主页
+  const goHome = () => {
+  router.push('/home');
+};
 </script>
 
 <style scoped>
+.reserve-container {
+  padding: 30px 20px;
+  width: 95%;
+  max-width: 900px;
+  max-height: 90vh;
+  margin: 20px auto;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+  border-radius: 15px;
+  /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  position: relative;
+  overflow-y: auto;
+}
+
+/* 关闭按钮样式 */
+.close-btn-wrapper {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.close-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.close-btn img {
+  width: 30px;
+  height: 30px;
+}
+
+.close-btn:hover {
+  transform: rotate(90deg);
+}
+
 #reservation-form {
-  background-color: #ffffff;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2);
+  /* border-radius: 12px;
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2); */
   text-align: center;
   max-width: 100%;
   width:95%;
@@ -110,7 +203,7 @@ const handleReservation = async () => {
 
 h1 {
   margin-bottom: 20px;
-  color: #000000;
+  color: var(--text-color); /* 使用全局文字颜色 */
 }
 
 .input-group {
@@ -121,7 +214,7 @@ h1 {
 .input-group label {
   display: block;
   margin-bottom: 8px;
-  color: #333333;
+  color: var(--text-color);
   font-weight: bold;
 }
 

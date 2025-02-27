@@ -84,7 +84,7 @@
   
   .description {
     font-size: 18px;
-    color: #41475e;
+    color: var(--text-color);
     letter-spacing: 0.5px;
     margin: 0;
   }

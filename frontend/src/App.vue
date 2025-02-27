@@ -22,12 +22,13 @@ import { useRoute } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
 import Header from './components/Header.vue';
 // import AudioRecorder from './components/AudioRecorder.vue';
-
+import IntroductionPage from '@/views/IntroductionPage.vue';
 export default {
   name: 'App',
   components: {
     AIFloatingChat,
     Header,
+    IntroductionPage
     // AudioRecorder
   },
   setup() {

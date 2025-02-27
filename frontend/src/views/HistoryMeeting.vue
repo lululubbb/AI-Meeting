@@ -15,7 +15,7 @@
         <input
           type="text"
           v-model="searchQuery"
-          placeholder="🔍 搜索会议相关信息"
+          placeholder="搜索会议相关信息"
           class="search-input"
         />
         <img
@@ -43,7 +43,7 @@
         <strong>👤 创建人员:</strong> {{ meeting.host }} <br />
         <strong>🕒 创建时间:</strong> {{ formatDate(meeting.createdAt) }} <br />
         <strong>📊 会议状态:</strong> {{ meeting.status }}<br />
-        <strong>⏰ 结束时间:</strong> {{ meeting.endedAt ? formatDate(meeting.endedAt) : '正在进行中' }}
+        <strong>⏰ 结束时间:</strong>
       </li>
     </ul>
 
@@ -491,16 +491,18 @@ body {
   max-width: 900px;
   max-height: 90vh;
   margin: 20px auto;
-  background-color: #ffffff;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   position: relative;
   overflow-y: auto;
+  color: #000;
 }
 
 .history-container h2 {
   text-align: center;
-  color: #333333;
+  color: var(--text-color);
   margin-bottom: 25px;
   font-size: 28px;
 }
@@ -531,7 +533,8 @@ body {
 
 .search-input:focus {
   border-color: #007BFF;
-  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+  /* box-shadow: 0 0 8px rgba(0, 123, 255, 0.3); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 }
 
 .search-input::placeholder {
@@ -548,7 +551,18 @@ body {
   height: 24px;
   pointer-events: none;
 }
-
+.closeBtn {
+  position: absolute;  /* 设置为绝对定位 */
+  top: 5px;           /* 调整顶部间距 */
+  right: 20px;   
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+}
+.closeBtn:hover {
+  color: red;
+}
 /* 无结果提示 */
 .no-results {
   text-align: center;
@@ -564,17 +578,20 @@ body {
 }
 
 .meeting-list li {
-  background-color: #fdfdfd;
+  /* background-color: #fdfdfd; */
+  color: #000;
   padding: 15px 20px;
   margin-bottom: 15px;
   border-radius: 10px;
   border: 1px solid #e0e0e0;
   transition: box-shadow 0.3s, border-color 0.3s;
   cursor: pointer;
+
 }
 
 .meeting-list li:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   border-color: #007BFF;
 }
 
@@ -605,9 +622,11 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
+  background-color: var(--background-color);
   padding: 25px 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  /* box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   z-index: 100;
   width: 90%;
   max-width: 900px;
@@ -638,7 +657,7 @@ body {
 #meetingDetails p {
   margin: 12px 0;
   font-size: 16px;
-  color: #555555;
+  color: #0e0e0e;
   line-height: 1.6;
 }
 
@@ -753,7 +772,8 @@ body {
   max-width: 800px;
   height: auto;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 }
 
 /* 表情图标容器样式 */

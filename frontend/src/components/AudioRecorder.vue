@@ -143,6 +143,6 @@ button {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
-  background-color: #f9f9f9;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
 }
 </style>

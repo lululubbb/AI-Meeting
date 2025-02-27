@@ -174,7 +174,7 @@ export default {
 }
 
 .file-name {
-  color: #121212;
+  color: var(--text-color);
   font-size: 15px;
   font-family: "Poppins", sans-serif;
   font-weight: 500;
@@ -182,7 +182,7 @@ export default {
 }
 
 .uploader {
-  color: #121212;
+  color: var(--text-color);
   font-size: 11px;
   opacity: 0.5;
   margin-top: 5px;
@@ -196,7 +196,7 @@ export default {
 }
 
 .file-size {
-  color: #121212;
+  color: var(--text-color);
   font-size: 14px;
 }
 
@@ -207,12 +207,12 @@ export default {
 }
 
 .action.cancel {
-  color: #121212;
+  color: var(--text-color);
   opacity: 0.54;
 }
 
 .action.download {
-  color: #7784ee;
+  color: var(--text-color);
   font-family: "Poppins", sans-serif;
   font-weight: 500;
 }

@@ -1,0 +1,29 @@
+/* 默认浅色主题 */
+body.light {
+    --background-color: #ffffff;
+    --text-color: #333333;
+    --primary-color: #409eff;
+    --secondary-color: #67c23a;
+    --global-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 深色主题 */
+  body.dark {
+    --background-color: #333333;
+    --text-color: #fefefe;
+    --primary-color: #79bbff;
+    --secondary-color: #85ce61;
+    --global-box-shadow: 2px 2px 3px 4px rgba(255, 255, 255, 0.3); 
+  }
+  
+  /* 应用全局样式 */
+  body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.3s, color 0.3s;
+    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  }
+  

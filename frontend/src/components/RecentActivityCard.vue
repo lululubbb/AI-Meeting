@@ -78,9 +78,10 @@
   .recent-activity-card {
     width: 90%;
     height: auto;
-    background-color: #ffffff;
+    background-color: var(--background-color); /* 使用全局背景颜色 */
     border-radius: 8px;
-    box-shadow: rgba(20, 29, 43, 0.15) 0px 20px 40px;
+    /* box-shadow: rgba(20, 29, 43, 0.15) 0px 20px 40px; */
+    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
     padding: 30px 33px;
     display: flex;
     flex-direction: column;
@@ -90,7 +91,7 @@
   .title {
     font-size: 20px;
     font-weight: bold;
-    color: #121212;
+    color: var(--text-color);
     margin-bottom: 30px;
   }
   

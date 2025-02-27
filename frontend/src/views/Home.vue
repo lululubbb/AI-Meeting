@@ -9,6 +9,7 @@
           <MeetingOption 
             @new-meeting="navigateToCreateMeeting" 
             @join-meeting="navigateToJoinMeeting" 
+            @schedule-meeting="navigateToScheduleMeeting"
             @history-meeting="navigateToHistoryMeeting" 
           />
         </div>
@@ -64,7 +65,12 @@ const navigateToJoinMeeting = () => {
     query: { mode: 'join' }
   });
 };
-
+//导航到安排会议
+const navigateToScheduleMeeting = () => {
+  router.push({ 
+    name: 'ReserveMeeting'
+  });
+};
 // 导航到历史会议
 const navigateToHistoryMeeting = () => {
   router.push({ 
@@ -80,7 +86,8 @@ const navigateToHistoryMeeting = () => {
   flex-direction: column;
   height: 100vh;
   width: 100%;
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
 }
 .main-layout {
@@ -101,9 +108,10 @@ const navigateToHistoryMeeting = () => {
 /* 左侧部分 */
 .left-section {
   flex: 1 1 400px;
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
   padding: 20px;
-  box-shadow: inset -1px 0 0 #ddd;
+  /* box-shadow: inset -1px 0 0 #ddd; */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   justify-content: center;
   align-items: center; 
   overflow: auto; 
@@ -112,9 +120,10 @@ const navigateToHistoryMeeting = () => {
 /* 中间部分 */
 .middle-section {
   flex:1 1 400px;
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
   padding: 20px;
-  box-shadow: inset -1px 0 0 #ddd;
+  /* box-shadow: inset -1px 0 0 #ddd; */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   padding: 0;
   justify-content: center;
   overflow: auto; 
@@ -125,7 +134,7 @@ const navigateToHistoryMeeting = () => {
   flex: 1 1 400px;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
   padding: 0;
   overflow: auto; 
 }
@@ -133,7 +142,8 @@ const navigateToHistoryMeeting = () => {
 
 footer {
   height: 30px;
-  background-color: #f5f5f5;
+  /* background-color: #f5f5f5; */
+  background-color: var(--footer-background-color); /* 使用全局页脚背景颜色 */
   display: flex;
   align-items: center;
   justify-content: center;

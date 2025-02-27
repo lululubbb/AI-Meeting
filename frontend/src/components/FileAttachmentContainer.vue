@@ -67,7 +67,7 @@ export default {
 
 .header {
   text-align: center;
-  color: #121212;
+  color: var(--text-color);
   font-size: 16px;
   font-family: "Poppins", sans-serif;
   font-weight: 600;

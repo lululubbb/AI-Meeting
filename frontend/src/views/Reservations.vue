@@ -18,6 +18,7 @@
       <!-- 右侧部分 -->
       <div class="right-section">
         <!-- 通讯录组件 -->
+        <img src="../assets/chat2.png" />
       </div>
     </main>
 
@@ -49,7 +50,7 @@ const store = useStore();
   flex-direction: column;
   height: 100vh;
   width: 98%;
-  background-color: #ffffff;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
   margin: 10px;
 }
@@ -66,18 +67,18 @@ const store = useStore();
 /* 左侧部分 */
 .left-section {
   flex:0.8;
-  background-color: #ffffff;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   padding: 10px;
-  box-shadow: inset -1px 0 0 #ddd;
+    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   overflow: auto; 
 }
 
 /* 中间部分 */
 .middle-section {
   flex: 1.3;
-  background-color: #ffffff;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   padding: 20px;
-  box-shadow: inset -1px 0 0 #ddd;
+    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   overflow: auto; 
   display: flex;
   justify-content: center;  
@@ -89,7 +90,7 @@ const store = useStore();
   flex: 0.8;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   padding: 10px;
   overflow: auto; 
 }
@@ -97,7 +98,7 @@ const store = useStore();
 
 footer {
   height: 30px;
-  background-color: #f5f5f5;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   display: flex;
   align-items: center;
   justify-content: center;

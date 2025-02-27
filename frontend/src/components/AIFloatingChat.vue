@@ -361,7 +361,8 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 }
 
 .ai-float-button img {
@@ -379,7 +380,8 @@ export default {
   max-height: 500px;
   background-color: #bcd9ffe0;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); */
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   display: flex;
   flex-direction: column;
   z-index: 1000;

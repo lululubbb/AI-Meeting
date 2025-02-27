@@ -4,7 +4,7 @@
     <!-- 登录和注册区域 -->
     <div class="login-section">
       <h1>慧议先锋</h1>
-      <h2>Artificial➕meeting!</h2>
+      <h2>AI Meeting</h2>
       <p>欢迎回来！请登录您的账号</p>
       <div class="email-section">
         <label for="email">邮箱地址</label>

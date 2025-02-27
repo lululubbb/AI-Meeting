@@ -1,30 +1,42 @@
-// src/store/index.js
-
-import { createStore } from 'vuex'
-import { auth, onAuthStateChanged } from '../services/FirebaseService.js'
-import FirestoreService from '../services/FirestoreService.js'
+import { createStore } from 'vuex';
+import { auth, onAuthStateChanged } from '../services/FirebaseService.js';
+import FirestoreService from '../services/FirestoreService.js';
 
 export default createStore({
   state: {
-    user:{
+    user: {
       uid: null,
       email: null,
       name: null,
-      status: '在线',  // 你的自定义字段
-      workLocation: 'Unknown',  // 你的自定义字段
-      avatarUrl:'https://randomuser.me/api/portraits/men/32.jpg',
-      mood:'开心',
-      todolist: []  
+      status: '在线', // 你的自定义字段
+      workLocation: 'Unknown', // 你的自定义字段
+      avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
+      mood: '开心',
+      todolist: [],
     },
-    meetings: []
+    meetings: [],
+    theme: 'light', // 默认主题为浅色
+    language: 'zh-CN', // 默认语言为中文
   },
   mutations: {
     SET_USER(state, user) {
-      state.user = { ...state.user, ...user } 
+      state.user = { ...state.user, ...user };
     },
     SET_MEETINGS(state, meetings) {
-      state.meetings = meetings
-    }
+      state.meetings = meetings;
+    },
+    SET_THEME(state, theme) {
+      state.theme = theme;
+      // 动态设置 body 的 class
+      document.body.className = theme;
+      // 动态设置 CSS 变量
+      document.documentElement.setAttribute('data-theme', theme);    },
+    SET_LANGUAGE(state, language) {
+      state.language = language;
+    },
+    SET_TODOLIST(state, todolist) {
+      state.user.todolist = todolist;
+    },
   },
   actions: {
     // 初始化认证监听
@@ -32,62 +44,69 @@ export default createStore({
       onAuthStateChanged(auth, async (user) => {
         if (user) {
           // 获取并更新用户信息
-          const userData = await FirestoreService.getUserInfo(user.uid)
-          commit('SET_USER', { ...userData, uid: user.uid, email: user.email }) // 合并 Firestore 和 Firebase 用户信息
-          await dispatch('listenToMeetings')
-          // 监听会议历史记录
-          await dispatch('listenToMeetings')
+          const userData = await FirestoreService.getUserInfo(user.uid);
+          commit('SET_USER', { ...userData, uid: user.uid, email: user.email }); // 合并 Firestore 和 Firebase 用户信息
+          await dispatch('listenToMeetings');
         } else {
-          commit('SET_USER', null)
-          commit('SET_MEETINGS', [])
+          commit('SET_USER', null);
+          commit('SET_MEETINGS', []);
         }
-      })
+      });
     },
     // 监听会议历史记录
     listenToMeetings({ commit, state }) {
       if (state.user) {
         FirestoreService.listenToMeetings(state.user.uid, (meetings) => {
-          commit('SET_MEETINGS', meetings)
-        })
+          commit('SET_MEETINGS', meetings);
+        });
       }
-    }, 
+    },
     // 更新用户状态
     updateUserStatus({ commit }, status) {
-      commit('SET_USER_STATUS', status)
+      commit('SET_USER_STATUS', status);
       // 更新 Firestore 中的状态
-      FirestoreService.updateUserStatus(status)
+      FirestoreService.updateUserStatus(status);
     },
-
     // 更新用户工作位置
     updateUserWorkLocation({ commit }, workLocation) {
-      commit('SET_USER_WORKLOCATION', workLocation)
+      commit('SET_USER_WORKLOCATION', workLocation);
       // 更新 Firestore 中的工作位置
-      FirestoreService.updateUserWorkLocation(workLocation)
+      FirestoreService.updateUserWorkLocation(workLocation);
     },
     // 处理用户登出
     async signOutUser({ commit }) {
-      const AuthService = await import('../services/AuthService.js')
-      const res = await AuthService.default.signOutUser()
+      const AuthService = await import('../services/AuthService.js');
+      const res = await AuthService.default.signOutUser();
       if (res) {
-        commit('SET_USER', null)
-        commit('SET_MEETINGS', [])
+        commit('SET_USER', null);
+        commit('SET_MEETINGS', []);
       }
     },
+    // 更新待办事项
     async updateTodoList({ commit, state }, todolist) {
       try {
         await FirestoreService.updateUserTodoList(state.user.uid, todolist);
-        commit('SET_TODOLIST', todolist);  // Commit the updated to-do list to the store
+        commit('SET_TODOLIST', todolist); // 提交更新后的待办事项到 store
       } catch (error) {
-        console.error("Failed to update to-do list:", error);
+        console.error('Failed to update to-do list:', error);
         showSnackBar(error.message);
       }
-    }
+    },
+    // 切换主题
+    changeTheme({ commit }, theme) {
+      commit('SET_THEME', theme);
+    },
+    // 切换语言
+    changeLanguage({ commit }, language) {
+      commit('SET_LANGUAGE', language);
+    },
   },
   getters: {
-    isLoggedIn: state => !!state.user,
-    getUser: state => state.user,
-    getMeetings: state => state.meetings,
-    getTodoList: state => state.user.todolist
+    isLoggedIn: (state) => !!state.user,
+    getUser: (state) => state.user,
+    getMeetings: (state) => state.meetings,
+    getTodoList: (state) => state.user.todolist,
+    theme: (state) => state.theme,
+    language: (state) => state.language,
   },
-  modules: {}
-})
+});
