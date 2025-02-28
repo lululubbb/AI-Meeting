@@ -4,10 +4,10 @@
     
   
   <!-- 只有在非 Login 页面时才显示 AIFloatingChat -->
-  <AIFloatingChat v-if="!isLoginPage" />
+  <AIFloatingChat v-if="!isLoginOrIntroductionPage" />
   <!-- <AudioRecorder v-if="!isLoginPage" /> -->
-  <Header v-if="!isLoginPage" />
-  <div :class="['content', { 'no-header': isLoginPage }]">
+  <Header v-if="!isLoginOrIntroductionPage" />
+  <div :class="['content', { 'no-header': isLoginOrIntroductionPage  }]">
       <transition name="fade" mode="out-in">
         <router-view />
       </transition>
@@ -35,10 +35,10 @@ export default {
     const route = useRoute();
 
     // 判断当前是否是登录页面，如果是则不显示 AIFloatingChat
-    const isLoginPage = computed(() => route.name === 'Login');
+    const isLoginOrIntroductionPage = computed(() => route.name === 'Login' || route.name === 'Introduction');
 
     return {
-      isLoginPage
+      isLoginOrIntroductionPage
     };
   }
 }

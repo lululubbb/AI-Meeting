@@ -1,142 +1,326 @@
 <template>
     <div class="introduction-page">
-      <!-- 头部 -->
+      <!-- 头部导航栏 -->
       <header class="header">
-        <img src="@/assets/logo.png" alt="AI Meeting Logo" class="logo" />
-        <h1 class="title">AI Meeting</h1>
-        <p class="subtitle">智能驱动的会议解决方案</p>
+        <img :src="logo" alt="AI 会议 logo" class="logo" />
+        <img :src="teamlogo" alt="慧议先锋logo" class="logo" />
+        <nav>
+          <ul class="nav-links">
+            <li><a href="#features">功能特点</a></li>
+            <li><a href="#screenshots">产品截图</a></li>
+            <li><a href="#about">关于我们</a></li>
+          </ul>
+        </nav>
+        <button @click="goToLogin" class="login-button">登录</button>
       </header>
   
-      <!-- 项目截图 -->
-      <div class="screenshot-section">
-        <img src="@/assets/ai-meeting-screenshot.png" alt="AI Meeting Screenshot" class="screenshot" />
-      </div>
+      <!-- 英雄区域 -->
+      <section class="hero-section">
+        <div class="hero-content">
+          <h1 class="hero-title">智能 AI 会议平台</h1>
+          <p class="hero-subtitle">开启高效、智能的会议新体验</p>
+          <button @click="goToLogin" class="cta-button">立即体验</button>
+        </div>
+        <img :src="heroImage" alt="AI 会议场景图" class="hero-image" />
+      </section>
   
-      <!-- 功能特点 -->
-      <div class="features-section">
-        <h2 class="section-title">主要功能</h2>
-        <div class="features-container">
+      <!-- 功能特点区域 -->
+      <section id="features" class="features-section">
+        <h2 class="section-title">功能特点</h2>
+        <div class="feature-cards-container">
           <FeatureCard
-            icon="@/assets/icon1.png"
-            title="智能语音识别"
-            description="实时将会议语音转换为文字，提高会议记录效率。"
+            :icon="feature1.icon"
+            :title="feature1.title"
+            :description="feature1.description"
           />
           <FeatureCard
-            icon="@/assets/icon2.png"
-            title="关键信息提取"
-            description="自动提取会议中的关键信息，帮助您快速回顾会议重点。"
+            :icon="feature2.icon"
+            :title="feature2.title"
+            :description="feature2.description"
           />
           <FeatureCard
-            icon="@/assets/icon3.png"
-            title="情感分析"
-            description="分析参会人员的情感状态，为会议决策提供参考。"
+            :icon="feature3.icon"
+            :title="feature3.title"
+            :description="feature3.description"
           />
         </div>
-      </div>
+      </section>
   
-      <!-- 产品说明 -->
-      <div class="product-description-section">
-        <h2 class="section-title">产品说明</h2>
-        <p class="description">
-          AI Meeting是一款基于人工智能技术的会议解决方案，旨在提高会议效率和质量。通过智能语音识别、关键信息提取、情感分析等功能，帮助您更好地管理和回顾会议内容。
+      <!-- 产品截图区域 -->
+      <section id="screenshots" class="screenshots-section">
+        <h2 class="section-title">产品截图</h2>
+        <ScreenshotCarousel :screenshots="screenshots" />
+      </section>
+  
+      <!-- 关于我们区域 -->
+      <section id="about" class="about-section">
+        <h2 class="section-title">关于我们</h2>
+        <p class="about-description">
+          我们致力于打造领先的 AI 会议解决方案，通过先进的人工智能技术，为用户提供便捷、高效、智能的会议体验。
+          我们的团队由一群充满激情和创新精神的专业人士组成，不断追求卓越，为用户创造价值。
         </p>
-      </div>
+      </section>
   
-      <!-- 底部 -->
+      <!-- 页脚 -->
       <footer class="footer">
-        <p class="copyright">© 2025 AI Meeting. All rights reserved.</p>
+        <p>&copy; 慧议先锋.</p>
       </footer>
     </div>
   </template>
   
-  <script>
-  import FeatureCard from '@/components/FeatureCard.vue';
+  <script setup>
+  import FeatureCard from '../components/FeatureCard.vue'
+  import ScreenshotCarousel from '../components/ScreenshotCarousel.vue'
+  import { ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import logo from '../assets/logo.jpg';//救命，可能需要改一下背景颜色
+  import teamlogo from '../assets/team.png';
+  const router = useRouter()
   
-  export default {
-    components: {
-      FeatureCard
-    }
-  };
+
+
+  // 英雄区域图片
+  const heroImage = '/assets/ai-meeting-screenshot1.png'
+  
+  // 功能特点数据
+  const feature1 = {
+    icon: '/assets/feature/ai-voice-recognition.png',
+    title: '智能语音识别',
+    description: '实时将语音转换为文字，准确率高，方便会议记录和整理。'
+  }
+  const feature2 = {
+    icon: '/assets/feature/intelligent-summary.png',
+    title: '智能会议总结',
+    description: '自动生成会议摘要，提炼关键信息，节省时间和精力。'
+  }
+  const feature3 = {
+    icon: '/assets/feature/real-time-translation.png',
+    title: '实时翻译',
+    description: '支持多语言实时翻译，打破语言障碍，促进全球协作。'
+  }
+  
+  // 产品截图数据
+  import chat1 from '../assets/chat1.png';
+  import chat2 from '../assets/chat2.png';
+
+  //轮播图显示的图片
+const screenshots = [chat1, chat2];
+  
+  // 跳转到登录页面的方法
+  const goToLogin = () => {
+    router.push('/login')
+  }
   </script>
   
   <style scoped>
   .introduction-page {
-    font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
-    color: #333;
-    padding: 20px;
+    font-family: Arial, sans-serif;
   }
   
   .header {
-    text-align: center;
-    padding: 40px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 50px;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
   
   .logo {
-    width: 100px;
-    height: 100px;
-    margin-bottom: 20px;
+    height: 80px;
   }
   
-  .title {
-    font-size: 36px;
-    font-weight: bold;
+  .nav-links {
+    list-style: none;
+    display: flex;
+    height: 20px;
+  }
+  
+  .nav-links li {
+    margin-right: 20px;
+    
+  }
+  
+  .nav-links a {
+    text-decoration: none;
+    color: #333;
+    font-size: 25px;
+    margin-right: 20px;
+    transition: color 0.3s ease;
+  }
+  
+  .nav-links a:hover {
+    color: #409eff;
+  }
+  
+  .login-button {
+    width: 70px;
+    height: 50px;
+    font-size: 20px;
+    padding: 10px 10px;
+    background-color: #409eff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .login-button:hover {
+    background-color: #2d8cf0;
+    border-radius: 5px;
+  }
+  
+  .hero-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 100px 50px;
+    background-color: #f4f9ff;
+  }
+  
+  .hero-content {
+    flex: 1;
+  }
+  
+  .hero-title {
+    font-size: 48px;
     margin-bottom: 10px;
   }
   
-  .subtitle {
-    font-size: 20px;
+  .hero-subtitle {
+    font-size: 24px;
+    margin-bottom: 40px;
     color: #666;
   }
   
-  .screenshot-section {
-    text-align: center;
-    margin-bottom: 40px;
+  .cta-button {
+    padding: 15px 30px;
+    background-color: #409eff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
   }
   
-  .screenshot {
-    max-width: 800px;
-    width: 100%;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  .cta-button:hover {
+    background-color: #2d8cf0;
+  }
+  
+  .hero-image {
+    flex: 1;
+    max-width: 500px;
+    height: auto;
   }
   
   .features-section {
+    padding: 100px 50px;
     text-align: center;
-    margin-bottom: 40px;
   }
   
   .section-title {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 20px;
+    font-size: 36px;
+    margin-bottom: 50px;
   }
   
-  .features-container {
+  .feature-cards-container {
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    justify-content: space-around;
     flex-wrap: wrap;
   }
   
-  .product-description-section {
+  .features-section {
+    padding: 100px 50px;
     text-align: center;
-    margin-bottom: 40px;
   }
   
-  .description {
-    font-size: 18px;
-    line-height: 1.5;
+  .section-title {
+    font-size: 36px;
+    margin-bottom: 50px;
+  }
+  
+  .feature-cards-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+  
+  .feature-card {
+    width: 450px;
+    height:350px;
+    padding: 30px;
+    background-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: transform 0.3s ease;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .feature-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+  }
+  
+  .feature-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+  
+  .feature-description {
+    font-size: 16px;
+    color: #666;
+  }
+  
+  .screenshots-section {
+    padding: 10px 50px;
+    text-align: center;
+  }
+  
+  .screenshot-carousel {
+    overflow: hidden;
+  }
+  
+  .screenshot-wrapper {
+    display: flex;
+    transition: transform 0.5s ease;
+  }
+  
+  .screenshot {
+    width: 100%;
+    max-width: 800px;
+    height: auto;
+    margin-right: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .about-section {
+    padding:10px 50px;
+    text-align: center;
+    background-color: #f4f9ff;
+  }
+  
+  .about-description {
+    font-size: 20px;
+    color: #666;
+    line-height: 1.8;
   }
   
   .footer {
     text-align: center;
-    padding: 20px 0;
-    background-color: #fff;
-    border-top: 1px solid #ddd;
+    padding: 3px;
+    font-size: 18px;
+    background-color: white;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
   }
   
-  .copyright {
+  .footer-text {
     font-size: 14px;
     color: #666;
   }

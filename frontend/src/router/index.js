@@ -14,10 +14,11 @@ import More from '../views/More.vue';
 import Chat from '../views/Chat.vue';
 import Helpview from '../views/Helpview.vue';
 import Settingview from '../views/Settingview.vue';
+import IntroductionPage from '../views/IntroductionPage.vue'
 // 定义路由规则
 const routes = [
   {
-    path: '/',
+    path: '/login',
     name: 'Login',
     component: Login,
     meta: { requiresAuth: false }
@@ -80,6 +81,11 @@ const routes = [
     name: 'Settings', 
     component: Settingview,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/',
+    name: 'Introduction',
+    component: IntroductionPage
   },
   // 处理未定义的路径
   { path: '/:pathMatch(.*)*', redirect: '/' },

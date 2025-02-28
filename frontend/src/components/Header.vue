@@ -133,7 +133,7 @@ const goToHelpPage = () => {
 // 登出功能
 const logout = async () => {
   await store.dispatch('signOutUser');
-  router.push('/');
+  router.push('/login');
 };
 
 </script>

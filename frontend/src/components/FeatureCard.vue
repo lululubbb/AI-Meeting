@@ -1,38 +1,38 @@
 <template>
     <div class="feature-card">
-      <img :src="icon" alt="Feature Icon" class="feature-icon" />
+      <img :src="icon" alt="功能图标" class="feature-icon" />
       <h3 class="feature-title">{{ title }}</h3>
       <p class="feature-description">{{ description }}</p>
     </div>
   </template>
   
-  <script>
-  export default {
-    props: {
-      icon: {
-        type: String,
-        required: true
-      },
-      title: {
-        type: String,
-        required: true
-      },
-      description: {
-        type: String,
-        required: true
-      }
+  <script setup>
+  import { defineProps } from 'vue'
+  
+  const props = defineProps({
+    icon: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
     }
-  };
+  })
   </script>
   
   <style scoped>
   .feature-card {
-    background-color: #fff;
-    border-radius: 12px;
-    /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
-    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
-    padding: 20px;
-    text-align: center;
+    width: 350px;
+    padding: 30px;
+    background-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    margin-bottom: 30px;
     transition: transform 0.3s ease;
   }
   
@@ -41,15 +41,14 @@
   }
   
   .feature-icon {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 10px;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
   }
   
   .feature-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-size: 24px;
+    margin-bottom: 15px;
   }
   
   .feature-description {
