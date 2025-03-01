@@ -4,7 +4,7 @@
 
   // 定义变量
   var sessionContainer;
-  var authEndpoint = 'http://localhost:4000';  // 后端 JWT 生成端点
+  var authEndpoint = 'http://localhost:5000';  // 后端 JWT 生成端点
   var config = {
     videoSDKJWT: '',  // 存储 JWT
     sessionName: 'test',  // 会话名称
