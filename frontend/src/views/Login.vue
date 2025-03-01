@@ -82,6 +82,7 @@ export default {
       }
 
       if (res) {
+        document.body.classList.add('light');
         ElMessage.success(isLoginMode.value ? "登录成功" : "注册成功");        router.push('/home');  // 跳转到 /home 页面
       }else {
         ElMessage.error("操作失败，请重试");  // 显示失败信息
@@ -92,6 +93,7 @@ export default {
       const res = await AuthService.signInWithGoogle();
       if (res){
         ElMessage.success("Google 登录成功"); 
+        document.body.classList.add('light');
         router.push('/home');  // 跳转到 /home 页面router.push('/home');
       }else {
         ElMessage.error("Google 登录失败");  // 显示失败信息
@@ -166,7 +168,7 @@ export default {
   border-radius: 20px;
 }
 h1 {
-  font-size: 28px;
+  font-size: 30px;
   color: #3867ff;
 }
 h2 {

@@ -240,7 +240,7 @@ export default {
       } finally {
         this.isLoading = false;
       }
-    },
+    }, 
     // 滚动到聊天底部
     scrollToBottom() {
       const container = this.$refs.chatMessages;
@@ -342,6 +342,8 @@ export default {
       return div.innerHTML;
     },
   },
+  // 暴露 handleAIDirectives 方法
+  expose: ['handleAIDirectives'],
 };
 </script>
 

@@ -12,7 +12,8 @@
         </div>
         <div class="search-bar">
           <i class="fas fa-search search-icon"></i>
-          <input type="text" placeholder="搜索内容" />
+            <!-- 添加 v-model 和 @input 事件 -->
+            <input type="text" placeholder="搜索内容" v-model="searchKeyword" @input="handleSearch" />
           <div class="search-divider"></div>
         </div>
       </div>
@@ -50,26 +51,6 @@
         </button>
         <!-- 显示用户信息卡片 -->
         <UserProfileCard v-if="isUserCardVisible" @close="toggleUserCardVisibility" />
-        
-
-        <!-- 用户信息卡片
-        <div v-if="isUserCardVisible" class="user-card">
-          <img :src="user.avatarUrl" alt="User Avatar" class="user-avatar" />
-          <p class="user-name">{{ user.name }}</p>
-          <p class="user-email">{{ user.email }}</p>
-          <p>状态信息
-            <el-select v-model="user.status" placeholder="选择状态">
-              <el-option label="在线" value="在线"></el-option>
-              <el-option label="离线" value="离线"></el-option>
-              <el-option label="请勿打扰" value="请勿打扰"></el-option>
-              <el-option label="离开" value="离开"></el-option>
-            </el-select>
-          </p>
-          <p>工作位置：{{ user.workLocation }}</p>
-          <el-button type="text" @click="goToHelpPage">帮助</el-button>
-          <el-button type="text" @click="goToSettingsPage">设置</el-button>
-          <el-button type="text" @click="logout">退出登录</el-button>
-        </div> -->
 
         <!-- 问号按钮 -->
         <button class="icon-button"  @click="goToHelpPage">
@@ -182,8 +163,8 @@ const logout = async () => {
 
 .search-bar {
   position: relative;
-  width: 16.9375rem; /* 271px */
-  height: 1.8125rem; /* 29px */
+  width: 17rem; /* 271px */
+  height: 2.0rem; /* 29px */
   background-color: #f7f7f7;
   border-radius: 1rem; /* 16px */
   display: flex;
@@ -192,7 +173,7 @@ const logout = async () => {
 }
 
 .search-icon {
-  color: #bfbfbf;
+  color: #949494;
   margin-right: 0.5rem; /* 8px */
   font-size: 1rem; /* 16px */
 }
@@ -202,7 +183,7 @@ const logout = async () => {
   border: none;
   background: transparent;
   font-size: 0.875rem; /* 14px */
-  color: #bfbfbf;
+  color: #515151;
   outline: none;
 }
 

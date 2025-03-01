@@ -58,7 +58,7 @@ const store = useStore();
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width:98%;
+  width:100%;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
   margin:10px
@@ -68,7 +68,7 @@ const store = useStore();
   flex: 1;
   overflow: hidden;
   flex-wrap: wrap;
-  overflow: auto; 
+  /* overflow: auto;  */
 }
 
 /* 左侧部分 */

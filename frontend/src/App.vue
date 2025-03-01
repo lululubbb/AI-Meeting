@@ -1,7 +1,6 @@
 <!-- src/App.vue -->
 <template>
   <div id="app">
-    
   
   <!-- 只有在非 Login 页面时才显示 AIFloatingChat -->
   <AIFloatingChat v-if="!isLoginOrIntroductionPage" />
@@ -17,7 +16,7 @@
 </template>
 
 <script>
-import { computed } from 'vue';
+import { computed,ref,provide } from 'vue';
 import { useRoute } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
 import Header from './components/Header.vue';
@@ -33,12 +32,15 @@ export default {
   },
   setup() {
     const route = useRoute();
-
+    const aiFloatingChat = ref(null); // 创建 AIFloatingChat 的引用
+    // 将 AIFloatingChat 的引用提供给子组件
+    provide('aiFloatingChat', aiFloatingChat);
     // 判断当前是否是登录页面，如果是则不显示 AIFloatingChat
     const isLoginOrIntroductionPage = computed(() => route.name === 'Login' || route.name === 'Introduction');
 
     return {
-      isLoginOrIntroductionPage
+      isLoginOrIntroductionPage,
+      aiFloatingChat,
     };
   }
 }

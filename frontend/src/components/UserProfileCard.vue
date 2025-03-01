@@ -67,7 +67,10 @@ const isEditing = ref(false);
 
 // 创建可编辑的用户副本
 const editableUser = ref({
-  ...user.value
+  name: user.value.name || '',
+  status: user.value.status || '在线',
+  workLocation: user.value.workLocation || '中国',
+  mood: user.value.mood || '开心', 
 });
 
 // 编辑按钮点击事件
@@ -88,8 +91,15 @@ const editProfile = () => {
 // 保存修改到数据库
 const saveChanges = async () => {
   try {
+    // 创建一个新的对象，只包含需要更新的字段
+    const userDataToUpdate = {
+      name: editableUser.value.name,
+      status: editableUser.value.status,
+      workLocation: editableUser.value.workLocation,
+      mood: editableUser.value.mood,
+    };
     // 调用 UserService 来更新用户信息到 Firebase Firestore
-    await AuthService.updateUserStatus(editableUser.value);
+    await AuthService.updateUserStatus(userDataToUpdate);
 
     // 更新本地 store 或者直接更新 user 信息
     user.value = { ...editableUser.value };
@@ -97,6 +107,7 @@ const saveChanges = async () => {
     isEditing.value = false; // 退出编辑模式
   } catch (error) {
     ElMessage.error('保存失败');
+    console.error('保存失败:', error);
   }
 };
 // 取消编辑

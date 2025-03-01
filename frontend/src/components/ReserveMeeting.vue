@@ -57,14 +57,17 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import { ElDatePicker } from 'element-plus';
+import { ref, reactive,inject } from 'vue';
 import CustomButton from '../components/CustomButton.vue';
 import { showSnackBar } from '../utils/utils.js';
-import { ElMessage } from 'element-plus';
+import { ElMessage,ElDatePicker ,ElMessageBox} from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js'; // 引入 FirestoreService
-import { useStore } from 'vuex'; // 引入 Vuex store
+import { useStore } from 'vuex'; 
+
+
+// 获取 AIFloatingChat 组件的引用
+const aiFloatingChat = inject('aiFloatingChat');
 
 // 获取当前路由和路由实例
 const route = useRoute();
@@ -79,6 +82,7 @@ const config = reactive({
 });
 
 const role = ref(1); // 默认是主持人角色
+const timer = ref(null); // 使用 ref 声明 timer
 
 // 配置禁止选择过去的时间
 const pickerOptions = {
@@ -120,12 +124,25 @@ const handleReservation = async () => {
       startTime: startTime,
       endTime: endTime,
       createdAt: startTime, 
-      status: 'not-started', // 会议状态：未开始
+      status: 'scheduled', // 会议状态：未开始
     };
 
     // 调用 FirestoreService 保存会议记录
     const meetingId = await FirestoreService.addToMeetingHistory(user.uid, config.sessionName, meetingData);
     console.log('会议预约成功，ID:', meetingId);
+
+    // 设置定时器，当会议开始时间到达时，自动创建会议
+    const now = Date.now();
+    const startTimeMillis = startTime.getTime();
+    const delay = startTimeMillis - now;
+
+    if (delay > 0) {
+      timer.value = setTimeout(() => {
+        showMeetingStartNotification(meetingData);
+      }, delay);
+    } else {
+      showSnackBar('会议开始时间已过，请重新选择时间');
+    }
 
     // 提示用户预约成功
     ElMessage.success('会议预约成功！');
@@ -141,10 +158,61 @@ const handleReservation = async () => {
   }
 };
 
+// 显示会议开始通知
+const showMeetingStartNotification = (meetingData) => {
+  ElMessageBox.confirm(
+    `您预约的会议 "${meetingData.sessionName}" 时间已到，是否立即创建会议？`,
+    '会议开始提醒',
+    {
+      confirmButtonText: '创建会议',
+      cancelButtonText: '取消',
+      type: 'info',
+    }
+  ).then(() => {
+    // 用户点击“创建会议”
+    createMeetingAutomatically(meetingData);
+  }).catch(() => {
+    // 用户点击“取消”
+    showSnackBar('已取消创建会议');
+  });
+};
+
+// 自动创建会议
+const createMeetingAutomatically = async (meetingData) => {
+  try {
+    const user = store.getters.getUser;
+    if (!user) {
+      showSnackBar('用户未登录，无法自动创建会议');
+      return;
+    }
+
+    // 构造指令
+    const instruction = JSON.stringify({
+      action: 'create_meeting',
+      meetingName: meetingData.sessionName,
+      password: meetingData.sessionPasscode,
+    });
+
+    // 调用 AI 助手的 sendMessage 方法
+    if (aiFloatingChat && aiFloatingChat.value) {
+      // 设置用户输入为指令
+      aiFloatingChat.value.userInput = instruction;
+      // 调用 sendMessage 方法
+      await aiFloatingChat.value.sendMessage();
+    } else {
+      showSnackBar('无法找到 AI 助手，请手动创建会议');
+    }
+  } catch (error) {
+    console.error('自动创建会议失败:', error);
+    showSnackBar('自动创建会议失败: ' + error.message);
+  }
+};
   // 返回主页
   const goHome = () => {
   router.push('/home');
 };
+
+
 </script>
 
 <style scoped>

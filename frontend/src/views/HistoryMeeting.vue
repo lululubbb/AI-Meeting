@@ -35,7 +35,7 @@
         :class="{
           'ongoing': meeting.status === 'ongoing',
           'finished': meeting.status === 'finished',
-          'not-started': meeting.status !== 'finished' && meeting.status !== 'ongoing'
+          'scheduled': meeting.status === 'scheduled' // 显示 scheduled 状态
         }"
         @click="showMeetingDetails(meeting)"
       >
@@ -43,7 +43,7 @@
         <strong>👤 创建人员:</strong> {{ meeting.host }} <br />
         <strong>🕒 创建时间:</strong> {{ formatDate(meeting.createdAt) }} <br />
         <strong>📊 会议状态:</strong> {{ meeting.status }}<br />
-        <strong>⏰ 结束时间:</strong>
+        <strong>⏰ 结束时间:</strong> {{ formatDate(meeting.endTime) }}
       </li>
     </ul>
 
@@ -56,7 +56,7 @@
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
         <p><strong>👤 发起人:</strong> {{ selectedMeeting.host }}</p>
         <p><strong>🕒 开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
-        <p><strong>⏰ 结束时间:</strong> {{ selectedMeeting.endedAt ? formatDate(selectedMeeting.endedAt) : '正在进行中' }}</p>
+        <p><strong>⏰ 结束时间:</strong>  {{ formatDate(meeting.endTime) }}</p>
         
         <!-- 只在当前用户是会议的host时显示以下内容 -->
         <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">
@@ -317,9 +317,38 @@ watch(() => route.path, (newPath) => {
 });
 
 // 格式化日期
+// const formatDate = (timestamp) => {
+//   if (!timestamp) return '';
+//   const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+//   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+// };
+
+
+// 格式化日期
 const formatDate = (timestamp) => {
-  if (!timestamp) return '';
-  const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+  if (!timestamp) return ''; // 如果时间戳为空，返回空字符串
+
+  let date;
+  if (typeof timestamp === 'number') {
+    // 如果时间戳是数字，直接转换为 Date 对象
+    date = new Date(timestamp);
+  } else if (timestamp.toDate) {
+    // 如果时间戳是 Firestore 的 Timestamp 对象，调用 toDate() 方法
+    date = timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    // 如果时间戳是 Date 对象，直接使用
+    date = timestamp;
+  } else {
+    // 如果时间戳是其他类型，尝试直接转换为 Date 对象
+    date = new Date(timestamp);
+  }
+
+  // 如果 date 是无效的 Date 对象，返回空字符串
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  // 返回格式化后的日期和时间
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 };
 
@@ -553,8 +582,8 @@ body {
 }
 .closeBtn {
   position: absolute;  /* 设置为绝对定位 */
-  top: 5px;           /* 调整顶部间距 */
-  right: 20px;   
+  top: 30px;           /* 调整顶部间距 */
+  right:30px;   
   background: none;
   border: none;
   font-size: 30px;
@@ -605,7 +634,7 @@ body {
   border-color: #b7eb8f;
 }
 
-.meeting-list li.not-started {
+.meeting-list li.scheduled {
   background-color: #fff1f0;
   border-color: #ffa39e;
 }
@@ -623,10 +652,8 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   /* background-color: #ffffff; */
-  background-color: var(--background-color);
   padding: 25px 20px;
   /* box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); */
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   z-index: 100;
   width: 90%;
   max-width: 900px;
@@ -645,6 +672,9 @@ body {
   padding: 10px;
   background-color: #ffffff;
   border-radius: 10px;
+
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+
 }
 
 #meetingDetails h3 {

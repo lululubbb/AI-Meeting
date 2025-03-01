@@ -233,7 +233,7 @@ const handleDownload = (file) => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 98%;
+  width: 100%;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden;
   margin: 10px;
@@ -244,7 +244,6 @@ const handleDownload = (file) => {
   flex: 1;
   overflow: hidden;
   flex-wrap: wrap;
-  overflow: auto;
 }
 
 .upload-demo {

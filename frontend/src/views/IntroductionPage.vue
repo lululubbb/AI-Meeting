@@ -2,8 +2,10 @@
     <div class="introduction-page">
       <!-- 头部导航栏 -->
       <header class="header">
-        <img :src="logo" alt="AI 会议 logo" class="logo" />
-        <img :src="teamlogo" alt="慧议先锋logo" class="logo" />
+        <div class="logo-container">
+          <img :src="logo" alt="AI 会议 logo" class="logo" />
+          <img :src="teamlogo" alt="慧议先锋logo" class="logo" style="margin-left: 30px;"/>
+        </div>
         <nav>
           <ul class="nav-links">
             <li><a href="#features">功能特点</a></li>
@@ -32,23 +34,26 @@
             :icon="feature1.icon"
             :title="feature1.title"
             :description="feature1.description"
+            :showImage="feature1.showImage"
           />
           <FeatureCard
             :icon="feature2.icon"
             :title="feature2.title"
             :description="feature2.description"
+            :showImage="feature2.showImage"
           />
           <FeatureCard
             :icon="feature3.icon"
             :title="feature3.title"
             :description="feature3.description"
+            :showImage="feature3.showImage"
           />
         </div>
       </section>
   
       <!-- 产品截图区域 -->
       <section id="screenshots" class="screenshots-section">
-        <h2 class="section-title">产品截图</h2>
+        <h2 class="section-title">产品展示</h2>
         <ScreenshotCarousel :screenshots="screenshots" />
       </section>
   
@@ -68,40 +73,47 @@
     </div>
   </template>
   
-  <script setup>
-  import FeatureCard from '../components/FeatureCard.vue'
-  import ScreenshotCarousel from '../components/ScreenshotCarousel.vue'
-  import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  import logo from '../assets/logo.jpg';//救命，可能需要改一下背景颜色
-  import teamlogo from '../assets/team.png';
-  const router = useRouter()
-  
+<script setup>
+import FeatureCard from '../components/FeatureCard.vue'
+import ScreenshotCarousel from '../components/ScreenshotCarousel.vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import logo from '../assets/logo.png';
+import teamlogo from '../assets/team2.png';
+import heroImage from '../assets/feature/usage_scene1.png';
+ // 产品截图数据
+import chat1 from '../assets/chat1.png';
+import chat2 from '../assets/chat1.png';
+import aiIcon from '@/assets/AI2.gif';
+import summaryIcon from '@/assets/summary2.gif';
+import startIcon from '@/assets/audio3.gif';
+import feature1ShowImage1 from '../assets/chat1.png';
+import feature1ShowImage2 from '../assets/chat1.png';
+import feature1ShowImage3 from '../assets/chat1.png';
 
 
-  // 英雄区域图片
-  const heroImage = '/assets/ai-meeting-screenshot1.png'
-  
-  // 功能特点数据
-  const feature1 = {
-    icon: '/assets/feature/ai-voice-recognition.png',
-    title: '智能语音识别',
-    description: '实时将语音转换为文字，准确率高，方便会议记录和整理。'
-  }
-  const feature2 = {
-    icon: '/assets/feature/intelligent-summary.png',
+const router = useRouter();  
+
+// 功能特点数据
+const feature1 = {
+    icon: aiIcon,
+    title: 'AI助手',
+    description: '随时可与AI助手聊天咨询，AI辅助会议创建和文档润色等。',
+    showImage: feature1ShowImage1
+}
+const feature2 = {
+    icon: summaryIcon,
     title: '智能会议总结',
-    description: '自动生成会议摘要，提炼关键信息，节省时间和精力。'
-  }
-  const feature3 = {
-    icon: '/assets/feature/real-time-translation.png',
-    title: '实时翻译',
-    description: '支持多语言实时翻译，打破语言障碍，促进全球协作。'
+    description: '自动生成会议摘要，提炼关键信息，节省时间和精力。',
+    showImage: feature1ShowImage2
+}
+const feature3 = {
+    icon: startIcon,
+    title: '实时转录与翻译',
+    description: '支持实时语音转文字、多语言实时翻译，促进全球协作。',
+    showImage: feature1ShowImage3
   }
   
-  // 产品截图数据
-  import chat1 from '../assets/chat1.png';
-  import chat2 from '../assets/chat2.png';
 
   //轮播图显示的图片
 const screenshots = [chat1, chat2];
@@ -110,6 +122,8 @@ const screenshots = [chat1, chat2];
   const goToLogin = () => {
     router.push('/login')
   }
+
+
   </script>
   
   <style scoped>
@@ -119,9 +133,9 @@ const screenshots = [chat1, chat2];
   
   .header {
     display: flex;
-    justify-content: space-between;
+    justify-content:space-between;
     align-items: center;
-    padding: 5px 50px;
+    padding: 1% 50px;
     background-color: white;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
@@ -137,7 +151,7 @@ const screenshots = [chat1, chat2];
   }
   
   .nav-links li {
-    margin-right: 20px;
+    margin-right: 100px;
     
   }
   
@@ -175,7 +189,7 @@ const screenshots = [chat1, chat2];
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 100px 50px;
+    padding: 10px 180px;
     background-color: #f4f9ff;
   }
   
@@ -195,7 +209,7 @@ const screenshots = [chat1, chat2];
   }
   
   .cta-button {
-    padding: 15px 30px;
+    padding: 15px 50px;
     background-color: #409eff;
     color: white;
     text-decoration: none;
@@ -207,11 +221,15 @@ const screenshots = [chat1, chat2];
   .cta-button:hover {
     background-color: #2d8cf0;
   }
-  
+  .logo-container {
+    display: flex;
+    align-items: center;
+  }
   .hero-image {
     flex: 1;
-    max-width: 500px;
+    max-width: 550px;
     height: auto;
+    margin-left: 20px;
   }
   
   .features-section {
@@ -229,77 +247,12 @@ const screenshots = [chat1, chat2];
     justify-content: space-around;
     flex-wrap: wrap;
   }
-  
-  .features-section {
-    padding: 100px 50px;
-    text-align: center;
-  }
-  
-  .section-title {
-    font-size: 36px;
-    margin-bottom: 50px;
-  }
-  
-  .feature-cards-container {
-    display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-  }
-  
-  .feature-card {
-    width: 450px;
-    height:350px;
-    padding: 30px;
-    background-color: white;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    transition: transform 0.3s ease;
-  }
-  
-  .feature-card:hover {
-    transform: translateY(-5px);
-  }
-  
-  .feature-icon {
-    width: 80px;
-    height: 80px;
-    margin-bottom: 20px;
-  }
-  
-  .feature-title {
-    font-size: 24px;
-    margin-bottom: 15px;
-  }
-  
-  .feature-description {
-    font-size: 16px;
-    color: #666;
-  }
-  
+
   .screenshots-section {
     padding: 10px 50px;
     text-align: center;
   }
-  
-  .screenshot-carousel {
-    overflow: hidden;
-  }
-  
-  .screenshot-wrapper {
-    display: flex;
-    transition: transform 0.5s ease;
-  }
-  
-  .screenshot {
-    width: 100%;
-    max-width: 800px;
-    height: auto;
-    margin-right: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  }
-  
+
   .about-section {
     padding:10px 50px;
     text-align: center;

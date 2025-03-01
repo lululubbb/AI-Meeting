@@ -3,6 +3,8 @@
       <img :src="icon" alt="功能图标" class="feature-icon" />
       <h3 class="feature-title">{{ title }}</h3>
       <p class="feature-description">{{ description }}</p>
+      <!-- 添加展示图片 -->
+      <img :src="showImage" alt="展示图片" class="show-image" v-if="showImage" />
     </div>
   </template>
   
@@ -21,13 +23,18 @@
     description: {
       type: String,
       required: true
+    },
+    showImage: {
+      type: String,
+      default: ''
     }
   })
   </script>
   
   <style scoped>
   .feature-card {
-    width: 350px;
+    width: 550px;
+    height: auto;
     padding: 30px;
     background-color: white;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -47,12 +54,18 @@
   }
   
   .feature-title {
-    font-size: 24px;
+    font-size: 26px;
     margin-bottom: 15px;
   }
   
   .feature-description {
-    font-size: 16px;
+    font-size: 18px;
     color: #666;
+    margin-bottom: 20px; 
+  }
+  .show-image {
+    width: 100%; /* 让图片宽度适应卡片宽度 */
+    height: auto; /* 保持图片比例 */
+    border-radius: 10px; /* 与卡片保持一致的圆角 */
   }
   </style>

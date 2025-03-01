@@ -75,13 +75,13 @@ class AuthService {
       const userDocRef = doc(db, 'users', user.uid)
       await setDoc(userDocRef, {
         email: user.email,
-        name:  'User' || user.displayName ,
-        avatarUrl: avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg',
-        status: status || '在线',
-        workLocation: workLocation || '中国',
-        mood: mood || '开心',
-        createdAt: new Date(),
-        todolist: []
+        name: name || user.displayName || 'User', // 优先使用传入的 name，否则使用 displayName，最后使用默认值 'User'
+      avatarUrl: avatarUrl || user.photoURL || 'https://randomuser.me/api/portraits/men/32.jpg', // 优先使用传入的 avatarUrl，否则使用 photoURL，最后使用默认头像
+      status: status || '在线', // 优先使用传入的 status，否则使用默认值 '在线'
+      workLocation: workLocation || '中国', // 优先使用传入的 workLocation，否则使用默认值 '中国'
+      mood: mood || '开心', // 优先使用传入的 mood，否则使用默认值 '开心'
+      createdAt: new Date(),
+      todolist: []
       }, { merge: true });
 
       console.log('用户文档已创建，ID:', userDocRef.id);
@@ -119,9 +119,9 @@ class AuthService {
           email: user.email,
           name: user.name || 'User',
           avatarUrl: avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg',
-        status: status || '在线',
-        workLocation: workLocation || '中国',
-        mood: mood || '开心',
+        status:  '在线',
+        workLocation: '中国',
+        mood:  '开心',
         todolist: [],
         createdAt: new Date()
         }, { merge: true })
@@ -180,9 +180,18 @@ class AuthService {
       const user = auth.currentUser;
       if (user) {
         const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, updatedInfo);
-        console.log('用户信息已更新');
-      }
+      // 过滤掉值为 undefined 的字段
+      const filteredUpdatedInfo = Object.keys(updatedInfo).reduce((acc, key) => {
+        if (updatedInfo[key] !== undefined) {
+          acc[key] = updatedInfo[key];
+        }
+        return acc;
+      }, {});
+
+      // 更新 Firestore 中的用户信息
+      await updateDoc(userDocRef, filteredUpdatedInfo);
+      console.log('用户信息已更新');
+    }
     } catch (error) {
       console.error('更新用户信息失败:', error);
       showSnackBar(error.message);
