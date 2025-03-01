@@ -56,7 +56,7 @@
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
         <p><strong>👤 发起人:</strong> {{ selectedMeeting.host }}</p>
         <p><strong>🕒 开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
-        <p><strong>⏰ 结束时间:</strong>  {{ formatDate(meeting.endTime) }}</p>
+        <p><strong>⏰ 结束时间:</strong>  {{ formatDate(selectedMeeting.endTime) }}</p>
         
         <!-- 只在当前用户是会议的host时显示以下内容 -->
         <div v-if="selectedMeeting.host === getUserEmail()" class="meeting-actions">

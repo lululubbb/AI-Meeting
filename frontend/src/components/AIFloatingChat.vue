@@ -240,7 +240,75 @@ export default {
       } finally {
         this.isLoading = false;
       }
-    }, 
+    },  // 监听预约的会议
+    listenToScheduledMeetings() {
+      const user = this.$store.getters.getUser;
+      if (!user) {
+        console.error('用户未登录');
+        return;
+      }
+
+      // 监听用户的会议记录
+      FirestoreService.listenToMeetings(user.uid, (meetings) => {
+        this.scheduledMeetings = meetings.filter((meeting) => meeting.status === 'scheduled');
+        this.checkScheduledMeetings();
+      });
+    },
+    // 检查预约的会议是否需要开始
+    checkScheduledMeetings() {
+      const now = Date.now();
+      this.scheduledMeetings.forEach(async (meeting) => {
+        if (meeting.startTime <= now && meeting.status === 'scheduled') {
+          // 自动创建会议
+          await this.createMeeting(meeting);
+        }
+      });
+    },
+    // 自动创建会议
+    async createMeeting(meeting) {
+      try {
+        const user = this.$store.getters.getUser;
+        if (!user) {
+          console.error('用户未登录');
+          return;
+        }
+
+        // 调用 ZoomVideoService 创建会议
+        const videoSDKJWT = await ZoomVideoService.getVideoSDKJWT(
+          meeting.sessionName,
+          meeting.role,
+          user.email
+        );
+
+        if (!videoSDKJWT) {
+          throw new Error('获取 JWT 失败');
+        }
+
+        // 更新会议状态为“已开始”
+        await FirestoreService.updateMeetingHistory(user.uid, meeting.meetingId, {
+          status: 'started',
+          videoSDKJWT: videoSDKJWT,
+        });
+
+        // 向用户发送一条消息，告知会议已创建
+        this.messages.push({
+          from: 'ai',
+          text: `会议 "${meeting.sessionName}" 已自动创建。`,
+          renderedText: this.escapeHTML(`会议 "${meeting.sessionName}" 已自动创建。`),
+        });
+        this.scrollToBottom();
+
+        console.log('会议已自动创建:', meeting.meetingId);
+      } catch (error) {
+        console.error('自动创建会议失败:', error);
+        this.messages.push({
+          from: 'ai',
+          text: `会议 "${meeting.sessionName}" 自动创建失败。`,
+          renderedText: this.escapeHTML(`会议 "${meeting.sessionName}" 自动创建失败。`),
+        });
+        this.scrollToBottom();
+      }
+    },
     // 滚动到聊天底部
     scrollToBottom() {
       const container = this.$refs.chatMessages;
@@ -342,8 +410,6 @@ export default {
       return div.innerHTML;
     },
   },
-  // 暴露 handleAIDirectives 方法
-  expose: ['handleAIDirectives'],
 };
 </script>
 
