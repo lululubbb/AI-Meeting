@@ -3,6 +3,8 @@
     <div class="recent-activity-card">
       <h2 class="title">最近活动</h2>
 
+      
+      <!-- 最近活动列表 -->
       <div class="activities">
         <ActivityItem
           v-for="(activity, index) in activities"
@@ -13,12 +15,21 @@
           :date="activity.date"
         />
       </div>
+      <!-- 添加活动按钮 -->
+      <button class="add-activity-btn" @click="toggleAddActivityForm">
+        {{ isAddingActivity ? '取消' : '➕ ' }}
+      </button>
 
-      <!-- 添加新活动组件 -->
+      <!-- 添加活动表单 -->
+      <CreateActivity 
+        v-if="isAddingActivity" 
+        @addActivity="addActivity" 
+        @cancel="toggleAddActivityForm"
+      />
+
     </div>
-    <CreateActivity @addActivity="addActivity" />
   </div>
-  </template>
+</template>
   
   <script>
   import ActivityItem from './ActivityItem.vue';
@@ -36,29 +47,39 @@
       {
         iconColor: '#5dc983', 
         icon: '📁', 
-        description: 'Karen 在 Konsep Ilustrasi 上留下了一些评论',
+        description: '同学A已经确定了分工和DDL',
         date: '2024-12-18',
       },
       {
         iconColor: '#7784ee',
         icon: '✏️',
-        description: 'Karen 修改了项目主页的项目信息',
+        description: '同学B提交了相关代码',
         date: '2024-12-19',
       },
       {
         iconColor: '#fba63c',
         icon: '➕',
-        description: 'Andrea 修改了项目主页的截止日期',
+        description: '同学C修改了项目主页的截止日期',
         date: '2024-12-28',
       },
     ]);
+    
+    const isAddingActivity = ref(false); // 控制添加活动表单的显示状态
+
+    // 切换添加活动表单的显示状态
+    const toggleAddActivityForm = () => {
+      isAddingActivity.value = !isAddingActivity.value;
+    };
 
     const addActivity = (newActivity) => {
       activities.value.push(newActivity);
+      toggleAddActivityForm(); // 添加完成后自动隐藏表单
     };
 
     return {
       activities,
+      isAddingActivity,
+      toggleAddActivityForm,
       addActivity,
     };
   },
@@ -100,5 +121,24 @@
     display: flex;
     flex-direction: column;
   }
+
+  .add-activity-btn {
+  padding: 10px 20px;
+  background-color: #b9ddfe;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.add-activity-btn:hover {
+  background-color: #84befd;
+  transform: translateY(-2px);
+
+}
   </style>
   

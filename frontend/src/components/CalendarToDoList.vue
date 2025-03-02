@@ -9,12 +9,9 @@ alendar<template>
       />
   
       <!-- To-Do List Section -->
-      <div class="header">
+      <div class="todo-list">
         <h2>待办事项</h2>
         <h3>点击日历上的日期即可新建该天的待办事项噢</h3>
-      </div>
-  
-      <div class="todo-list">
         <ul>
           <li v-for="(todo, index) in todos" :key="todo.id">
             <input type="checkbox" v-model="todo.isCompleted" class="checkbox"/>
@@ -194,8 +191,11 @@ alendar<template>
   
   .todo-list {
     width: 90%;
-    margin-top: -15px;
+    margin-top: 15px;
     max-width: 100%;
+    padding: 20px;
+    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+    border-radius: 10px;
   }
   
   .todo-list li {
@@ -206,7 +206,6 @@ alendar<template>
     padding: 10px 0;
     border-bottom: 1px solid #ccc;
     position: relative;
-
   }
   
   .todo-list li input[type="checkbox"] {

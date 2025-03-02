@@ -74,31 +74,68 @@ const handleHistoryMeeting = () => {
   text-align: center;
   width: auto;
   margin: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* 添加过渡效果 */
+  position: relative; /* 确保可以使用 z-index */
+  z-index: 1; /* 初始图层 */
+  border-radius: 50%;
 }
 
-.icon-wrapper1 {
-  background-color: #fba1a3; 
-  padding: 10px;
-  border-radius: 50%;
-}
+.icon-wrapper1,
 .icon-wrapper {
-  background-color: #c6e0ff; 
-  padding: 10px;
+  background-color: #fba1a3; /* 新会议图标背景色 */
+  padding: 15px; /* 增大内边距 */
+  border-radius: 50%;
+  transition: background-color 0.2s ease; /* 背景色过渡效果 */
+}
+
+.icon-wrapper {
+  border-radius: 50%;
+  background-color: #c6e0ff; /* 其他按钮图标背景色 */
+}
+
+.icon-wrapper:hover {
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2); /* 悬浮时的阴影效果 */
+  z-index: 2; /* 提高层级 */
   border-radius: 50%;
 }
-.icon-wrapper1 img {
+
+.icon-wrapper:active {
+  transform: translateY(-5px); /* 点击时上移 */
+  border-radius: 50%;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+}
+
+
+.option:hover .icon-wrapper1,
+.option:hover .icon-wrapper {
+  background-color: #ff7f83; /* 新会议悬浮背景色 */
+}
+
+.option:hover .icon-wrapper {
+  background-color: #99cfff; /* 其他按钮悬浮背景色 */
+}
+
+.icon-wrapper1 img,
+.icon-wrapper img {
   width: 80px;
   height: 80px;
+  transition: transform 0.2s ease; /* 图标放大效果 */
 }
-.icon-wrapper img {
-  width: 90px;
-  height: 90px;
+
+.option:hover .icon-wrapper1 img,
+.option:hover .icon-wrapper img {
+  transform: scale(1.1); /* 悬浮时图标放大 */
 }
 
 span {
   margin-top: 10px;
   font-size: 24px;
   color: var(--text-color);
-  font-weight:bold;
+  font-weight: bold;
+  transition: color 0.2s ease; /* 文字颜色过渡效果 */
+}
+
+.option:hover span {
+  color: #333; /* 悬浮时文字颜色加深 */
 }
 </style>

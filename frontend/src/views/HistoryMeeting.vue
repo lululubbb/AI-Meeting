@@ -17,11 +17,7 @@
           placeholder="搜索会议相关信息"
           class="search-input"
         />
-        <img
-          src="@/assets/search.png"
-          alt="搜索"
-          class="search-icon"
-        />
+        <img src="@/assets/search.png" alt="搜索" class="search-icon" />
       </div>
     </div>
 

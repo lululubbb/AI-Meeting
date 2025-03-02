@@ -1,59 +1,59 @@
 <!-- src/components/AIFloatingChat.vue -->
 <template>
   <div>
-    <button class="ai-float-button" @click="toggleChat">
+    <button class="ai-float-button" @click="drawer = true">
       <img src="@/assets/AI.png" alt="AI Chat" />
     </button>
 
-    <div v-if="isChatOpen" class="chat-container">
-      <div class="chat-header">
-        <span>AI助手</span>
-        <button @click="toggleChat">×</button>
-      </div>
-      <!-- 消息列表 -->
-      <div class="chat-messages" ref="chatMessages">
-        <!-- 使用统一的 .message-row 包裹单条消息，根据 msg.from 动态添加 ai-row / user-row 控制布局 -->
-        <div
-          v-for="(msg, index) in messages"
-          :key="index"
-          class="message-row"
-          :class="[msg.from === 'ai' ? 'ai-row' : 'user-row']"
-        >
-          <!-- AI 消息：左侧头像 -->
-          <div v-if="msg.from === 'ai'" class="avatar-container">
-            <img src="@/assets/AI.png" alt="AI Avatar" class="avatar" />
-          </div>
-
-          <!-- 气泡 -->
+  <!-- 抽屉组件 -->
+  <el-drawer v-model="drawer" title="AI 助手" :with-header="true" size="600px">
+      <!-- 聊天内容 -->
+      <div class="chat-container">
+        <!-- 消息列表 -->
+        <div class="chat-messages" ref="chatMessages">
+          <!-- 使用统一的 .message-row 包裹单条消息，根据 msg.from 动态添加 ai-row / user-row 控制布局 -->
           <div
-            class="message-bubble"
-            :class="[msg.from === 'user' ? 'user-message' : 'ai-message']"
+            v-for="(msg, index) in messages"
+            :key="index"
+            class="message-row"
+            :class="[msg.from === 'ai' ? 'ai-row' : 'user-row']"
           >
-            <span v-html="msg.renderedText"></span>
+            <!-- AI 消息：左侧头像 -->
+            <div v-if="msg.from === 'ai'" class="avatar-container">
+              <img src="@/assets/AI.png" alt="AI Avatar" class="avatar" />
+            </div>
+
+            <!-- 气泡 -->
+            <div
+              class="message-bubble"
+              :class="[msg.from === 'user' ? 'user-message' : 'ai-message']"
+            >
+              <span v-html="msg.renderedText"></span>
+            </div>
+
+            <!-- 用户消息：右侧头像 -->
+            <div v-if="msg.from === 'user'" class="avatar-container">
+              <img src="@/assets/user.png" alt="User Avatar" class="avatar" />
+            </div>
           </div>
 
-          <!-- 用户消息：右侧头像 -->
-          <div v-if="msg.from === 'user'" class="avatar-container">
-            <img src="@/assets/user.png" alt="User Avatar" class="avatar" />
+          <!-- AI 正在思考提示 -->
+          <div v-if="isLoading && !isCreatingMeeting" class="loading">
+            <span>AI 正在思考...</span>
           </div>
         </div>
 
-        <!-- AI 正在思考提示 -->
-        <div v-if="isLoading && !isCreatingMeeting" class="loading">
-          <span>AI 正在思考...</span>
+        <!-- 输入框 -->
+        <div class="chat-input">
+          <input
+            v-model="userInput"
+            @keyup.enter="sendMessage"
+            placeholder="输入您的问题..."
+          />
+          <button @click="sendMessage">发送</button>
         </div>
       </div>
-
-      <!-- 输入框 -->
-      <div class="chat-input">
-        <input
-          v-model="userInput"
-          @keyup.enter="sendMessage"
-          placeholder="输入您的问题..."
-        />
-        <button @click="sendMessage">发送</button>
-      </div>
-    </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -69,6 +69,7 @@ export default {
   name: 'AIFloatingChat',
   data() {
     return {
+      drawer: false,
       isChatOpen: false,
       messages: [],
       userInput: '',
@@ -439,21 +440,22 @@ export default {
   object-fit: contain;
 }
 
+
 /* ======= 聊天窗口容器 ======= */
+/* 整体容器布局 */
 .chat-container {
-  position: fixed;
-  bottom: 100px;
-  right: 30px;
-  width: 400px;
-  max-height: 500px;
-  background-color: #bcd9ffe0;
-  border-radius: 12px;
-  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); */
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   display: flex;
   flex-direction: column;
-  z-index: 1000;
-  animation: slide-up 0.3s ease-out;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 @keyframes slide-up {
@@ -468,6 +470,17 @@ export default {
 }
 
 /* ======= 头部 ======= */
+.el-drawer {
+  background-color: #bcd9ffe0;
+  border-radius: 12px 0 0 12px;
+  height: 70vh !important; /* 控制抽屉高度 */
+}
+.el-drawer__body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .chat-header {
   display: flex;
   justify-content: space-between;
@@ -498,20 +511,28 @@ export default {
 }
 
 /* ======= 输入框 ======= */
+
+/* 输入框容器（固定底部） */
 .chat-input {
-  display: flex;
-  border-top: 1px solid white;
+  padding: 16px;
+  background: #fff;
+  border-top: 1px solid #ebeef5;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+
 }
 
 .chat-input input {
   flex: 1;
   padding: 12px 16px;
-  border: none;
+  border: solid 2px #ecebeb;
   border-bottom-left-radius: 12px;
   outline: none;
   font-size: 16px;
   background-color: white;
   color: #434040;
+  width: 78%;
 }
 
 .chat-input input::placeholder {
@@ -522,7 +543,7 @@ export default {
   padding: 12px 20px;
   background-color: #bcd9ffe0;
   color: #434040;
-  border: none;
+  border: solid 1px #ecebeb;
   cursor: pointer;
   border-bottom-right-radius: 12px;
   transition: background-color 0.3s;
@@ -530,7 +551,7 @@ export default {
 }
 
 .chat-input button:hover {
-  background-color: #bababae0;
+  background-color: #7ab4ffe0;
 }
 
 /* ======= AI 正在思考 ======= */
