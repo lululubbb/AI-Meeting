@@ -1,8 +1,8 @@
-// src/services/ZoomVideoService.js
-
+// zoomvideoservice.js
 import ZoomVideo from '@zoom/videosdk';
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js';
+import { nextTick } from 'vue'; // 导入 nextTick
 
 export const VideoQuality = {
   VIDEO_180P: 1,
@@ -30,10 +30,14 @@ class ZoomVideoService {
     this.client = ZoomVideo.createClient();
     this.stream = null;
     this.sessionJoined = false;
+    this.isHost = false; // 新增: 是否为主持人
 
     // 聊天
     this.chatClient = null;
     this.onMessageSent = null;
+  }
+  getIsHost() {
+    return this.isHost;
   }
 
   async getVideoSDKJWT(sessionName, role, userIdentity, sessionPasscode = '', expirationSeconds = 7200) {
@@ -70,6 +74,10 @@ class ZoomVideoService {
       await this.startLocalAudio();
       await this.startLocalVideo();
       await this.initChat();
+
+      // 新增: 获取当前用户是否为主持人
+      this.isHost = this.client.isHost();
+
       return true;
     } catch (error) {
       showSnackBar('加入会议失败: ' + error.message);
@@ -99,27 +107,28 @@ class ZoomVideoService {
     return this.chatClient.getReceivers() || [];
   }
 
-  /** 私聊给 userId 发送文本消息 */
-  async sendMessageToUser(text, userId) {
-    if (!this.chatClient) {
-      showSnackBar('聊天客户端未初始化');
-      return;
-    }
-    try {
-      const result = await this.chatClient.send(text, userId);
-      if (this.onMessageSent && result && !result.message && !result.errorCode) {
-        const curUser = this.client.getCurrentUserInfo();
-        this.onMessageSent({
-          sender: { name: curUser.displayName },
-          message: text,
-          receiver: { userId }
-        });
-      }
-    } catch (error) {
-      showSnackBar('发送私聊消息失败: ' + error.message);
-      console.error(error);
-    }
+/** 私聊给 userId 发送文本消息 */
+async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
+  if (!this.chatClient) {
+    showSnackBar('聊天客户端未初始化');
+    return;
   }
+  try {
+    const result = await this.chatClient.send(text, userId);
+    if (this.onMessageSent && result && !result.message && !result.errorCode) {
+      const curUser = this.client.getCurrentUserInfo();
+      this.onMessageSent({
+        sender: { userId: curUser.userId, name: curUser.displayName }, // 同时发送 userId
+        message: text,
+        receiver: { userId },
+        timestamp: timestamp.getTime() // 传递时间戳的数值
+      });
+    }
+  } catch (error) {
+    showSnackBar('发送私聊消息失败: ' + error.message);
+    console.error(error);
+  }
+}
 
   /** 文件发送: 发给所有人 */
   async sendFileToAll(file) {
@@ -127,19 +136,28 @@ class ZoomVideoService {
       showSnackBar('聊天客户端未初始化');
       return null;
     }
-    // 检查是否支持文件发送
     if (!this.chatClient.isFileTransferEnabled()) {
       showSnackBar('当前会议未启用文件传输');
       return null;
     }
-    try {
-      const cancelFn = await this.chatClient.sendFile(file, 0);
-      return cancelFn; // 记得在外层保存
-    } catch (error) {
-      showSnackBar('发送文件失败: ' + error.message);
-      console.error(error);
-      return null;
-    }
+    return new Promise((resolve, reject) => { // 使用 Promise
+      let cancelFn;
+      const onMessage = (payload) => {
+        if (payload.file && payload.file.name === file.name && payload.sender.userId === this.client.getCurrentUserInfo().userId ) {
+            // 确保是当前用户发送的这个文件
+          this.client.off('chat-on-message', onMessage); // 解除监听
+          resolve(payload.id); // 返回 msgId
+        }
+      };
+      this.client.on('chat-on-message', onMessage); // 监听消息
+
+      this.chatClient.sendFile(file, 0).then(fn => {
+          cancelFn = fn;
+      }).catch(err => {
+        this.client.off('chat-on-message', onMessage);
+        reject(err);  // 失败
+      });
+    });
   }
 
   /** 文件发送: 发给指定 userId */
@@ -152,14 +170,24 @@ class ZoomVideoService {
       showSnackBar('当前会议未启用文件传输');
       return null;
     }
-    try {
-      const cancelFn = await this.chatClient.sendFile(file, userId);
-      return cancelFn;
-    } catch (error) {
-      showSnackBar('发送文件失败: ' + error.message);
-      console.error(error);
-      return null;
-    }
+
+     return new Promise((resolve, reject) => { // 使用 Promise
+      let cancelFn;
+      const onMessage = (payload) => {
+         if (payload.file && payload.file.name === file.name && payload.sender.userId === this.client.getCurrentUserInfo().userId) {
+          this.client.off('chat-on-message', onMessage);
+          resolve(payload.id);  // 返回 msgId
+        }
+      };
+       this.client.on('chat-on-message', onMessage);
+
+      this.chatClient.sendFile(file, userId).then(fn => {
+          cancelFn = fn;
+      }).catch(err => {
+          this.client.off('chat-on-message', onMessage);
+        reject(err); // 失败
+      });
+    });
   }
 
   /** 下载文件 (SDK 会自动下载到浏览器的默认下载位置) */
@@ -183,14 +211,24 @@ class ZoomVideoService {
   async getChatHistory() {
     if (!this.chatClient) return [];
     try {
-      return await this.chatClient.getHistory();
+      const history = await this.chatClient.getHistory();
+      // 转换 history 数组
+      return history.map(msg => ({
+        ...msg,
+        type: msg.receiver.userId === '0' ? 'group' : 'private',  // 添加 type
+        timestamp: msg.timestamp ?  msg.timestamp: Date.now(),   // 添加时间戳
+        sender: {
+          userId: msg.sender.userId, // 同时发送 userId
+          name: msg.sender.name
+        }
+      }));
     } catch (err) {
       console.error('getChatHistory error:', err);
       return [];
     }
   }
 
-  async sendMessageToAll(message) {
+    async sendMessageToAll(message, timestamp) { //增加 timestamp
     if (!this.chatClient) {
       showSnackBar('聊天客户端未初始化');
       return;
@@ -200,8 +238,9 @@ class ZoomVideoService {
       if (this.onMessageSent && result && !result.message && !result.errorCode) {
         const curUser = this.client.getCurrentUserInfo();
         this.onMessageSent({
-          sender: { name: curUser.displayName },
-          message
+          sender: { userId: curUser.userId, name: curUser.displayName },  // 同时发送 userId
+          message,
+          timestamp: timestamp.getTime()  // 传递时间戳的数值
         });
       }
     } catch (error) {
@@ -308,47 +347,54 @@ class ZoomVideoService {
     }
   }
 
-  async startLocalScreenShare() {
+ async startLocalScreenShare() {
     if (!this.sessionJoined || !this.stream) return false;
     try {
-      const shareArea = document.querySelector('.speaker-area');
-      if (!shareArea) return false;
-      let oldVideo = document.getElementById('local-share-video');
-      let oldCanvas = document.getElementById('local-share-canvas');
-      if (oldVideo) oldVideo.remove();
-      if (oldCanvas) oldCanvas.remove();
+        const shareArea = document.querySelector('.speaker-area');
+        if (!shareArea) return false;
 
-      if (this.stream.isStartShareScreenWithVideoElement()) {
-        const shareVideo = document.createElement('video');
-        shareVideo.id = 'local-share-video';
-        shareVideo.autoplay = true;
-        shareVideo.playsInline = true;
-        shareVideo.classList.add('video-element', 'share-video');
+        // 先清空
+        let oldVideo = document.getElementById('local-share-video');
+        let oldCanvas = document.getElementById('local-share-canvas');
+        if (oldVideo) oldVideo.remove();
+        if (oldCanvas) oldCanvas.remove();
 
-        shareArea.innerHTML = '';
-        shareArea.appendChild(shareVideo);
-        await this.stream.startShareScreen(shareVideo);
-      } else {
-        const shareCanvas = document.createElement('canvas');
-        shareCanvas.id = 'local-share-canvas';
-        shareCanvas.classList.add('video-element', 'share-video');
+        // 使用 nextTick 确保 DOM 更新
+        await nextTick();
 
-        shareArea.innerHTML = '';
-        shareArea.appendChild(shareCanvas);
-        await this.stream.startShareScreen(shareCanvas);
-      }
-      return true;
+        if (this.stream.isStartShareScreenWithVideoElement()) {
+            const shareVideo = document.createElement('video');
+            shareVideo.id = 'local-share-video';
+            shareVideo.autoplay = true;
+            shareVideo.playsInline = true;
+            shareVideo.classList.add('video-element', 'share-video');
+
+            shareArea.innerHTML = ''; // 再次清空，确保安全
+            shareArea.appendChild(shareVideo);
+            await this.stream.startShareScreen(shareVideo);
+        } else {
+            const shareCanvas = document.createElement('canvas');
+            shareCanvas.id = 'local-share-canvas';
+            shareCanvas.classList.add('video-element', 'share-video');
+
+            shareArea.innerHTML = '';// 再次清空，确保安全
+            shareArea.appendChild(shareCanvas);
+            await this.stream.startShareScreen(shareCanvas);
+        }
+        return true;
     } catch (error) {
-      showSnackBar('开启屏幕共享失败:' + error.message);
-      console.error(error);
-      return false;
+        showSnackBar('开启屏幕共享失败:' + error.message);
+        console.error(error);
+        return false;
     }
-  }
+}
 
   async stopLocalScreenShare() {
     if (!this.sessionJoined || !this.stream) return;
     try {
-      await this.stream.stopShareScreen();
+      await this.stream.stopShareScreen(); // 先停止共享
+
+      // 再从 DOM 中移除
       const shareVideo = document.getElementById('local-share-video');
       if (shareVideo) shareVideo.remove();
       const shareCanvas = document.getElementById('local-share-canvas');
@@ -394,6 +440,7 @@ class ZoomVideoService {
       this.sessionJoined = false;
       this.stream = null;
       this.chatClient = null;
+      this.isHost = false; // 重置 isHost
     } catch (error) {
       showSnackBar('离开会议失败:' + error.message);
       console.error(error);

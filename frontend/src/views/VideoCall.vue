@@ -1,3 +1,4 @@
+<!-- videocall.vue -->
 <template>
     <main>
       <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->

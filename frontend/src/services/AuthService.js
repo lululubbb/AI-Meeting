@@ -33,10 +33,11 @@ class AuthService {
         await setDoc(userDocRef, {
           email: user.email,
           name: user.displayName  || 'User',
-          avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',  // 初始为空，之后可以更新
-          status: '在线',  
-          workLocation: '中国',  
-          mood: '开心', 
+          avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
+          status: '在线',
+          workLocation: '中国',
+          mood: '开心',
+          role: 'user', // 默认角色为普通用户
           createdAt: new Date(),
           todolist: []
         }, { merge: true });
@@ -44,14 +45,21 @@ class AuthService {
       }
 
       // 获取用户的额外信息
-      const userProfile = userDoc.data();
-      
-      // 获取 JWT，使用 user.email 作为 userIdentity
-      const videoSDKJWT = await ZoomVideoService.getVideoSDKJWT(`Session_${user.uid}`, 1, user.email)
-      
+      const userProfile = userDoc.exists() ? userDoc.data() : {};
+      const userRole = userProfile.role || 'user'; // 获取用户角色，默认为普通用户
+
+      // 获取 JWT，使用 user.email 作为 userIdentity，并根据角色设置 role_type
+      const roleType = userRole === 'admin' ? 1 : 0;
+      const videoSDKJWT = await ZoomVideoService.getVideoSDKJWT(`Session_${user.uid}`, roleType, user.email)
+
       if (videoSDKJWT) {
         // 将用户信息和 JWT 存储在 Vuex Store 中
-        store.commit('SET_USER', { ...user, videoSDKJWT, ...userProfile  })
+        store.commit('SET_USER', { 
+          ...user, 
+          videoSDKJWT, 
+          ...userProfile,
+          role: userRole 
+        })
         return true
       } else {
         // 获取 JWT 失败，登出用户
@@ -66,7 +74,7 @@ class AuthService {
   }
 
   // 使用邮箱和密码注册
-  async registerWithEmailAndPassword(email, password, name, avatarUrl, status, workLocation, mood) {
+  async registerWithEmailAndPassword(email, password, name, avatarUrl, status, workLocation, mood, role = 'user') {
     try {
       const userCredential = await firebaseCreateUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
@@ -86,12 +94,17 @@ class AuthService {
 
       console.log('用户文档已创建，ID:', userDocRef.id);
       
-      // 获取 JWT，使用 user.email 作为 userIdentity
-      const videoSDKJWT = await ZoomVideoService.getVideoSDKJWT(`Session_${user.uid}`, 1, user.email)
+      // 获取 JWT，使用 user.email 作为 userIdentity，并根据角色设置 role_type
+      const roleType = role === 'admin' ? 1 : 0;
+      const videoSDKJWT = await ZoomVideoService.getVideoSDKJWT(`Session_${user.uid}`, roleType, user.email)
       
       if (videoSDKJWT) {
         // 将用户信息和 JWT 存储在 Vuex Store 中
-        store.commit('SET_USER', { ...user, videoSDKJWT })
+        store.commit('SET_USER', { 
+          ...user, 
+          videoSDKJWT, 
+          role: role 
+        })
         return true
       } else {
         // 获取 JWT 失败，登出用户

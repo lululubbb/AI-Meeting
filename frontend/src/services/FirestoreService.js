@@ -1,10 +1,10 @@
-// src/services/FirestoreService.js
-
+// FirestoreService.js
 import { db } from './FirebaseService.js';
-import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 
 class FirestoreService {
-  // 监听用户的会议历史记录
+    // ... (listenToMeetings, getTranscriptions, getMeetingHistory, getAllMeetingHistory 等函数保持不变) ...
+      // 监听用户的会议历史记录
   listenToMeetings(userId, callback) {
     if (typeof userId !== 'string') {
       console.error("userId 必须是字符串");
@@ -14,9 +14,9 @@ class FirestoreService {
     return onSnapshot(q, (querySnapshot) => {
       const meetings = [];
       querySnapshot.forEach((docSnapshot) => {
-        meetings.push({ 
+        meetings.push({
           meetingId: docSnapshot.id, // 使用 meetingId 代替 id
-          ...docSnapshot.data() 
+          ...docSnapshot.data()
         });
       });
       callback(meetings);
@@ -84,6 +84,74 @@ class FirestoreService {
       throw error;
     }
   }
+
+  // 新增: 获取单个会议的详细信息
+  async getMeetingHistory(userId, meetingId) {
+    try {
+      const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+      const meetingDoc = await getDoc(meetingDocRef);
+      if (meetingDoc.exists()) {
+        return {
+          meetingId: meetingDoc.id,
+          ...meetingDoc.data()
+        };
+      } else {
+        return null; // 或抛出错误, 根据你的需求
+      }
+    } catch (error) {
+      console.error('获取会议历史记录失败:', error);
+      throw error;
+    }
+  }
+
+  // 新增: 获取用户的所有会议
+  async getAllMeetingHistory(userId) {
+    try {
+      const meetingsColRef = collection(db, 'users', userId, 'meetings');
+      const q = query(meetingsColRef, orderBy('createdAt', 'desc')); // 按创建时间降序排列
+      const querySnapshot = await getDocs(q);
+      const meetings = [];
+      querySnapshot.forEach(doc => {
+        meetings.push({
+          meetingId: doc.id,
+          ...doc.data()
+        });
+      });
+      return meetings;
+    } catch (error) {
+      console.error('获取所有会议历史记录失败:', error);
+      throw error;
+    }
+  }
+  // 添加/更新会议历史记录
+    async updateOrCreateMeetingHistory(userId, meetingId, data) {
+     try {
+        const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+        const meetingDoc = await getDoc(meetingDocRef);
+
+      if (meetingDoc.exists()) {
+          // 更新现有记录
+        const cleanedData = {};
+        for (const key in data) {
+          if (data.hasOwnProperty(key) && data[key] !== undefined) {
+            cleanedData[key] = data[key];
+          }
+        }
+        await updateDoc(meetingDocRef, cleanedData);
+        console.log('会议历史记录已更新，ID:', meetingId);
+      } else {
+        // 创建新记录, 这里是关键修改
+        await setDoc(meetingDocRef,{  createdAt: new Date(), ...data });
+
+        console.log('会议历史记录已创建，ID:', meetingId);
+        }
+        return meetingId;
+     }
+     catch(err){
+          console.error('添加/更新会议历史记录失败:', err);
+      throw err;
+     }
+    }
 }
 
 export default new FirestoreService();
