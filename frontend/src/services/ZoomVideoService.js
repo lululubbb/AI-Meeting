@@ -1,4 +1,4 @@
-// zoomvideoservice.js
+// ZoomVideoService.js
 import ZoomVideo from '@zoom/videosdk';
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js';
@@ -110,27 +110,28 @@ class ZoomVideoService {
 /** 私聊给 userId 发送文本消息 */
 async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
   if (!this.chatClient) {
-    showSnackBar('聊天客户端未初始化');
-    return;
-  }
-  try {
+      showSnackBar('聊天客户端未初始化');
+      return;
+   }
+ try {
     const result = await this.chatClient.send(text, userId);
-    if (this.onMessageSent && result && !result.message && !result.errorCode) {
-      const curUser = this.client.getCurrentUserInfo();
-      this.onMessageSent({
-        sender: { userId: curUser.userId, name: curUser.displayName }, // 同时发送 userId
-        message: text,
-        receiver: { userId },
-        timestamp: timestamp.getTime() // 传递时间戳的数值
-      });
+    if (result && result.id && this.onMessageSent) {
+       const curUser = this.client.getCurrentUserInfo();
+        this.onMessageSent({
+              ...result,
+              sender: { userId: curUser.userId, name: curUser.displayName }, // 同时发送 userId
+              message: text,
+              receiver: { userId },
+              timestamp: timestamp.getTime() // 传递时间戳的数值
+          });
     }
-  } catch (error) {
-    showSnackBar('发送私聊消息失败: ' + error.message);
+ } catch (error) {
+     showSnackBar('发送私聊消息失败: ' + error.message);
     console.error(error);
-  }
+}
 }
 
-  /** 文件发送: 发给所有人 */
+   /** 文件发送: 发给所有人 */
   async sendFileToAll(file) {
     if (!this.chatClient) {
       showSnackBar('聊天客户端未初始化');
@@ -228,19 +229,22 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
     }
   }
 
-    async sendMessageToAll(message, timestamp) { //增加 timestamp
+  async sendMessageToAll(message, timestamp) {
     if (!this.chatClient) {
       showSnackBar('聊天客户端未初始化');
       return;
     }
     try {
       const result = await this.chatClient.sendToAll(message);
-      if (this.onMessageSent && result && !result.message && !result.errorCode) {
-        const curUser = this.client.getCurrentUserInfo();
-        this.onMessageSent({
-          sender: { userId: curUser.userId, name: curUser.displayName },  // 同时发送 userId
-          message,
-          timestamp: timestamp.getTime()  // 传递时间戳的数值
+       // 使用 SDK 的返回值 (不再需要自己构造 onMessageSent)
+        if (result && result.id && this.onMessageSent) {
+          const curUser = this.client.getCurrentUserInfo();
+          this.onMessageSent({
+            ...result,  // 直接使用SDK返回的消息对象
+            sender: { userId: curUser.userId, name: curUser.displayName },
+            receiver: { userId: '0' }, //  '0' 表示群发
+            message, //  message
+            timestamp: timestamp.getTime()
         });
       }
     } catch (error) {
@@ -252,7 +256,20 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
   setMessageSentCallback(cb) {
     this.onMessageSent = cb;
   }
-
+  // 辅助函数：检查消息是否已存在
+  isMessageAlreadyAdded(msgId) {
+    if(!this.messageIds){
+      this.messageIds = new Set();
+    }
+    return this.messageIds.has(msgId);
+ }
+     // 添加消息 ID
+     addMessageId(msgId) {
+      if(!this.messageIds){
+       this.messageIds = new Set();
+     }
+   this.messageIds.add(msgId);
+ }
   async startLocalVideo(options = {}) {
     try {
       const videoOptions = { hd: true, ...options };
@@ -447,5 +464,4 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
     }
   }
 }
-
 export default new ZoomVideoService();

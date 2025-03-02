@@ -139,63 +139,62 @@
             <!-- 参会者列表 -->
             <h3>参会者列表</h3>
             <div v-if="selectedMeeting.participants && selectedMeeting.participants.length > 0">
-                <table class="participants-table">
-             <thead>
-                <tr>
-                  <th>用户名</th>
-                  <th>角色</th>
-                  <th>加入时间</th>
-                  <th>离开时间</th>
-                  <th>参会时长</th>
-                  <th>视频</th>
-                  <th>音频</th>
-                  <th>屏幕共享</th>
-                    <!-- 新增列 -->
-                  <th>上传次数</th>
-                  <th>下载次数</th>
-                  <th>消息数</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="participant in selectedMeeting.participants" :key="participant.userId">
-                  <td>{{ participant.userName }}</td>
-                  <td>{{ participant.role }}</td>
-                  <td>{{ formatDate(participant.joinTime) }}</td>
-                  <td>{{ participant.leaveTime ? formatDate(participant.leaveTime) : '未离开' }}</td>
-                  <td>{{ calculateDuration(participant.joinTime, participant.leaveTime) }}</td>
+                <!-- 增加一个外层 div，用于实现水平滚动 -->
+                <div class="table-scrollable-wrapper">
+                    <table class="participants-table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>角色</th>
+                                <th>加入时间</th>
+                                <th>离开时间</th>
+                                <th>参会时长</th>
+                                <th>视频</th>
+                                <th>音频</th>
+                                <th>屏幕共享</th>
+                                <!-- 新增列 -->
+                                <th>消息数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="participant in selectedMeeting.participants" :key="participant.userId">
+                                <td>{{ participant.userName }}</td>
+                                <td>{{ participant.role }}</td>
+                                <td>{{ formatDate(participant.joinTime) }}</td>
+                                <td>{{ participant.leaveTime ? formatDate(participant.leaveTime) : '未离开' }}</td>
+                                <td>{{ calculateDuration(participant.joinTime, participant.leaveTime) }}</td>
 
-                    <td>
-                    <template v-if="participant.hasVideo && participant.hasVideo.timeline">
-                      开启次数: {{ getVideoOnCount(participant.hasVideo.timeline) }} <br>
-                      总开启时长: {{ getVideoTotalOnTime(participant.hasVideo.timeline) }} <br>
-                    </template>
-                  </td>
+                                <td>
+                                    <template v-if="participant.hasVideo && participant.hasVideo.timeline">
+                                        开启次数: {{ getVideoOnCount(participant.hasVideo.timeline) }} <br>
+                                        总开启时长: {{ getVideoTotalOnTime(participant.hasVideo.timeline) }} <br>
+                                    </template>
+                                </td>
 
-                  <td>
-                    <template v-if="participant.isAudioOn && participant.isAudioOn.timeline">
-                      开启次数: {{ getAudioOnCount(participant.isAudioOn.timeline) }} <br>
-                      总开启时长: {{ getAudioTotalOnTime(participant.isAudioOn.timeline) }}
-                    </template>
-                    <template v-else>
-                        未开启
-                    </template>
+                                <td>
+                                    <template v-if="participant.isAudioOn && participant.isAudioOn.timeline">
+                                        开启次数: {{ getAudioOnCount(participant.isAudioOn.timeline) }} <br>
+                                        总开启时长: {{ getAudioTotalOnTime(participant.isAudioOn.timeline) }}
+                                    </template>
+                                    <template v-else>
+                                        未开启
+                                    </template>
 
-                  </td>
+                                </td>
 
-                  <td>
-                      <template v-if="participant.isSharing && participant.isSharing.timeline">
-                          开启次数:{{ getSharingCounts(participant.isSharing.timeline) }}<br>
-                          总开启时长:{{ getSharingTotalTime(participant.isSharing.timeline) }}
-                      </template>
-                      <template v-else>未开启</template>
-                  </td>
-                   <!-- 新增列 -->
-                  <td>{{ participant.uploads || 0 }}</td>
-                  <td>{{ participant.downloads || 0 }}</td>
-                  <td>{{ participant.messagesSent || 0 }}</td>
-                </tr>
-              </tbody>
-                </table>
+                                <td>
+                                    <template v-if="participant.isSharing && participant.isSharing.timeline">
+                                        开启次数:{{ getSharingCounts(participant.isSharing.timeline) }}<br>
+                                        总开启时长:{{ getSharingTotalTime(participant.isSharing.timeline) }}
+                                    </template>
+                                    <template v-else>未开启</template>
+                                </td>
+                                <!-- 新增列 -->
+                                <td>{{ participant.messagesSent || 0 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
             </div>
               <div v-else>
                 <p>没有参会者数据。</p>
@@ -452,19 +451,19 @@ const formatDate = (timestamp) => {
 
     // 新增函数：下载参会者数据为 CSV
     const downloadParticipantsData = () => {
-  if (!selectedMeeting.value || !selectedMeeting.value.participants) {
-    showSnackBar('没有参会者数据可供下载。');
-    return;
-  }
+        if (!selectedMeeting.value || !selectedMeeting.value.participants) {
+            showSnackBar('没有参会者数据可供下载。');
+            return;
+         }
 
-  // BOM + UTF-8 编码
-  let csvContent = '\uFEFF';
+        // BOM + UTF-8 编码
+        let csvContent = '\uFEFF';
 
-  // CSV 头部
-  csvContent += '用户名,角色,加入时间,离开时间,参会时长,视频开启次数,视频总开启时长,音频开启次数,音频总开启时长,屏幕共享次数,屏幕共享总时长,上传次数,下载次数,消息数\n';
+        // CSV 头部 (修改)
+        csvContent += '用户名,角色,加入时间,离开时间,参会时长,视频开启次数,视频总开启时长,音频开启次数,音频总开启时长,屏幕共享次数,屏幕共享总时长,消息数\n';
 
-  // CSV 数据行
-  selectedMeeting.value.participants.forEach(p => {
+        // CSV 数据行
+         selectedMeeting.value.participants.forEach(p => {
      // 过滤 undefined 值
      if (Object.values(p).some(value => value === undefined)) {
          console.warn('Skipping participant due to undefined values:', p);
@@ -482,11 +481,11 @@ const formatDate = (timestamp) => {
     const sharingCount = p.isSharing ? getSharingCounts(p.isSharing.timeline) : 0;
     const sharingTotalOnTime = p.isSharing ? getSharingTotalTime(p.isSharing.timeline):'0秒';
      // 新增
-    const uploads = p.uploads || 0;
-    const downloads = p.downloads || 0;
+    // const uploads = p.uploads || 0; // 移除
+    // const downloads = p.downloads || 0; // 移除
     const messagesSent = p.messagesSent || 0;
 
-    csvContent += `${p.userName},${p.role},${joinTime},${leaveTime},${duration},${videoOnCount},${videoTotalOnTime},${audioOnCount},${audioTotalOnTime},${sharingCount},${sharingTotalOnTime},${uploads},${downloads},${messagesSent}\n`;
+    csvContent += `${p.userName},${p.role},${joinTime},${leaveTime},${duration},${videoOnCount},${videoTotalOnTime},${audioOnCount},${audioTotalOnTime},${sharingCount},${sharingTotalOnTime},${messagesSent}\n`;
   });
 
   // 创建 Blob 对象, 指定编码
@@ -521,8 +520,36 @@ const formatDate = (timestamp) => {
     link.click();
   };
 
+  // 格式化日期和时间（精确到秒）
+const formatDateTimeForCSV = (timestamp) => {
+  if (!timestamp) return '';
+  let date;
+  if (typeof timestamp === 'number') {
+    date = new Date(timestamp);
+  } else if (timestamp.toDate) {
+    date = timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = new Date(timestamp);
+  }
+
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  // 使用更详细的格式化
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+};
       // 新增函数：下载聊天数据
-    const downloadChatData = () => {
+      const downloadChatData = () => {
     if (!selectedMeeting.value || !selectedMeeting.value.chatMessages) {
       showSnackBar('没有聊天数据可供下载。');
       return;
@@ -542,7 +569,8 @@ const formatDate = (timestamp) => {
         const sender = msg.senderName;
         const receiver = msg.type === 'private' ? getReceiverName(msg.receiverId) : '所有人';
         const message = msg.message ? msg.message.replace(/,/g, '，') : `[文件] ${msg.file?.name || '未知文件名'}`;  // 使用可选链和空值合并
-         const timestamp = formatDate(msg.timestamp);
+        //  const timestamp = formatDate(msg.timestamp); // 使用新的格式化函数
+        const timestamp = formatDateTimeForCSV(msg.timestamp);
       csvContent += `${type},${sender},${receiver},"${message}",${timestamp}\n`; // 使用双引号包裹消息内容
       });
 
@@ -559,12 +587,19 @@ const formatDate = (timestamp) => {
 
   // 根据 receiverId 获取接收者名称（用于私聊）
   const getReceiverName = (receiverId) => {
-      if (!selectedMeeting.value || !selectedMeeting.value.participants) {
-          return '未知用户';
+    // 如果是群发消息，直接返回 "所有人"
+    if (receiverId === '0' || receiverId === 0) {
+      return '所有人';
     }
-       const receiver = selectedMeeting.value.participants.find(p => p.userId === receiverId);
-       return receiver ? receiver.userName : '未知用户';
 
+    // 如果不是群发消息，查找对应的用户
+    if (!selectedMeeting.value || !selectedMeeting.value.participants) {
+        return `未知用户 (ID: ${receiverId})`; // 显示 ID
+    }
+    const receiver = selectedMeeting.value.participants.find(p => p.userId === receiverId);
+
+    // 同时显示用户名和 ID
+     return receiver ? `${receiver.userName} (ID: ${receiverId})` : `未知用户 (ID: ${receiverId})`;
   };
 
   // 切换功能区域
@@ -1179,17 +1214,17 @@ button:disabled {
 }
 
 /* 参会者表格样式 */
-.participants-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
+.table-scrollable-wrapper {
+    overflow-x: auto; /* 允许水平滚动 */
+    width: 100%;
 }
-
 .participants-table th,
 .participants-table td {
   padding: 10px 15px;
   text-align: left;
   border-bottom: 1px solid #ddd;
+   min-width: 100px; /*  最小宽度 */
+  white-space: nowrap; /*  不换行 */
 }
 
 .participants-table th {
