@@ -21,11 +21,11 @@
       </div>
     </div>
 
-    <div v-if="filteredMeetings.length === 0" class="no-results">
+    <div v-if="visibleMeetings.length === 0" class="no-results">
       <p>😕 没有找到符合条件的会议记录</p>
     </div>
     <ul v-else class="meeting-list">
-      <li v-for="meeting in filteredMeetings" :key="meeting.meetingId"
+      <li v-for="meeting in visibleMeetings" :key="meeting.meetingId"
         :class="{
           'ongoing': meeting.status === 'ongoing',
           'finished': meeting.status === 'finished',
@@ -41,10 +41,22 @@
       </li>
     </ul>
 
+    <div v-if="loading" class="loading-indicator">📥 加载中...</div>
+    <div v-if="allFilteredMeetings.length === 0" class="no-more-data">🎉 没有会议记录啦~</div>
+    <!-- 页码导航 -->
+    <div v-if="allFilteredMeetings.length > pageSize" class="pagination">
+      <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
+      <span>
+        第 {{ currentPage }} 页，共 {{ totalPages }} 页
+      </span>
+      <button @click="nextPage" :disabled="currentPage === totalPages">下一页</button>
+    </div>
+
+    
     <!-- 会议详情 -->
     <div v-if="showModal" class="meeting-detail-modal">
       <div id="meetingDetails">
-                <span class="closeBtn" @click="closeModal">×</span>
+        <span class="closeBtn" @click="closeModal">×</span>
         <h3>📋 会议详情</h3>
         <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
@@ -199,7 +211,7 @@
             <!-- 聊天记录,  显示/下载 按钮 -->
             <h3>聊天记录</h3>
             <button @click="downloadChatData" class="download-btn" aria-label="下载聊天记录">
-                 下载聊天记录
+              <img src="@/assets/download.png" alt="下载" />
             </button>
 
             <div v-if="selectedMeeting.chatMessages && selectedMeeting.chatMessages.length > 0">
@@ -232,7 +244,7 @@
 </template>
 
 <script setup>
- import { computed, onMounted, ref, watch } from 'vue';
+ import { computed, onMounted, ref, watch,onUnmounted  } from 'vue';
   import { useStore } from 'vuex';
   import { useRouter, useRoute } from 'vue-router';
     import { ElMessage } from 'element-plus';
@@ -251,6 +263,27 @@
     radar_chart: ''
   });
 
+  const currentPage = ref(1);
+  const pageSize = ref(10);
+  const loading = ref(false);
+// 计算总页数
+const totalPages = computed(() => {
+  return Math.ceil(allFilteredMeetings.value.length / pageSize.value);
+});
+
+// 上一页函数
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+// 下一页函数
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
     // 定义后端 API 地址
     const BACKEND_URL = 'http://localhost:8003'; // 根据实际情况修改
     
@@ -354,6 +387,7 @@
     } finally {
       isLoadingSummary.value = false;
     }
+    onUnmounted(() => abortController.abort());
   };
 
 
@@ -388,10 +422,10 @@ const getUserId = () => {
   const meetingTranscriptions = ref('');
   const showCloseButton = ref(false);
 
-  
-// 监听 route.path 变化
-watch(() => route.path, (newPath) => {
-  showCloseButton.value = newPath === '/history';
+// 监听搜索查询变化，重置状态
+watch(searchQuery, () => {
+  currentPage.value = 1;
+  // noMoreData.value = false;  // 由于已经改为页码导航，这一行可以去掉
 });
 
 // 格式化日期
@@ -637,22 +671,62 @@ const formatDateTimeForCSV = (timestamp) => {
     });
 
   // 根据搜索条件过滤会议列表
-  const filteredMeetings = computed(() => {
-    if (!searchQuery.value) return meetings.value;
+  // const filteredMeetings = computed(() => {
+  //   if (!searchQuery.value) return meetings.value;
 
-    const query = searchQuery.value.toLowerCase();
-    return meetings.value.filter((meeting) => {
-      const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query);
-      const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query);
-      const createdAtMatch = meeting.startTime && formatDate(meeting.startTime).toLowerCase().includes(query);  // startTime
-      const endedAtMatch = meeting.endTime && formatDate(meeting.endTime).toLowerCase().includes(query);       //endTime
+  //   const query = searchQuery.value.toLowerCase();
+  //   return meetings.value.filter((meeting) => {
+  //     const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query);
+  //     const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query);
+  //     const createdAtMatch = meeting.startTime && formatDate(meeting.startTime).toLowerCase().includes(query);  // startTime
+  //     const endedAtMatch = meeting.endTime && formatDate(meeting.endTime).toLowerCase().includes(query);       //endTime
 
-      return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
-    });
+  //     return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
+  //   });
+  // });
+
+  // 获取所有过滤后的会议记录
+const allFilteredMeetings = computed(() => {
+  if (!searchQuery.value) return meetings.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return meetings.value.filter((meeting) => {
+    const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query);
+    const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query);
+    const createdAtMatch = meeting.startTime && formatDate(meeting.startTime).toLowerCase().includes(query);  // startTime
+    const endedAtMatch = meeting.endTime && formatDate(meeting.endTime).toLowerCase().includes(query);       //endTime
+
+    return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
   });
+});
 
+// 当前可见的会议记录
+const visibleMeetings = computed(() => {
+  const startIndex = (currentPage.value - 1) * pageSize.value;
+  const endIndex = startIndex + pageSize.value;
+  return allFilteredMeetings.value.slice(startIndex, endIndex);
+});
+
+// 加载更多会议记录
+const loadMore = async () => {
+  loading.value = true;
+  // 模拟加载延迟
+  await new Promise(resolve => setTimeout(resolve, 500));
+  currentPage.value++;
+  if (visibleMeetings.value.length >= allFilteredMeetings.value.length) {
+    noMoreData.value = true;
+  }
+  loading.value = false;
+};
+
+
+// 在组件卸载时取消监听
+onUnmounted(() => {
+  store.dispatch('unlistenToMeetings'); // 需要在 Vuex 中实现该 action
+});
   // 返回主页
   const goHome = () => {
+    showModal.value = false;
     router.push('/home');
   };
 
@@ -854,7 +928,36 @@ const formatDuration = (milliseconds) => {
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
 
+.pagination button {
+  margin: 0 10px;
+  padding: 5px 10px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pagination button:hover {
+  background-color: #0056b3;
+}
+
+.pagination button:disabled {
+  background-color: #eeeeee;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  margin: 0 10px;
+}
 /* 关闭按钮样式 */
 .close-btn-wrapper{
     position: absolute;
@@ -994,7 +1097,33 @@ body {
    background-color: #e6f7ff; /* 浅蓝色背景 */
    border-color: #91d5ff;
  }
+ .load-more-btn {
+  display: block;
+  margin: 20px auto;
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
 
+.load-more-btn:hover {
+  background-color: #0056b3;
+}
+
+.loading-indicator {
+  text-align: center;
+  color: #007BFF;
+  margin: 20px 0;
+}
+
+.no-more-data {
+  text-align: center;
+  color: #666;
+  margin: 20px 0;
+}
  .meeting-list li.finished {
   background-color: #f6ffed; /* 浅绿色背景 */
   border-color: #b7eb8f;
@@ -1075,7 +1204,7 @@ body {
 
 .download-btn {
   background-color: #ffffff; /* 白色背景 */
-  border: 2px solid #007BFF; /* 蓝色边框 */
+  border: 2px solid #d4d4d4; /* 蓝色边框 */
   border-radius: 8px;
   cursor: pointer;
   padding: 8px;
@@ -1087,7 +1216,7 @@ body {
 }
 
 .download-btn:hover {
-  background-color: #007BFF; /* 鼠标悬停时变为蓝色背景 */
+  background-color: #cbe4ff; /* 鼠标悬停时变为蓝色背景 */
   transform: scale(1.05);  /* 稍微放大 */
 }
 
