@@ -139,13 +139,13 @@ const handleReservation = async () => {
     if (delay > 0) {
       timer.value = setTimeout(() => {
         showMeetingStartNotification(meetingData);
-      }, delay);
+      }, delay);      
+    // 提示用户预约成功
+    ElMessage.success('会议预约成功！');
+
     } else {
       showSnackBar('会议开始时间已过，请重新选择时间');
     }
-
-    // 提示用户预约成功
-    ElMessage.success('会议预约成功！');
 
     // 清空表单
     config.sessionName = '';
