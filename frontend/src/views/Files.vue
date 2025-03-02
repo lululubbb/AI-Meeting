@@ -97,7 +97,7 @@ const store = useStore();
 const uploadRef = ref(null);
 
 // 文件上传相关
-const uploadUrl = 'http://localhost:5000/api/upload'; // 后端上传接口
+const uploadUrl = 'http://localhost:4000/api/upload'; // 后端上传接口
 const fileList = ref([]);
 const uploadedFiles = ref([]);
 const isUploading = ref(false);
