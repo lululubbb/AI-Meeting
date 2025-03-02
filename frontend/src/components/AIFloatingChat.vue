@@ -64,6 +64,7 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router'; // 引入 useRouter
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import FirestoreService from '../services/FirestoreService.js';
 
 export default {
   name: 'AIFloatingChat',
@@ -88,159 +89,163 @@ export default {
     },
     // 发送消息到AI
     async sendMessage() {
-      const message = this.userInput.trim();
-      if (message === '') return;
+  const message = this.userInput.trim();
+  if (message === '') return;
 
-      // 添加用户消息
-      this.messages.push({
-        from: 'user',
-        text: message,
-        renderedText: this.escapeHTML(message),
-      });
-      this.userInput = '';
-      this.scrollToBottom();
+  this.messages.push({
+    from: 'user',
+    text: message,
+    renderedText: this.escapeHTML(message),
+  });
+  this.userInput = '';
+  this.scrollToBottom();
 
-      try {
-        this.isLoading = true;
-        console.log('发送消息到AI:', message); // 调试信息
+  try {
+    this.isLoading = true;
+    console.log('发送消息到AI:', message);
 
-        // 准备请求数据
-        const requestData = {
-          model: 'lite', // 指定请求的模型
-          user: this.getUserEmail(), // 可选：添加用户唯一ID
-          messages: [
-            {
-              role: 'system',
-              content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）并确保指令与其他回复分开发送：
-              {
-                "action": "create_meeting",
-                "meetingName": "会议名称",
-                "password": "密码"
+    const requestData = {
+      model: 'lite',
+      user: this.getUserEmail(),
+      messages: [
+        {
+          role: 'system',
+          content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）并确保指令与其他回复分开发送：
+          {
+            "action": "create_meeting",
+            "meetingName": "会议名称",
+            "password": "密码"
+          }
+          如果不是创建会议的请求，请正常回复。`,
+        },
+        {
+          role: 'user',
+          content: message,
+        },
+      ],
+      stream: true,
+    };
+
+    const response = await fetch('/api/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer 123456',
+      },
+      body: JSON.stringify(requestData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+    let aiMessage = '';
+
+    // 添加一个新的AI消息，用于动态更新 *普通* 文本
+    this.messages.push({ from: 'ai', text: '', renderedText: '' });
+    const aiMessageIndex = this.messages.length - 1;
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const dataStr = line.replace(/^data:/, '').trim();
+            if (dataStr === '[DONE]') {
+              done = true;
+              break;
+            }
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.code !== 0) {
+                // 处理API错误 (同之前)
+                this.messages[aiMessageIndex].text += '抱歉，我无法回答你的问题。';
+                this.messages[aiMessageIndex].renderedText = this.escapeHTML(
+                  this.messages[aiMessageIndex].text
+                );
+                this.scrollToBottom();
+                continue;
               }
-              如果不是创建会议的请求，请正常回复。`,
-            },
-            {
-              role: 'user',
-              content: message,
-            },
-          ],
-          stream: true, // 设置为流式请求
-        };
 
-        // 发送流式请求 using fetch
-        const response = await fetch('/api/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer 123456', // 替换为实际的APIPassword
-          },
-          body: JSON.stringify(requestData),
-        });
+              if (data.choices && data.choices.length > 0) {
+                const delta = data.choices[0].delta;
+                if (delta && delta.content) {
+                  // *关键修改*:  只累加到 aiMessage，*不* 在这里解析 JSON
+                  aiMessage += delta.content;
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let done = false;
-        let aiMessage = '';
-
-        // 添加一个新的AI消息，用于动态更新
-        this.messages.push({ from: 'ai', text: '', renderedText: '' });
-        const aiMessageIndex = this.messages.length - 1;
-
-        while (!done) {
-          const { value, done: doneReading } = await reader.read();
-          done = doneReading;
-          if (value) {
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n').filter((line) => line.trim() !== '');
-            for (const line of lines) {
-              if (line.startsWith('data:')) {
-                const dataStr = line.replace(/^data:/, '').trim();
-                if (dataStr === '[DONE]') {
-                  done = true;
-                  break;
-                }
-                try {
-                  const data = JSON.parse(dataStr);
-                  if (data.code !== 0) {
-                    // 处理API错误
-                    this.messages[aiMessageIndex].text += '抱歉，我无法回答你的问题。';
-                    this.messages[aiMessageIndex].renderedText = this.escapeHTML(
-                      this.messages[aiMessageIndex].text
-                    );
-                    this.scrollToBottom();
-                    continue;
-                  }
-                  if (data.choices && data.choices.length > 0) {
-                    const delta = data.choices[0].delta;
-                    if (delta && delta.content) {
-                      aiMessage += delta.content;
-
-                      // 调节显示速度：每个字符后延迟30毫秒
-                      for (const char of delta.content) {
-                        this.messages[aiMessageIndex].text += char;
-                        this.messages[aiMessageIndex].renderedText = this.renderMarkdown(
-                          this.messages[aiMessageIndex].text
-                        );
-                        this.scrollToBottom();
-                        await this.sleep(30); // 每个字符延迟30毫秒，可根据需求调整
-                      }
+                  // 如果是 *普通* 文本，则逐字渲染
+                  // (这里假设普通文本不会是有效的 JSON)
+                  try {
+                    JSON.parse(aiMessage); // 尝试解析
+                    // 如果是 JSON，则 *不* 逐字渲染 (稍后统一处理)
+                  } catch (e) {
+                    // 如果不是 JSON, 则逐字渲染
+                    for (const char of delta.content) {
+                      this.messages[aiMessageIndex].text += char;
+                      this.messages[aiMessageIndex].renderedText = this.renderMarkdown(
+                        this.messages[aiMessageIndex].text
+                      );
+                      this.scrollToBottom();
+                      await this.sleep(30);
                     }
-                    // 处理指令（在流式模式下，指令通常作为完整消息发送）
-                    // 这里暂时不处理，因为指令可能在多个delta中分开发送
                   }
-                } catch (err) {
-                  console.error('解析数据失败:', err);
                 }
               }
+            } catch (err) {
+              console.error('解析数据失败:', err);
             }
           }
         }
-
-        // 完成流式响应后的最终更新（尝试解析为指令）
-        if (aiMessage.trim() !== '') {
-          // 尝试解析AI消息为JSON
-          let isCommand = false;
-          let commandData = null;
-          try {
-            commandData = JSON.parse(aiMessage);
-            if (commandData.action === 'create_meeting') {
-              isCommand = true;
-            }
-          } catch (jsonError) {
-            // 不是JSON格式，正常回复
-          }
-
-          if (isCommand) {
-            // 处理创建会议指令
-            this.isCreatingMeeting = true;
-            // 更新AI消息显示为正在创建会议
-            this.messages[aiMessageIndex].text = '正在创建会议...';
-            this.messages[aiMessageIndex].renderedText = this.escapeHTML(
-              this.messages[aiMessageIndex].text
-            );
-            this.scrollToBottom();
-
-            await this.handleAIDirectives(commandData);
-
-            this.isCreatingMeeting = false;
-          }
-        }
-      } catch (error) {
-        console.error('AI聊天失败:', error.message);
-        this.messages.push({
-          from: 'ai',
-          text: '抱歉，我无法回答你的问题。',
-          renderedText: this.escapeHTML('抱歉，我无法回答你的问题。'),
-        });
-        this.scrollToBottom();
-      } finally {
-        this.isLoading = false;
       }
-    },  // 监听预约的会议
+    } // end while
+
+    // *关键修改*:  所有数据接收完毕后，再解析 JSON
+    if (aiMessage.trim() !== '') {
+      try {
+        const commandData = JSON.parse(aiMessage);
+        if (commandData.action === 'create_meeting') {
+          // 处理创建会议指令
+          this.isCreatingMeeting = true; // 设置标志
+          this.messages[aiMessageIndex].text = '正在创建会议...'; // 显示提示
+          this.messages[aiMessageIndex].renderedText = this.escapeHTML(this.messages[aiMessageIndex].text);
+          this.scrollToBottom();
+
+          await this.handleAIDirectives(commandData); // 调用
+
+          this.isCreatingMeeting = false; // 清除标志
+        } else {
+          // 如果不是创建会议指令,直接显示
+          this.messages[aiMessageIndex].text = aiMessage;
+          this.messages[aiMessageIndex].renderedText = this.renderMarkdown(aiMessage);
+          this.scrollToBottom();
+        }
+      } catch (jsonError) {
+          // 如果 aiMessage *不是* JSON (例如是普通文本)
+          //  那么直接渲染
+        this.messages[aiMessageIndex].text = aiMessage;
+        this.messages[aiMessageIndex].renderedText = this.renderMarkdown(aiMessage);
+        this.scrollToBottom();
+
+      }
+    } // end if
+  } catch (error) {
+    console.error('AI聊天失败:', error.message);
+    this.messages.push({
+      from: 'ai',
+      text: '抱歉，我无法回答你的问题。',
+      renderedText: this.escapeHTML('抱歉，我无法回答你的问题。'),
+    });
+    this.scrollToBottom();
+  } finally {
+    this.isLoading = false;
+  }
+},  // 监听预约的会议
     listenToScheduledMeetings() {
       const user = this.$store.getters.getUser;
       if (!user) {
@@ -332,39 +337,59 @@ export default {
       const userName = this.getUserName();
 
       try {
-        // 调用后端API获取JWT
-        console.log('请求后端API获取JWT...');
-        const jwtResponse = await axios.post('/api/zoom-jwt', {
-          sessionName: meetingName,
-          role: 1, // 主持人角色
-          userIdentity: userEmail, // 使用用户邮箱作为身份标识
+      // 1. *先* 创建 Firestore 会议文档
+      const user = this.$store.getters.getUser;
+      if (!user) {
+        showSnackBar('用户未登录');
+        return;
+      }
+
+      const meetingId = await FirestoreService.addToMeetingHistory(
+        user.uid,
+        meetingName,
+        {
+          status: 'ongoing',
+          hostId: user.uid, // 创建者即主持人
+          hostName: userName, // 使用邮箱或用户名
           sessionPasscode: meetingPassword,
+          startTime: new Date(),
+        }
+      );
+
+      // 2. 调用后端API获取JWT
+      console.log('请求后端API获取JWT...');
+      const jwtResponse = await axios.post('/api/zoom-jwt', {
+        sessionName: meetingName,
+        role: 1, // 主持人角色
+        userIdentity: userEmail, // 使用用户邮箱作为身份标识
+        sessionPasscode: meetingPassword,
+      });
+
+      console.log('后端JWT响应:', jwtResponse.data);
+
+      const jwt = jwtResponse.data.signature;
+      if (jwt) {
+        // 3. 导航到 VideoCall 页面，并传递 meetingId
+        await this.$router.push({
+          name: 'VideoCall',
+          query: {
+            mode: 'create',
+            sessionName: meetingName,
+            userName: userName,
+            sessionPasscode: meetingPassword,
+            videoSDKJWT: jwt,
+            role: 1,
+            meetingId: meetingId, // *重要* 传递 meetingId
+            hostId: user.uid,      // *重要* 传递 hostId
+          },
         });
 
-        console.log('后端JWT响应:', jwtResponse.data); // 调试信息
-
-        const jwt = jwtResponse.data.signature;
-        if (jwt) {
-          // 导航到 VideoCall 页面并传递参数，包括 role
-          await this.$router.push({
-            name: 'VideoCall',
-            query: {
-              mode: 'create',
-              sessionName: meetingName,
-              userName: userName, // 现在是用户邮箱
-              sessionPasscode: meetingPassword,
-              videoSDKJWT: jwt,
-              role: 1, // 添加 role 参数
-            },
-          });
-
-          showSnackBar(`已创建会议 "${meetingName}" 并加入`);
-          // 关闭聊天窗口
-          this.isChatOpen = false;
-        } else {
-          showSnackBar('获取 JWT 失败');
-        }
-      } catch (error) {
+        showSnackBar(`已创建会议 "${meetingName}" 并加入`);
+        this.isChatOpen = false;
+      } else {
+        showSnackBar('获取 JWT 失败');
+      }
+    } catch (error) {
         console.error(
           '获取 JWT 失败:',
           error.response ? error.response.data : error.message

@@ -462,7 +462,12 @@ async function checkRouteParams() {
       config.hostId = hostId;
       config.meetingId = meetingId;
     }
-
+    
+    // 如果是创建会议，从路由参数中获取 meetingId 和 hostId
+    if (mode.value === 'create') {
+       config.meetingId = meetingId; // 从路由参数中获取
+       config.hostId = hostId;       // 从路由参数中获取
+    }
     autoJoin.value = true;
     await nextTick();
     await joinSession();
@@ -484,21 +489,22 @@ const handleSession = async () => {
     isJoining.value = true;
     let jwt;
     if (mode.value === 'create') {
+        //创建jwt
       jwt = await ZoomVideoService.getVideoSDKJWT(
-        config.sessionName,
-        1,
-        config.userName,
+	    config.sessionName,
+	    1,
+	    config.userName,
         config.sessionPasscode,
         config.expirationSeconds
       );
     } else {
       jwt = await ZoomVideoService.getVideoSDKJWT(
-        config.sessionName,
-        parseInt(role.value, 10),
-        config.userName,
-        config.sessionPasscode,
-        config.expirationSeconds
-      );
+            config.sessionName,
+            parseInt(role.value, 10),
+            config.userName,
+	        config.sessionPasscode,
+	        config.expirationSeconds
+          );
     }
 
     if (!jwt) {
@@ -508,35 +514,6 @@ const handleSession = async () => {
     }
 
     config.videoSDKJWT = jwt;
-    const user = store.getters.getUser;
-
-    // 仅在创建会议时，添加会议记录.
-    if (user && mode.value === 'create') {
-      try {
-        // 添加一条会议历史记录(ongoing)
-        const meetingId = await FirestoreService.addToMeetingHistory(
-          user.uid,  // 创建者 ID
-          config.sessionName,
-          {
-            status: 'ongoing',
-            hostId: user.uid,           // 创建者ID
-            hostName:config.userName,
-            sessionPasscode: config.sessionPasscode,
-            startTime: new Date(),
-          }
-        );
-        config.meetingId = meetingId; // 保存到 config，后续 update 用到
-        config.hostId = user.uid;// 新增：创建会议时，hostId 就是当前用户
-
-        console.log('已添加会议历史记录，ID:', meetingId);
-      } catch (error) {
-        console.error('添加会议历史记录失败:', error);
-        showSnackBar('添加会议历史记录失败: ' + error.message);
-        //isJoining.value = false; //  创建失败，不继续
-        //return;
-      }
-    }
-
     autoJoin.value = true;
     await nextTick();
     await joinSession();
@@ -823,29 +800,30 @@ const joinSession = async () => {
         messagesSent: 0,
       });
 
-       // 所有用户（包括主持人和参与者）都在加入时更新自己的会议记录
-       const user = store.getters.getUser;
-      if (user) {
-        try {
-           // 重要：现在所有用户都在加入会议时尝试更新/创建会议历史（包括主持人）
-          let meetingData = {
-            status: 'ongoing',
-            hostId: config.hostId,    //  hostId
-            hostName: config.userName, // 注意：这里假设加入会议时填写的 userName 就是 hostName.  如果是主持人,之前创建时已经保存.
-            sessionName: config.sessionName,
-            sessionPasscode: config.sessionPasscode,
-            startTime: new Date(),
-            meetingId: config.meetingId
-             // participants, chatMessages 等字段稍后在各自的事件中更新
-          };
-          // 更新或创建会议信息
-          await FirestoreService.updateOrCreateMeetingHistory(user.uid, meetingData.meetingId, meetingData);
+      const user = store.getters.getUser;
+    if(user){
+        try{
+            // 重要：现在所有用户都在加入会议时尝试更新/创建会议历史
+            let meetingData = {
+                status: 'ongoing',
+                hostId: config.hostId,  // 使用 config.hostId
+                hostName: config.userName, // 假设加入会议时填写的 userName 就是 hostName
+                sessionName: config.sessionName,
+                sessionPasscode: config.sessionPasscode,
+                startTime: new Date(),
+                meetingId: config.meetingId //把config.meetingId保存进去。
+               // participants, chatMessages 等字段稍后在各自的事件中更新
+            };
+            // *关键修改*：更新或创建会议信息，传入 meetingId
+            await FirestoreService.updateOrCreateMeetingHistory(user.uid, config.meetingId, meetingData);
 
-        } catch (err) {
-          console.error('更新/创建会议信息失败(join):', err);
-          showSnackBar('更新/创建会议信息失败: ' + err.message);
+
         }
-      }
+        catch(err){
+            console.error('更新/创建会议信息失败(join):', err);
+            showSnackBar('更新/创建会议信息失败: ' + err.message);
+        }
+    }
     }
 
     // 订阅事件
@@ -1922,7 +1900,7 @@ function subscribeEvents() {
   /**
    * 文件下载进度事件
    */
-   client.on('chat-file-download-progress', (payload) => {
+    client.on('chat-file-download-progress', (payload) => {
     const { fileName, progress, status, id, fileBlob } = payload;
     // 找到对应的消息
     const msgObj = chatMessagesList.value.find((m) => m.msgId === id);
