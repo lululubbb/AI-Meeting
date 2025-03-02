@@ -44,9 +44,6 @@ class FirestoreService {
     try {
       const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
        await updateDoc(meetingDocRef, data);
-      // await updateDoc(meetingDocRef, {
-      //   status: status
-      // });
       console.log('会议历史记录已更新，ID:', meetingId);
     } catch (error) {
       console.error('更新会议历史记录失败:', error);
@@ -125,7 +122,7 @@ class FirestoreService {
   // 添加/更新会议历史记录
     async updateOrCreateMeetingHistory(userId, meetingId, data) {
      try {
-        const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+        const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);  // *关键*: 构建正确的文档路径
         const meetingDoc = await getDoc(meetingDocRef);
 
       if (meetingDoc.exists()) {
@@ -140,7 +137,34 @@ class FirestoreService {
         console.log('会议历史记录已更新，ID:', meetingId);
       } else {
         // 创建新记录, 这里是关键修改
-        await setDoc(meetingDocRef,{  createdAt: new Date(), ...data });
+        await setDoc(meetingDocRef,{  createdAt: new Date(), ...data }); //使用setDoc()
+
+        console.log('会议历史记录已创建，ID:', meetingId);
+        }
+        return meetingId;
+     }
+     catch(err){
+          console.error('添加/更新会议历史记录失败:', err);
+      throw err;
+     }
+    }    async updateOrCreateMeetingHistory(userId, meetingId, data) {
+     try {
+        const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);  // *关键*: 构建正确的文档路径
+        const meetingDoc = await getDoc(meetingDocRef);
+
+      if (meetingDoc.exists()) {
+          // 更新现有记录
+        const cleanedData = {};
+        for (const key in data) {
+          if (data.hasOwnProperty(key) && data[key] !== undefined) {
+            cleanedData[key] = data[key];
+          }
+        }
+        await updateDoc(meetingDocRef, cleanedData);
+        console.log('会议历史记录已更新，ID:', meetingId);
+      } else {
+        // 创建新记录, 这里是关键修改
+        await setDoc(meetingDocRef,{  createdAt: new Date(), ...data }); //使用setDoc()
 
         console.log('会议历史记录已创建，ID:', meetingId);
         }
