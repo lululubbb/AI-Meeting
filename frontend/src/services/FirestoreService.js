@@ -176,49 +176,6 @@ class FirestoreService {
      }
     }
 
-    // 新增分页查询方法
-    async getPaginatedMeetings(userId, page = 1, pageSize = 10, search = '') {
-      if (!userId) throw new Error('用户未登录');
-    
-      try {
-        let q = query(
-          collection(db, 'users', userId, 'meetings'),
-          orderBy('createdAt', 'desc'),
-          limit(pageSize)
-        );
-    
-        if (page > 1) {
-          const lastDoc = await this.getLastDoc(userId, page, pageSize);
-          q = query(q, startAfter(lastDoc));
-        }
-    
-        if (search) {
-          q = query(q, where('sessionName', '>=', search));
-        }
-        console.log('查询参数:', { userId, page, pageSize, search }); // 调试参数
-        // ...原有逻辑
-        console.log('查询结果:', querySnapshot.docs.map(d => d.data())); // 调试返回数据
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({
-          meetingId: doc.id,
-          ...doc.data()
-        }));
-      } catch (error) {
-        console.error('分页查询失败:', error);
-        throw error;
-      }
-    }
-    
-    async getLastDoc(userId, page, pageSize) {
-      const q = query(
-        collection(db, 'users', userId, 'meetings'),
-        orderBy('createdAt', 'desc'),
-        limit((page - 1) * pageSize)
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs[querySnapshot.docs.length - 1];
-    }
-
 }
 
 export default new FirestoreService();

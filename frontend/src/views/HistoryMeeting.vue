@@ -56,7 +56,10 @@
     <!-- 会议详情 -->
     <div v-if="showModal" class="meeting-detail-modal">
       <div id="meetingDetails">
-        <span class="closeBtn" @click="closeModal">×</span>
+        <!-- <span class="closeBtn" @click="closeModal">×</span> -->
+        <button @click="closeModal" class="close-btn" aria-label="关闭">
+          <img src="@/assets/exit.png" alt="退出" />
+        </button>
         <h3>📋 会议详情</h3>
         <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
@@ -66,11 +69,12 @@
         
         <!-- 只在当前用户是会议的host时显示以下内容 -->
         <div v-if="selectedMeeting.hostId === getUserId()" class="meeting-actions">   <!-- 也要修改 -->
-                    <p><strong>👥 参会人员:</strong></p>
-          <button @click="downloadParticipantsData" class="download-btn" aria-label="下载数据">
+                    <p><strong>📈 参会数据汇总:</strong></p>
+          <button @click="downloadParticipantsAllData" class="download-btn" aria-label="下载数据">
             <img src="@/assets/download.png" alt="下载" />
           </button>
         </div>
+
 
         <!-- 添加四个功能按钮 -->
         <div class="function-buttons">
@@ -145,7 +149,12 @@
           <div v-if="selectedMeeting.status === 'finished'">
             <!--          <p>📈 参会统计内容...</p>-->
             <!-- 参会者列表 -->
-            <h3>参会者列表</h3>
+            <div class="chat-record-container">
+              <h3>参会者列表</h3>
+              <button @click="downloadParticipantsData" class="download-btn" aria-label="下载聊天记录">
+                <img src="@/assets/download.png" alt="下载" />
+              </button>
+            </div>
             <div v-if="selectedMeeting.participants && selectedMeeting.participants.length > 0">
                 <!-- 增加一个外层 div，用于实现水平滚动 -->
                 <div class="table-scrollable-wrapper">
@@ -160,12 +169,12 @@
                                 <th>视频</th>
                                 <th>音频</th>
                                 <th>屏幕共享</th>
-                                <!-- 新增列 -->
                                 <th>消息数</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="participant in selectedMeeting.participants" :key="participant.userId">
+                            <!-- 使用计算属性 limitedParticipants 截取前 5 条数据 -->
+                            <tr v-for="participant in limitedParticipants" :key="participant.userId">
                                 <td>{{ participant.userName }}</td>
                                 <td>{{ participant.role }}</td>
                                 <td>{{ formatDate(participant.joinTime) }}</td>
@@ -202,18 +211,59 @@
                             </tr>
                         </tbody>
                     </table>
-                 </div>
+                  </div>
+                    <!-- 在参会者列表的表格表头部分添加新列 -->
+            <div class="chat-record-container">
+              <button @click="showExplanationModal" class="download-btn" aria-label="显示评分说明">
+                <img src="@/assets/explanati.png" alt="说明" />
+            </button>
+
+              <h3>参会者参与度分析</h3>
+              <button @click="downloadParticipationAnalysis" class="download-btn" aria-label="分析参与度">
+                <img src="@/assets/download.png" alt="下载" />
+              </button>              
             </div>
+
+            <div v-if="participationAnalysisResults.length > 0">
+            <div class="table-scrollable-wrapper">
+            <table class="participants-table">
+          <thead>
+            <tr>
+              <th>用户名</th>
+              <th>角色</th>
+              <th>行为参与度</th>
+              <th>认知参与度</th>
+              <th>综合参与度</th>
+            </tr>
+          </thead>
+          <tbody>
+<!-- 使用计算属性 limitedAnalysisResults 截取前 5 条数据 -->
+<tr v-for="result in limitedAnalysisResults" :key="result.userId">
+              <td>{{ result.userName }}</td>
+              <td>{{ result.role }}</td>
+              <td>{{ result.behaviorScore.toFixed(2) }}</td>
+              <td>{{ result.cognitiveScore.toFixed(2) }}</td>
+              <td>{{ result.participationScore.toFixed(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      </div> 
+      <div v-else>
+    <p>📥 加载中...</p>
+  </div>
+    </div>
               <div v-else>
-                <p>没有参会者数据。</p>
+                <p>暂无参会者数据</p>
               </div>
 
             <!-- 聊天记录,  显示/下载 按钮 -->
-            <h3>聊天记录</h3>
-            <button @click="downloadChatData" class="download-btn" aria-label="下载聊天记录">
-              <img src="@/assets/download.png" alt="下载" />
-            </button>
-
+            <div class="chat-record-container">
+              <h3>聊天记录</h3>
+              <button @click="downloadChatData" class="download-btn" aria-label="下载聊天记录">
+                <img src="@/assets/download.png" alt="下载" />
+              </button>
+            </div>
             <div v-if="selectedMeeting.chatMessages && selectedMeeting.chatMessages.length > 0">
 
               <div v-for="(msg, index) in selectedMeeting.chatMessages" :key="index" class="chat-message">
@@ -230,16 +280,49 @@
               </div>
             </div>
             <div v-else>
-                <p>没有聊天记录。</p>
+                <p>暂无聊天记录</p>
             </div>
 
           </div>
           <div v-else class="info-message">
-            🕒 会议未结束，无法查看参会统计。
+            🕒 会议未结束，无法查看参会统计
           </div>
         </div>
       </div>
     </div>
+
+    
+    <div v-if="showExplanation" class="explanation-modal">
+    <div class="modal-content">
+      <button @click="hideExplanationModal" class="close-btn" aria-label="关闭">
+          <img src="@/assets/exit.png" alt="退出" />
+        </button>
+      <h4>参会者参与度评分说明</h4>
+      <p><strong>行为参与度（Behavior Engagement, BE）</strong></p>
+      <p>行为参与度主要衡量参会者在会议中的实际行为表现，综合考虑了参与频度、参与广度和参与深度三个方面：</p>
+      <ul>
+        <li><strong>参与频度（BE<sub>f</sub>）</strong>：计算方式为视频开启次数、音频开启次数、屏幕共享次数和消息发送数量之和，反映了参会者在会议中主动参与的频繁程度。</li>
+        <li><strong>参与广度（BE<sub>b</sub>）</strong>：计算方式为视频开启时长、音频开启时长和屏幕共享时长之和与会议总时长的比值，体现了参会者在会议中参与活动的时间占比。</li>
+        <li><strong>参与深度（BE<sub>d</sub>）</strong>：计算方式为（视频开启次数 + 音频开启次数 + 屏幕共享次数 + 消息发送数量）除以 6，衡量了参会者在不同参与方式上的均衡程度。</li>
+      </ul>
+      <p>综合行为参与度得分（BE）是通过对参与频度、参与广度和参与深度进行加权平均得到的，权重分别为 0.4、0.3 和 0.3。</p>
+      <p><strong>认知参与度（Cognitive Engagement, CE）</strong></p>
+      <p>认知参与度主要评估参会者的发言内容与会议主题的相关性，使用 Sentence - BERT 模型计算：</p>
+      <ul>
+        <li>首先，使用预训练的 Sentence - BERT 模型将参会者的消息和会议主题关键词编码为向量。</li>
+        <li>然后，计算消息向量与主题关键词向量的余弦相似度。</li>
+        <li>最后，取所有相似度的平均值并转换为百分制。</li>
+      </ul>
+      <p>反映了参会者在会议中对主题的理解和思考程度。</p>
+      <p><strong>综合参与度（Participation Engagement, PE）</strong></p>
+      <p>综合参与度是行为参与度和认知参与度的加权平均值，权重分别为 0.6 和 0.4：</p>
+      <ul>
+        <li>计算方式：PE = 0.6 * BE + 0.4 * CE</li>
+        <li>意义：全面评估了参会者在会议中的整体参与情况。</li>
+      </ul>
+    </div>
+  </div>
+
   </div>
 </template>
 
@@ -252,6 +335,7 @@
     import { showSnackBar } from '../utils/utils.js';
     import { generateSummaryAPI } from '../api/chat.js';
     import axios from 'axios'; // 导入 Axios
+    import * as XLSX from 'xlsx';
 
   const isLoadingSummary = ref(false);
   const summary = ref('');
@@ -266,6 +350,18 @@
   const currentPage = ref(1);
   const pageSize = ref(10);
   const loading = ref(false);
+
+  const showExplanation = ref(false);
+
+const showExplanationModal = () => {
+  showExplanation.value = true;
+};
+
+const hideExplanationModal = () => {
+  showExplanation.value = false;
+};
+
+
 // 计算总页数
 const totalPages = computed(() => {
   return Math.ceil(allFilteredMeetings.value.length / pageSize.value);
@@ -400,7 +496,7 @@ const nextPage = () => {
   const getUserEmail = () => {
       const user = store.getters.getUser;
       // console.log('当前用户ID:', user.uid);
-      return user?.email || 'unknown@domain.com';  // 修改这里, 如果 user 不存在返回
+      return user?.email || 'unknown@domain.com'
   };
 // 获取用户 ID
 const getUserId = () => {
@@ -422,10 +518,13 @@ const getUserId = () => {
   const meetingTranscriptions = ref('');
   const showCloseButton = ref(false);
 
+// 监听 route.path 变化
+watch(() => route.path, (newPath) => {
+  showCloseButton.value = newPath === '/history';
+});
 // 监听搜索查询变化，重置状态
 watch(searchQuery, () => {
   currentPage.value = 1;
-  // noMoreData.value = false;  // 由于已经改为页码导航，这一行可以去掉
 });
 
 // 格式化日期
@@ -467,6 +566,15 @@ const formatDate = (timestamp) => {
   // 显示会议详情
   const showMeetingDetails = (meeting) => {
     selectedMeeting.value = meeting;
+    console.log('All properties of selected meeting:', Object.keys(meeting)); 
+    console.log('Selected meeting:', meeting); // 打印会议对象
+    console.log('Selected meeting participants:', meeting.participants); // 打印参会者数组
+    console.log('Selected meeting:', meeting);
+  if (meeting.host) {
+    console.log('Host data:', meeting.host);
+  } else {
+    console.log('Host data is missing or empty.');
+  }
     showModal.value = true;
       activeSection.value = ''; //  重置 activeSection
   };
@@ -479,7 +587,7 @@ const formatDate = (timestamp) => {
      meetingTranscriptions.value = ''; //重置
   };
 
-    // 新增函数：下载参会者数据为 CSV
+//     // 新增函数：下载参会者数据为 CSV
     const downloadParticipantsData = () => {
         if (!selectedMeeting.value || !selectedMeeting.value.participants) {
             showSnackBar('没有参会者数据可供下载。');
@@ -531,24 +639,24 @@ const formatDate = (timestamp) => {
   URL.revokeObjectURL(link.href);
 };
 
-  // 下载数据
-  const downloadData = () => {
-      if(!selectedMeeting.value) return;
-    const data = {
-      meetingId: selectedMeeting.value.meetingId,
-      participants: selectedMeeting.value.participants,
-    //   participationRate: selectedMeeting.value.participationRate, // 如有
-      transcriptions: selectedMeeting.value.transcriptions,
-      chatMessages: selectedMeeting.value.chatMessages,
-    };
+  // // 下载数据
+  // const downloadData = () => {
+  //     if(!selectedMeeting.value) return;
+  //   const data = {
+  //     meetingId: selectedMeeting.value.meetingId,
+  //     participants: selectedMeeting.value.participants,
+  //   //   participationRate: selectedMeeting.value.participationRate, // 如有
+  //     transcriptions: selectedMeeting.value.transcriptions,
+  //     chatMessages: selectedMeeting.value.chatMessages,
+  //   };
 
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${selectedMeeting.value.sessionName}-data.json`;
-    link.click();
-  };
+  //   const json = JSON.stringify(data, null, 2);
+  //   const blob = new Blob([json], { type: 'application/json' });
+  //   const link = document.createElement('a');
+  //   link.href = URL.createObjectURL(blob);
+  //   link.download = `${selectedMeeting.value.sessionName}-data.json`;
+  //   link.click();
+  // };
 
   // 格式化日期和时间（精确到秒）
 const formatDateTimeForCSV = (timestamp) => {
@@ -657,10 +765,14 @@ const formatDateTimeForCSV = (timestamp) => {
           if (section === 'sentiment') {
             await fetchSentimentImages();
         }
+        if (section === 'statistics') {
+        await analyzeParticipation();
+    }
       } else {
         ElMessage.warning("请等会议结束后再进行查看");
       }
 };
+
 
   // 生命周期钩子
     onMounted(() => {
@@ -707,23 +819,7 @@ const visibleMeetings = computed(() => {
   return allFilteredMeetings.value.slice(startIndex, endIndex);
 });
 
-// 加载更多会议记录
-const loadMore = async () => {
-  loading.value = true;
-  // 模拟加载延迟
-  await new Promise(resolve => setTimeout(resolve, 500));
-  currentPage.value++;
-  if (visibleMeetings.value.length >= allFilteredMeetings.value.length) {
-    noMoreData.value = true;
-  }
-  loading.value = false;
-};
 
-
-// 在组件卸载时取消监听
-onUnmounted(() => {
-  store.dispatch('unlistenToMeetings'); // 需要在 Vuex 中实现该 action
-});
   // 返回主页
   const goHome = () => {
     showModal.value = false;
@@ -733,7 +829,7 @@ onUnmounted(() => {
     // 函数：发送转录文本到后端并获取情感分析图表
     const fetchSentimentImages = async () => {
       if (!meetingTranscriptions.value) {
-        ElMessage.error('会议转录文本为空，无法进行情感分析。');
+        ElMessage.error('会议转录文本为空，无法进行情感分析');
         return;
       }
 
@@ -894,7 +990,7 @@ const formatDuration = (milliseconds) => {
         result += `${hours}小时 `;
     }
     if(minutes > 0){
-         result += `${minutes}分钟 `;
+        result += `${minutes}分钟 `;
     }
     if(remainingSeconds > 0 || result === ''){ // 如果只有秒, 或者毫秒数为0, 都显示秒
         result += `${remainingSeconds}秒`;
@@ -920,6 +1016,184 @@ const formatDuration = (milliseconds) => {
     const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     return formattedTime;
   };
+  
+// ——————————参会者行为分析——————————————
+// 存储参与度分析结果
+const participationAnalysisResults = ref([]);
+// 存储当前会议的 ID
+const currentMeetingId = ref(null);
+
+// 新增函数：发送参与度分析请求
+const analyzeParticipation = async () => {
+  if (!selectedMeeting.value || !selectedMeeting.value.participants) {
+    showSnackBar('没有参会者数据可供分析');
+    return;
+  }
+    // 检查是否切换了会议，如果是则重置分析结果
+    if (currentMeetingId.value !== selectedMeeting.value.meetingId) {
+    participationAnalysisResults.value = [];
+    currentMeetingId.value = selectedMeeting.value.meetingId;
+  }
+  // 检查是否有会议摘要
+  // if (!summary.value) {
+  //   showSnackBar('暂无会议摘要，无法进行参与度分析。');
+  //   return;
+  // }
+  // 提取每个用户的参与数据
+  const participantsData = selectedMeeting.value.participants.map(p => {
+    const cameraOnTimes = p.hasVideo ? getVideoOnCount(p.hasVideo.timeline) : 0;
+    const cameraDuration = p.hasVideo ? getVideoTotalOnTime(p.hasVideo.timeline) : '0秒';
+    const audioOnTimes = p.isAudioOn ? getAudioOnCount(p.isAudioOn.timeline) : 0;
+    const audioDuration = p.isAudioOn ? getAudioTotalOnTime(p.isAudioOn.timeline) : '0秒';
+    const shareOnTimes = p.isSharing ? getSharingCounts(p.isSharing.timeline) : 0;
+    const shareDuration = p.isSharing ? getSharingTotalTime(p.isSharing.timeline) : '0秒';
+    const messageCount = p.messagesSent || 0;
+    const totalDuration = calculateDuration(selectedMeeting.value.startTime, selectedMeeting.value.endTime);
+
+    // 提取用户的聊天消息
+  const messages = selectedMeeting.value.chatMessages
+    .filter(msg => msg.senderId === p.userId)
+    .map(msg => msg.message);
+
+    return {
+      userId: p.userId,
+      userName: p.userName,
+      role: p.role,
+      cameraOnTimes,
+      cameraDuration: convertDurationToSeconds(cameraDuration),
+      audioOnTimes,
+      audioDuration: convertDurationToSeconds(audioDuration),
+      shareOnTimes,
+      shareDuration: convertDurationToSeconds(shareDuration),
+      messageCount,
+      totalDuration: convertDurationToSeconds(totalDuration),
+      messages
+    };
+  });
+
+  try {
+    // 发送 POST 请求到后端 API
+    const response = await axios.post('http://localhost:5000/analyze-participation', {
+      participants: participantsData,
+      topicKeywords: summary.value,
+      meetingId: selectedMeeting.value.meetingId 
+    });
+
+  // 检查返回结果的会议 ID 是否与当前会议 ID 一致
+  if (response.data.meetingId === currentMeetingId.value) {
+      // 处理后端返回的结果
+      participationAnalysisResults.value = response.data.results;
+      console.log('参与度分析结果:', participationAnalysisResults.value);
+    } else {
+      console.log('忽略旧会议的分析结果');
+    }
+  } catch (error) {
+    console.error('参与度分析请求失败:', error);
+    showSnackBar('参与度分析请求失败，请稍后重试。');
+  }
+};
+// 监听 selectedMeeting 的变化，当会议切换时重置分析结果
+watch(selectedMeeting, (newMeeting) => {
+  if (newMeeting) {
+    participationAnalysisResults.value = [];
+    currentMeetingId.value = newMeeting.meetingId;
+  }
+});
+// 将时长字符串转换为秒数
+const convertDurationToSeconds = (duration) => {
+  const parts = duration.match(/(\d+)小时 (\d+)分钟 (\d+)秒/);
+  if (parts) {
+    const hours = parseInt(parts[1], 10);
+    const minutes = parseInt(parts[2], 10);
+    const seconds = parseInt(parts[3], 10);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+  return 0;
+};
+ // 计算属性：截取 selectedMeeting.participants 的前 5 条数据
+ const limitedParticipants = computed(() => {
+      return selectedMeeting.value.participants.slice(0, 5);
+    });
+
+    // 计算属性：截取 participationAnalysisResults 的前 5 条数据
+    const limitedAnalysisResults = computed(() => {
+      return participationAnalysisResults.value.slice(0, 5);
+    });
+// 新增函数：下载参与度分析结果为 Excel 文件
+const downloadParticipationAnalysis = () => {
+    console.log('开始下载参与度分析结果');
+    if (participationAnalysisResults.value.length === 0) {
+        console.log('参与度分析结果为空，无法下载');
+        showSnackBar('参与度分析结果未准备好，请等待');
+        return;
+    }
+    const customHeader = ['用户名', '角色', '行为参与度', '认知参与度', '综合参与度'];
+    const data = participationAnalysisResults.value.map(result => [
+        result.userName,
+        result.role,
+        result.behaviorScore.toFixed(2),
+        result.cognitiveScore.toFixed(2),
+        result.participationScore.toFixed(2)
+    ]);
+    console.log('准备生成的 Excel 数据:', data);
+    const worksheet = XLSX.utils.aoa_to_sheet([customHeader, ...data]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '参与度分析结果');
+    try {
+        console.log('开始生成 Excel 文件');
+        XLSX.writeFile(workbook, `${selectedMeeting.value.sessionName}-参与度分析.xlsx`);
+        console.log('Excel 文件生成并下载成功');
+    } catch (error) {
+        console.error('文件生成失败:', error);
+        showSnackBar('文件生成失败，请稍后重试。');
+    }
+};
+// 下载参与者所有信息
+const downloadParticipantsAllData = () => {
+  if (participationAnalysisResults.value.length === 0) {
+    showSnackBar('暂无参与度分析结果可供下载。');
+    return;
+  }
+ // 合并参会者数据和参与度分析结果
+ const combinedData = selectedMeeting.value.participants.map((participant) => {
+    const analysisResult = participationAnalysisResults.value.find((result) => result.userId === participant.userId);
+    const joinTime = participant.joinTime ? formatDate(participant.joinTime) : 'N/A';
+    const leaveTime = participant.leaveTime ? formatDate(participant.leaveTime) : '未离开';
+    const duration = calculateDuration(participant.joinTime, participant.leaveTime);
+    const videoOnCount = participant.hasVideo ? getVideoOnCount(participant.hasVideo.timeline) : 0;
+    const videoTotalOnTime = participant.hasVideo ? getVideoTotalOnTime(participant.hasVideo.timeline) : '0秒';
+    const audioOnCount = participant.isAudioOn ? getAudioOnCount(participant.isAudioOn.timeline) : 0;
+    const audioTotalOnTime = participant.isAudioOn ? getAudioTotalOnTime(participant.isAudioOn.timeline) : '0秒';
+    const sharingCount = participant.isSharing ? getSharingCounts(participant.isSharing.timeline) : 0;
+    const sharingTotalOnTime = participant.isSharing ? getSharingTotalTime(participant.isSharing.timeline) : '0秒';
+    const messagesSent = participant.messagesSent || 0;
+
+    return {
+      用户名: participant.userName,
+      角色: participant.role,
+      加入时间: joinTime,
+      离开时间: leaveTime,
+      参会时长: duration,
+      视频开启次数: videoOnCount,
+      视频总开启时长: videoTotalOnTime,
+      音频开启次数: audioOnCount,
+      音频总开启时长: audioTotalOnTime,
+      屏幕共享次数: sharingCount,
+      屏幕共享总时长: sharingTotalOnTime,
+      消息数: messagesSent,
+      行为参与度: analysisResult ? analysisResult.behaviorScore.toFixed(2) : 'N/A',
+      认知参与度: analysisResult ? analysisResult.cognitiveScore.toFixed(2) : 'N/A',
+      综合参与度: analysisResult ? analysisResult.participationScore.toFixed(2) : 'N/A'
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(combinedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, '参与度分析结果');
+  XLSX.writeFile(workbook, `${selectedMeeting.value.sessionName}-参会数据.xlsx`);
+};
+  
+
 </script>
 
 <style scoped>
@@ -976,13 +1250,12 @@ body {
 }
 
 .close-btn img {
-  width: 30px;
-  height: 30px;
+  width: 25px;
+  height: 25px;
 }
 .close-btn:hover{
     transform: rotate(90deg);
 }
-
 /* 容器样式 */
 .history-container {
   padding: 30px 20px;
@@ -1050,18 +1323,7 @@ body {
   height: 24px;
   pointer-events: none;
 }
-.closeBtn {
-  position: absolute;  /* 设置为绝对定位 */
-  top: 30px;           /* 调整顶部间距 */
-  right:30px;   
-  background: none;
-  border: none;
-  font-size: 30px;
-  cursor: pointer;
-}
-.closeBtn:hover {
-  color: red;
-}
+
 /* 无结果提示 */
 .no-results {
   text-align: center;
@@ -1139,7 +1401,38 @@ body {
   display: inline-block;
   width: 120px; /* 调整标题宽度 */
 }
+.explanation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
 
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 80%;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-content h4 {
+  text-align: center;
+  color: #a962ff;
+  margin-bottom: 20px;
+  margin-top: -10px;
+  font-size: 22px;
+}
+ 
 /* 会议详情弹窗样式 */
 .meeting-detail-modal {
   position: fixed;
@@ -1170,11 +1463,12 @@ body {
 
 }
 
+
 #meetingDetails h3 {
   text-align: center;
   color: #007BFF;
   margin-bottom: 20px;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 #meetingDetails p {
@@ -1201,10 +1495,15 @@ body {
   font-size: 16px;
   color: #333333;
 }
-
+.chat-record-container {
+  display: flex;
+  align-items: center; /* 垂直居中对齐 */
+  justify-content: center; /* 水平居中整体内容 */
+  gap: 10px; /* 设置元素之间的间距 */
+}
 .download-btn {
-  background-color: #ffffff; /* 白色背景 */
-  border: 2px solid #d4d4d4; /* 蓝色边框 */
+  border: none; /* 蓝色边框 */
+  background-color:transparent;
   border-radius: 8px;
   cursor: pointer;
   padding: 8px;
@@ -1342,6 +1641,12 @@ button:disabled {
 .table-scrollable-wrapper {
     overflow-x: auto; /* 允许水平滚动 */
     width: 100%;
+}
+.participants-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .participants-table th,
 .participants-table td {
