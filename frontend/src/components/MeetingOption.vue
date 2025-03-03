@@ -82,7 +82,7 @@ const handleHistoryMeeting = () => {
 
 .icon-wrapper1,
 .icon-wrapper {
-  background-color: #fba1a3; /* 新会议图标背景色 */
+  background-color: #D3D6F5; /* 新会议图标背景色 */
   padding: 15px; /* 增大内边距 */
   border-radius: 50%;
   transition: background-color 0.2s ease; /* 背景色过渡效果 */
@@ -108,11 +108,11 @@ const handleHistoryMeeting = () => {
 
 .option:hover .icon-wrapper1,
 .option:hover .icon-wrapper {
-  background-color: #ff7f83; /* 新会议悬浮背景色 */
+  background-color: #6266DD; /* 新会议悬浮背景色 */
 }
 
 .option:hover .icon-wrapper {
-  background-color: #99cfff; /* 其他按钮悬浮背景色 */
+  background-color: #6266DD; /* 其他按钮悬浮背景色 */
 }
 
 .icon-wrapper1 img,

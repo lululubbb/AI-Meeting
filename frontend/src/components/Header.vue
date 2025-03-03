@@ -9,12 +9,9 @@
         </div>
         <div class="title">
           AI Meeting<br />
-        </div>
-        <div class="search-bar">
-          <i class="fas fa-search search-icon"></i>
-            <!-- 添加 v-model 和 @input 事件 -->
-            <input type="text" placeholder="搜索内容" v-model="searchKeyword" @input="handleSearch" />
-          <div class="search-divider"></div>
+          <div class="subtitle">
+           AI智能会议 打造智能高效的沟通新生态<br />
+          </div>
         </div>
       </div>
 
@@ -34,14 +31,10 @@
 
       <!-- 右侧按钮 -->
       <div class="right-section">
-        <!-- 减号按钮 -->
-        <button class="icon-button">
-          <i class="fa-solid fa-minus"></i>
-        </button>
 
-        <!-- 铃铛按钮 -->
-        <button class="icon-button">
-          <i class="fa-solid fa-bell"></i>
+        <!-- 问号按钮 -->
+        <button class="icon-button"  @click="goToHelpPage">
+          <i class="fa-solid fa-question"></i>
         </button>
 
           <!-- 用户按钮 -->
@@ -51,21 +44,6 @@
         </button>
         <!-- 显示用户信息卡片 -->
         <UserProfileCard v-if="isUserCardVisible" @close="toggleUserCardVisibility" />
-
-        <!-- 问号按钮 -->
-        <button class="icon-button"  @click="goToHelpPage">
-          <i class="fa-solid fa-question"></i>
-        </button>
-
-        <!-- 扩展按钮 -->
-        <button class="icon-button">
-          <i class="fa-solid fa-expand"></i>
-        </button>
-
-        <!-- 关闭按钮 -->
-        <button @click="logout" class="icon-button">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
       </div>
     </div>
   </header>
@@ -84,8 +62,8 @@ const navItems = ref([
   { name: 'Meetings', path: '/meetings', label: '会议', icon: 'fas fa-users' },
   { name: 'Reservations', path: '/reservations', label: '预约', icon: 'fas fa-calendar-alt' },
   { name: 'Files', path: '/files', label: '文件', icon: 'fas fa-file-alt' },
-  { name: 'Chat', path: '/chat', label: '聊天', icon: 'fas fa-comments' },
-  { name: 'More', path: '/more', label: '更多', icon: 'fas fa-ellipsis-h' },
+  // { name: 'Chat', path: '/chat', label: '聊天', icon: 'fas fa-comments' },
+  // { name: 'More', path: '/more', label: '更多', icon: 'fas fa-ellipsis-h' },
 ]);
 
 // 获取 Vuex store 和 Vue Router 实例
@@ -156,8 +134,16 @@ const logout = async () => {
 .title {
   color: #000;
   font-size: 1.5rem; /* 24px */
-  line-height: 1.2;
+  line-height: 1.5;
   font-weight: bold;
+  white-space: pre-line;
+}
+
+.subtitle {
+  color: #000;
+  font-size: 1rem; /* 24px */
+  line-height: 1;
+  font-weight: 400;
   white-space: pre-line;
 }
 
@@ -202,7 +188,7 @@ const logout = async () => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 2rem; /* 59px */
+  gap: 4rem; /* 59px */
   flex-shrink: 1;
 }
 .logo img {

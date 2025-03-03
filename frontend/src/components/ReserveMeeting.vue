@@ -1,24 +1,41 @@
 <template>
   <div class="reserve-container">
-    <div id="reservation-form" v-if="!isJoining">
-      <div v-if="route.name === 'ReserveMeeting'" class="close-btn-wrapper">
+    <div id="reservation-form">
+      <div v-if="route.name === 'ReserveMeeting'" class="close-btn-wrapper">      
         <button @click="goHome" class="close-btn" aria-label="关闭">
           <img src="@/assets/exit.png" alt="退出" />
         </button>
       </div>
       <h1>预约会议</h1>
+      
+      <!-- 会议名称 -->
       <div class="input-group">
         <label for="sessionName">会议名称:</label>
         <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" />
       </div>
+
+      <!-- 用户名 -->
       <div class="input-group">
         <label for="userName">用户名:</label>
         <input id="userName" v-model="config.userName" placeholder="请输入用户名" />
       </div>
+
+      <!-- 会议密码 (可选) -->
       <div class="input-group">
         <label for="sessionPasscode">会议密码 (可选):</label>
         <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" />
       </div>
+
+      <!-- 角色选择 -->
+      <div class="input-group">
+        <label for="role">角色:</label>
+        <select id="role" v-model="role">
+          <option :value="1">主持人</option>
+          <option :value="0">参与者</option>
+        </select>
+      </div>
+
+      <!-- 选择会议开始时间和结束时间 -->
       <div class="input-group">
         <label for="meetingDateRange">选择会议时间:</label>
         <el-date-picker
@@ -28,14 +45,14 @@
           range-separator="至"
           start-placeholder="开始时间"
           end-placeholder="结束时间"
-          align="right"
-        ></el-date-picker>
+          align="right"></el-date-picker>
       </div>
-      <CustomButton :text="'预约会议'" :onPressed="handleReservation" />
-    </div>
-    <div v-else class="meeting-loading">
-      <div class="spinner"></div>
-      <p>正在预约并设置会议，请稍候...</p>
+
+      <div class="button-container">
+        <CustomButton text="复制会议邀请" @click="copyInvitationToClipboard" /> 
+        <!-- 提交按钮 -->
+        <CustomButton :text="'预约会议'" @click="handleReservation" />
+      </div>
     </div>
   </div>
 </template>
@@ -49,6 +66,25 @@ import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 
+//复制预约会议信息
+const generateInvitationContent = () => {
+  const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${config.meetingDateRange}\n会议密码:${config.sessionPasscode}\n请打开“慧议”系统加入会议吧！`;
+  return meetingInfo;
+  };
+
+  const copyInvitationToClipboard = async () => {
+  const invitationContent = generateInvitationContent();
+  try {
+    await navigator.clipboard.writeText(invitationContent);
+    showSnackBar('会议邀请已复制到剪贴板');
+  } catch (err) {
+    showSnackBar('复制失败，请手动复制');
+  }
+  };
+// 获取 AIFloatingChat 组件的引用
+const aiFloatingChat = inject('aiFloatingChat');
+
+// 获取当前路由和路由实例
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
@@ -228,34 +264,16 @@ CustomButton {
   margin-top: 20px;
 }
 
-/* 加载动画样式 */
-.meeting-loading {
-    display: flex;
-    flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--background-color);
-  border-radius: 12px;
-  box-shadow: var(--global-box-shadow);
+.button-container {
+  display: flex;
+  justify-content: center; /* 按钮居中 */
+  gap: 10px; /* 按钮之间的间距 */
+  margin-top: 20px; /* 调整与上方内容的间距 */
 }
 
-
- .spinner {
-  width: 50px;
-  height: 50px;
-  border: 6px solid #ccc;
-  border-top: 6px solid #1a73e8;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-   margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.button-container > * {
+  flex: 1; /* 让按钮宽度均等 */
+  max-width: 200px; /* 限制按钮最大宽度 */
+  text-align: center;
 }
 </style>
