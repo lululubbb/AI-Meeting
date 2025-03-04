@@ -1,6 +1,9 @@
 import { createStore } from 'vuex';
 import { auth, onAuthStateChanged } from '../services/FirebaseService.js';
 import FirestoreService from '../services/FirestoreService.js';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../services/FirebaseService.js';
+import { ElMessage } from 'element-plus'; // 导入 ElMessage
 
 export default createStore({
   state: {
@@ -8,15 +11,16 @@ export default createStore({
       uid: null,
       email: null,
       name: null,
-      status: '在线', // 你的自定义字段
-      workLocation: 'Unknown', // 你的自定义字段
+      status: '在线',
+      workLocation: 'Unknown',
       avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
       mood: '开心',
       todolist: [],
     },
     meetings: [],
-    theme: 'light', // 默认主题为浅色
-    language: 'zh-CN', // 默认语言为中文
+    activities: [], // 新增：活动列表
+    theme: 'light',
+    language: 'zh-CN',
   },
   mutations: {
     SET_USER(state, user) {
@@ -27,33 +31,37 @@ export default createStore({
     },
     SET_THEME(state, theme) {
       state.theme = theme;
-      // 动态设置 body 的 class
       document.body.className = theme;
-      // 动态设置 CSS 变量
-      document.documentElement.setAttribute('data-theme', theme);    },
+      document.documentElement.setAttribute('data-theme', theme);
+    },
     SET_LANGUAGE(state, language) {
       state.language = language;
     },
     SET_TODOLIST(state, todolist) {
       state.user.todolist = todolist;
     },
+    SET_ACTIVITIES(state, activities) { // 新增：设置活动列表
+      state.activities = activities;
+    },
   },
   actions: {
-    // 初始化认证监听
-    initAuth({ commit, dispatch }) {
+     initAuth({ commit, dispatch }) {
       onAuthStateChanged(auth, async (user) => {
         if (user) {
-          // 获取并更新用户信息
           const userData = await FirestoreService.getUserInfo(user.uid);
-          commit('SET_USER', { ...userData, uid: user.uid, email: user.email }); // 合并 Firestore 和 Firebase 用户信息
+            // 获取用户活动
+          const userActivities = await FirestoreService.getUserActivities(user.uid);
+          commit('SET_USER', { ...userData, uid: user.uid, email: user.email });
           await dispatch('listenToMeetings');
+            // 设置活动到 Vuex
+          commit('SET_ACTIVITIES', userActivities);
         } else {
           commit('SET_USER', null);
           commit('SET_MEETINGS', []);
+          commit('SET_ACTIVITIES', []); // 未登录时清空活动
         }
       });
     },
-    // 监听会议历史记录
     listenToMeetings({ commit, state }) {
       if (state.user) {
         FirestoreService.listenToMeetings(state.user.uid, (meetings) => {
@@ -61,19 +69,14 @@ export default createStore({
         });
       }
     },
-    // 更新用户状态
     updateUserStatus({ commit }, status) {
       commit('SET_USER_STATUS', status);
-      // 更新 Firestore 中的状态
       FirestoreService.updateUserStatus(status);
     },
-    // 更新用户工作位置
     updateUserWorkLocation({ commit }, workLocation) {
       commit('SET_USER_WORKLOCATION', workLocation);
-      // 更新 Firestore 中的工作位置
       FirestoreService.updateUserWorkLocation(workLocation);
     },
-    // 处理用户登出
     async signOutUser({ commit }) {
       const AuthService = await import('../services/AuthService.js');
       const res = await AuthService.default.signOutUser();
@@ -82,31 +85,111 @@ export default createStore({
         commit('SET_MEETINGS', []);
       }
     },
-    // 更新待办事项
-    async updateTodoList({ commit, state }, todolist) {
+    async addTodo({ commit, state }, newTodo) {
+      if (!state.user || !state.user.uid) {
+        ElMessage.warning('用户未登录，无法添加待办事项。');
+        return;
+      }
       try {
-        await FirestoreService.updateUserTodoList(state.user.uid, todolist);
-        commit('SET_TODOLIST', todolist); // 提交更新后的待办事项到 store
+        const updatedTodoList = [...(state.user.todolist || []), newTodo];
+        await FirestoreService.addTodoItem(state.user.uid, newTodo);
+        commit('SET_USER', { ...state.user, todolist: updatedTodoList });
+         ElMessage.success('待办事项已添加')
       } catch (error) {
-        console.error('Failed to update to-do list:', error);
-        showSnackBar(error.message);
+        console.error('添加待办事项失败:', error);
+        ElMessage.error('添加待办事项失败：' + error.message);
+
       }
     },
-    // 切换主题
+   async updateTodoItem({ commit, state }, updatedTodo) {
+      if (!state.user || !state.user.uid) {
+         ElMessage.warning('用户未登录，无法更新待办事项。');
+        return;
+      }
+
+      try {
+        const updatedTodoList = state.user.todolist.map(todo =>
+          todo.id === updatedTodo.id ? updatedTodo : todo
+        );
+        await FirestoreService.updateTodoItem(state.user.uid, updatedTodo);
+        commit('SET_USER', { ...state.user, todolist: updatedTodoList });
+        ElMessage.success('待办事项已更新');
+      } catch (error) {
+        console.error('更新待办事项失败:', error);
+        ElMessage.error('更新待办事项失败：' + error.message);
+      }
+    },
+    async deleteTodoItem({ commit, state }, todoId) {
+      if (!state.user || !state.user.uid) {
+        ElMessage.warning('用户未登录，无法删除待办事项。');
+        return;
+      }
+
+      try {
+        const updatedTodoList = state.user.todolist.filter(todo => todo.id !== todoId);
+        await FirestoreService.deleteTodoItem(state.user.uid, todoId);
+        commit('SET_USER', { ...state.user, todolist: updatedTodoList });
+        ElMessage.success('待办事项已删除');
+
+      } catch (error) {
+        console.error('删除待办事项失败:', error);
+        ElMessage.error('删除待办事项失败：' + error.message);
+
+      }
+    },
     changeTheme({ commit }, theme) {
       commit('SET_THEME', theme);
     },
-    // 切换语言
     changeLanguage({ commit }, language) {
       commit('SET_LANGUAGE', language);
     },
+
+    // 新增：从 Firestore 获取用户活动
+    async fetchActivities({ commit, state }) {
+      if (state.user && state.user.uid) {
+        try {
+          const activities = await FirestoreService.getUserActivities(state.user.uid);
+          commit('SET_ACTIVITIES', activities);
+        } catch (error) {
+          console.error('获取活动失败:', error);
+          ElMessage.error('获取活动失败：' + error.message);
+        }
+      }
+    },
+
+    // 新增：将活动添加到 Firestore
+    async addActivity({ commit, state, dispatch }, newActivity) {
+      if (!state.user || !state.user.uid) {
+        ElMessage.warning('用户未登录，无法添加活动。');
+        return;
+      }
+      try {
+        // 确保 newActivity 包含所有必要字段, 且有一个唯一的 ID
+        const activityToAdd = {
+          ...newActivity,
+          id: Date.now().toString(), // 使用时间戳作为 ID
+          userId: state.user.uid,  // 添加 userId 字段
+        };
+
+       await FirestoreService.addActivity(state.user.uid, activityToAdd);
+        //  更新 Vuex store (可选，如果使用实时监听则不需要)
+       dispatch('fetchActivities'); // 重新获取活动列表
+
+        ElMessage.success('活动已添加');
+      } catch (error) {
+        console.error('添加活动失败:', error);
+        ElMessage.error('添加活动失败：' + error.message);
+      }
+    },
+
   },
-  getters: {
+    getters: {
     isLoggedIn: (state) => !!state.user,
     getUser: (state) => state.user,
     getMeetings: (state) => state.meetings,
     getTodoList: (state) => state.user.todolist,
     theme: (state) => state.theme,
     language: (state) => state.language,
+     getActivities: (state) => state.activities, // 新增：获取活动列表
   },
 });

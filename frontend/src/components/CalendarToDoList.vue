@@ -1,324 +1,369 @@
-alendar<template>
-    <div class="calendar-todolist">
-      <!-- FullCalendar -->
-      <FullCalendar 
-        :options="calendarOptions" 
-        :locale="zhCnLocale"
-        @dateClick="handleDateClick" 
-        class="calendar"
-      />
-  
-      <!-- To-Do List Section -->
-      <div class="todo-list">
-        <h2>待办事项</h2>
-        <h3>点击日历上的日期即可新建该天的待办事项噢</h3>
-        <ul>
-          <li v-for="(todo, index) in todos" :key="todo.id">
-            <input type="checkbox" v-model="todo.isCompleted" class="checkbox"/>
-  
-            <div class="todo-text">
-              <div :class="{'completed-text': todo.isCompleted}">{{ todo.text }}</div>
-              <div class="date">{{ todo.date }}</div>
-            </div>
-            <div class="button-container">
-            <!-- 编辑按钮 -->
-            <button @click="editTodo(todo)" class="edit-button">···</button>
-  
-            <!-- 删除按钮 -->
-            <img 
-              src="@/assets/delete.png" 
-              alt="Delete" 
-              class="delete-button" 
-              @click="deleteTodo(todo)" 
-            />
-            </div>
-          </li>
-        </ul>
-      </div>
-  
-      <!-- 对话框 -->
-      <div v-if="isDialogVisible" class="todo-dialog">
-        <div class="dialog-content">
-          <h3>{{ isEditing ? '编辑' : '新建' }}待办事项</h3>
-          <input v-model="newTodoText" placeholder="输入待办事项"  @keyup.enter="saveTodo"/>
-          <button @click="saveTodo">{{ isEditing ? '保存' : '添加' }}</button>
-          <button @click="closeDialog">取消</button>
-        </div>
+<template>
+  <div class="calendar-todolist">
+    <!-- FullCalendar -->
+    <FullCalendar 
+      :options="calendarOptions" 
+      :locale="zhCnLocale"
+      @dateClick="handleDateClick" 
+      class="calendar"
+    />
+
+    <!-- To-Do List Section -->
+    <div class="todo-list">
+      <h2>待办事项</h2>
+      <h3>点击日历上的日期即可新建该天的待办事项噢</h3>
+      <ul>
+        <li v-for="(todo, index) in displayedTodos" :key="todo.id">
+          <input type="checkbox" v-model="todo.isCompleted" class="checkbox" @change="updateTodo(todo)"/>
+
+          <div class="todo-text">
+            <div :class="{'completed-text': todo.isCompleted}">{{ todo.text }}</div>
+            <div class="date">{{ todo.date }}</div>
+          </div>
+          <div class="button-container">
+          <!-- 编辑按钮 -->
+          <button @click="editTodo(todo)" class="edit-button">···</button>
+
+          <!-- 删除按钮 -->
+          <img 
+            src="@/assets/delete.png" 
+            alt="Delete" 
+            class="delete-button" 
+            @click="deleteTodo(todo)" 
+          />
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 对话框 -->
+    <div v-if="isDialogVisible" class="todo-dialog">
+      <div class="dialog-content">
+        <h3>{{ isEditing ? '编辑' : '新建' }}待办事项</h3>
+        <input v-model="newTodoText" placeholder="输入待办事项"  @keyup.enter="saveTodo"/>
+        <button @click="saveTodo">{{ isEditing ? '保存' : '添加' }}</button>
+        <button @click="closeDialog">取消</button>
       </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref, computed } from 'vue';
-  import FullCalendar from '@fullcalendar/vue3';
-  import dayGridPlugin from '@fullcalendar/daygrid';
-  import interactionPlugin from '@fullcalendar/interaction';
-  import zhCnLocale from '@fullcalendar/core/locales/zh-cn';
-  import { useStore } from 'vuex';
-  
-  const store = useStore();
-  
-  // 从 Vuex 中获取当前用户的信息
-  const user = ref(store.state.user);
-  console.log("用户信息", user.value); // 打印整个用户对象
-  console.log("userTodoList",user.value.todolist)
+  </div>
+</template>
 
-  // State variables
-  const selectedDate = ref('');
-  const todos = ref([
-    { id: 1, text: 'Design layout', date: '2024-12-01', isCompleted: true },
-    { id: 2, text: 'Push on Github', date: '2024-12-05', isCompleted: false },
-    { id: 3, text: 'Deploy with Firebase', date: '2024-12-09', isCompleted: false }
-  ]);
-  const newTodoText = ref('');
-  const isEditing = ref(false);
-  const editingTodo = ref(null);
-  const isDialogVisible = ref(false);
-  
-  // Calendar options
-  const calendarOptions = computed(() => ({
-    plugins: [dayGridPlugin, interactionPlugin],
-    locale: zhCnLocale,
-    height: 'auto',
-    contentHeight: 'auto', // 自动高度
-    minWidth: '300px',
-    maxWidth: '1000px',
-    height: '480px',  // 设置日历的固定高度
-    contentHeight: '800px',  // 设置日历内容区域的高度
-    buttonText: {
-      today: '今天',
-      month: '月',
-    },
-    initialView: 'dayGridMonth',
-    dateClick: handleDateClick,
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: ''
-    }
-  }));
-  
-  // Methods
-  const handleDateClick = (info) => {
-    selectedDate.value = info.dateStr;
-    openAddTodoDialog();
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import FullCalendar from '@fullcalendar/vue3';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import zhCnLocale from '@fullcalendar/core/locales/zh-cn';
+import { useStore } from 'vuex';
+//   import { showSnackBar } from '../utils/utils.js'; // 不需要导入 showSnackBar，直接使用 ElMessage
+import { ElMessage } from 'element-plus'; // 导入 ElMessage
+
+
+const store = useStore();
+
+// State variables
+const selectedDate = ref('');
+const newTodoText = ref('');
+const isEditing = ref(false);
+const editingTodo = ref(null);
+const isDialogVisible = ref(false);
+
+const user = computed(() => store.state.user);
+const userTodoList = ref([]);
+
+// 使用watch监听用户的变化
+watch(user, (newUser) => {
+if (newUser && newUser.todolist) {
+  userTodoList.value = newUser.todolist;
+  console.log("userTodolist updated", userTodoList.value);
+
+}
+}, { immediate: true });
+
+
+
+// 计算属性：根据 selectedDate 过滤待办事项
+const displayedTodos = computed(() => {
+  if (!selectedDate.value) {
+    return userTodoList.value; // 如果未选择日期，则显示所有待办事项
+  }
+  return userTodoList.value.filter(todo => todo.date === selectedDate.value);
+});
+
+
+// Calendar options
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, interactionPlugin],
+  locale: zhCnLocale,
+  height: 'auto',
+  contentHeight: 'auto',
+  minWidth: '300px',
+  maxWidth: '1000px',
+  height: '480px',
+  contentHeight: '800px',
+  buttonText: {
+    today: '今天',
+    month: '月',
+  },
+  initialView: 'dayGridMonth',
+  dateClick: handleDateClick,
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: ''
+  }
+}));
+
+// Methods
+const handleDateClick = (info) => {
+  selectedDate.value = info.dateStr;
+  openAddTodoDialog();
+};
+
+const openAddTodoDialog = () => {
+  isDialogVisible.value = true;
+  isEditing.value = false;
+  newTodoText.value = '';
+};
+
+const closeDialog = () => {
+  isDialogVisible.value = false;
+  isEditing.value = false;
+  newTodoText.value = '';
+  editingTodo.value = null;
+};
+
+  const saveTodo = async () => {
+      if (!user.value || !user.value.uid) {
+          ElMessage.warning('用户未登录，无法保存待办事项'); // 使用 ElMessage
+          return;
+      }
+
+      if (isEditing.value) {
+          try{
+              await store.dispatch('updateTodoItem', { ...editingTodo.value, text: newTodoText.value });
+              ElMessage.success('待办事项已更新');
+          }
+          catch(error){
+               ElMessage.error('更新失败:'+error.message);
+          }
+      } else {
+          const newTodo = {
+              id: Date.now(),
+              text: newTodoText.value,
+              date: selectedDate.value,
+              isCompleted: false
+          };
+      try{
+          await store.dispatch('addTodo', newTodo);
+          ElMessage.success('待办事项已添加'); // 使用 ElMessage
+      }catch(error){
+          ElMessage.error('添加失败：'+error.message);
+      }
+
+      }
+      closeDialog();
   };
-  
-  const openAddTodoDialog = () => {
-    isDialogVisible.value = true;
-    isEditing.value = false;
-    newTodoText.value = '';
-  };
-  
-  const closeDialog = () => {
-    isDialogVisible.value = false;
-    isEditing.value = false;
-    newTodoText.value = '';
-  };
-  
-  const saveTodo =() => {
-    if (isEditing.value) {
-      editingTodo.value.text = newTodoText.value;
-    } else {
-      const newTodo = {
-        id: Date.now(),
-        text: newTodoText.value,
-        date: selectedDate.value,
-        isCompleted: false
-      };
-      todos.value.push(newTodo);
-    }
-    closeDialog();
-  };
-  
+
   const editTodo = (todo) => {
-    isEditing.value = true;
-    newTodoText.value = todo.text;
-    editingTodo.value = todo;
-    isDialogVisible.value = true;
-  };
-  
-  const deleteTodo = (todo) => {
-    const index = todos.value.findIndex(t => t.id === todo.id);
-    if (index !== -1) {
-      todos.value.splice(index, 1);
-    }
-    store.dispatch('updateTodoList', todos.value); // Update Firestore
+      isEditing.value = true;
+      newTodoText.value = todo.text;
+      editingTodo.value = todo;
+      isDialogVisible.value = true;
   };
 
+const deleteTodo = async (todo) => {
+  try{
+       await store.dispatch('deleteTodoItem', todo.id);
+        ElMessage.success('待办事项已删除');
+  }
+  catch(error){
+       ElMessage.error("删除失败："+error.message);
+  }
+};
 
+const updateTodo =async (todo) => {
+  try{
+     await store.dispatch('updateTodoItem', todo);
+  }catch(error){
+       ElMessage.error('更新失败：'+error.message);
+       todo.isCompleted = !todo.isCompleted; // 恢复状态
 
-  </script>
-  
-  <style scoped>
-  .calendar-todolist {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 95%; 
-    margin: 10px; 
-    margin-left: 5px;
-    max-width: 100%;
-    padding: 5px;
-    margin-top: 40px;
   }
+ 
+};
 
-  .calendar {
-  /* box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px; */
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
-  border-radius: 8px; 
-  width:90%;
-}
-  .header {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .header h2 {
-    margin-top: 50px;
-    margin-bottom: 1px;
-    margin-left: 30px;
-  }
-  
-  .header h3 {
-    margin-top: 10px;
-    color: var(--text-color);
-    margin-left: 30px;
-    margin-bottom: 10px;
-  }
-  
-  .todo-list {
-    width: 90%;
-    margin-top: 15px;
-    max-width: 100%;
-    padding: 20px;
-    box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
-    border-radius: 10px;
-  }
-  
-  .todo-list li {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    /* justify-content: space-between;  */
-    padding: 10px 0;
-    border-bottom: 1px solid #ccc;
-    position: relative;
-  }
-  
-  .todo-list li input[type="checkbox"] {
-    width: 25px;
-    height: 25px;
-    cursor: pointer;
-    position: relative;
-    margin-right: 20px;
-    margin-left: -35px;
-  }
-  
-  .todo-list li .todo-text {
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    flex-direction: column;
-    flex-grow: 1;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  
-  .todo-list li .todo-text div {
-    color: var(--text-color);
-    font-size: 17px;
-    margin-right: 10px;
-    white-space: nowrap;
-    font-size: 20px;
-  }
-  
-  .todo-list li .todo-text div.completed-text {
-    text-decoration: line-through;
-    color: var(--text-color);
-  }
-  
-  .todo-list li .todo-text .date {
-    font-size: 12px;
-    color: var(--text-color);
-    font-size: 18px;
-    margin-top: 2px; 
-  }
-  .todo-list li .button-container {
+</script>
+
+<style scoped>
+/* 样式保持不变 */
+.calendar-todolist {
   display: flex;
-  flex-direction: row; 
-  align-items: center; 
-  margin-left: auto; 
-  justify-content: center;
-}
-  .todo-list li .edit-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-color);
-    font-size: 26px;
-    font-weight: bolder;
-    padding: 0 10px;
-  }
-  
-  .todo-list li .delete-button {
-    cursor: pointer;
-    width: 20px;
-    height: 20px;
-  }
-  
-  .todo-dialog {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  z-index: 9999; /* 设置一个高的 z-index 值，确保对话框位于最上层 */
+  justify-content: center;
+  width: 95%; 
+  margin: 10px; 
+  margin-left: 5px;
+  max-width: 100%;
+  padding: 5px;
+  margin-top: 40px;
+}
+
+.calendar {
+/* box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px; */
+box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+border-radius: 8px; 
+width:90%;
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.header h2 {
+  margin-top: 50px;
+  margin-bottom: 1px;
+  margin-left: 30px;
+}
+
+.header h3 {
+  margin-top: 10px;
+  color: var(--text-color);
+  margin-left: 30px;
+  margin-bottom: 10px;
+}
+
+.todo-list {
+  width: 90%;
+  margin-top: 15px;
+  max-width: 100%;
+  padding: 20px;
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  border-radius: 10px;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  /* justify-content: space-between;  */
+  padding: 10px 0;
+  border-bottom: 1px solid #ccc;
+  position: relative;
+}
+
+.todo-list li input[type="checkbox"] {
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  position: relative;
+  margin-right: 20px;
+  margin-left: -35px;
+}
+
+.todo-list li .todo-text {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  flex-grow: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.todo-list li .todo-text div {
+  color: var(--text-color);
+  font-size: 17px;
+  margin-right: 10px;
+  white-space: nowrap;
+  font-size: 20px;
+}
+
+.todo-list li .todo-text div.completed-text {
+  text-decoration: line-through;
+  color: var(--text-color);
+}
+
+.todo-list li .todo-text .date {
+  font-size: 12px;
+  color: var(--text-color);
+  font-size: 18px;
+  margin-top: 2px; 
+}
+.todo-list li .button-container {
+display: flex;
+flex-direction: row; 
+align-items: center; 
+margin-left: auto; 
+justify-content: center;
+}
+.todo-list li .edit-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+  font-size: 26px;
+  font-weight: bolder;
+  padding: 0 10px;
+}
+
+.todo-list li .delete-button {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+}
+
+.todo-dialog {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 9999; /* 设置一个高的 z-index 值，确保对话框位于最上层 */
 }
 
 .dialog-content {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  width: 350px;
-  z-index: 9999; /* 保证内容区域也在顶层 */
+background: white;
+padding: 20px;
+border-radius: 10px;
+text-align: center;
+width: 350px;
+z-index: 9999; /* 保证内容区域也在顶层 */
 }
 
-  
-  input {
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 5px;
+
+input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px;
 }
 
 h2 {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 button {
-  width: 40%;
-  padding: 10px;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
+width: 40%;
+padding: 10px;
+border: none;
+cursor: pointer;
+font-size: 16px;
 }
 
 button:first-child {
-  margin-right: 10px; 
+margin-right: 10px; 
 }
 
 
 button:last-child {
-  background-color: #6e8bea; 
-  color: white;
-  margin-left: 15px;
+background-color: #6e8bea; 
+color: white;
+margin-left: 15px;
 }
-  </style>
-  
+</style>
