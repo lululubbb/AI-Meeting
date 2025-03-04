@@ -156,4 +156,50 @@ h2 {
   display: inline;
   margin-right: 10px;
 }
+
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  h2 {
+    font-size: 18px;
+    margin-right: 8px;
+  }
+
+  .mood-select {
+    padding: 6px;
+    font-size: 16px;
+    margin-left: 3px;
+  }
+
+  .mood-image-container {
+    margin-top: 15px;
+  }
+
+  .mood-image {
+    width: 30px;
+    height:30px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  h2 {
+    font-size: 16px;
+    margin-right: 6px;
+  }
+
+  .mood-select {
+    padding: 4px;
+    font-size: 14px;
+    margin-left: 2px;
+  }
+
+  .mood-image-container {
+    margin-top: 10px;
+  }
+
+  .mood-image {
+    width: 20px;
+    height: 20px;
+  }
+}
 </style>

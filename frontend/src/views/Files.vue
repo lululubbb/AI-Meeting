@@ -5,7 +5,7 @@
     <main class="main-layout">
       <!-- 左侧区域 -->
       <div class="left-section">
-        <Mood />
+        <!-- <Mood /> -->
         <CalendarTodoList />
       </div>
 

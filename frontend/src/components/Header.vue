@@ -264,6 +264,7 @@ const logout = async () => {
 
 .icon-button:hover {
   color: #434040;
+  transform: translateY(-5px); /* 点击时上移 */
 }
 
 /* ---------------------- */
@@ -297,6 +298,10 @@ const logout = async () => {
   margin-left:0; /* 负值让它更往左移动，自己调合适的数值 */
 }
 
+.subtitle {
+    font-size: 0.9rem;
+    text-align: center;
+  }
 
   .search-icon {
     margin-right: 0.4rem; /* 6.4px */
@@ -350,6 +355,10 @@ const logout = async () => {
 }
 
 
+.subtitle {
+    font-size: 0.9rem;
+    text-align: center;
+  }
   .title {
     font-size: 1.25rem; /* 20px */
   }
@@ -412,6 +421,10 @@ const logout = async () => {
     font-size: 1.125rem; /* 18px */
   }
 
+  .subtitle {
+    font-size: 0.875rem;
+    text-align: center;
+  }
   .search-bar {
     width: 13rem; /* 208px */
     height: 1.5rem; /* 24px */
@@ -471,6 +484,10 @@ const logout = async () => {
     font-size: 1rem; /* 16px */
   }
 
+  .subtitle {
+    font-size: 0.825rem;
+    text-align: center;
+  }
   .search-bar {
     width: 12rem; /* 192px */
     height: 1.375rem; /* 22px */
@@ -522,6 +539,10 @@ const logout = async () => {
     padding: 0.5rem 0.5rem 0.1rem 0.5rem; /* 8px 8px 1.6px 8px */
   }
 
+  .subtitle {
+    font-size:  0.55rem;
+    text-align: center;
+  }
   .left-section {
     gap: 0.75rem; /* 12px */
   }

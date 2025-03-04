@@ -231,4 +231,114 @@ export default {
   background-color: #08a0f7;
   border-radius: 200px;
 }
+
+@media screen and (max-width: 768px) {
+  .file-attachment {
+    margin-bottom: 15px;
+  }
+
+  .file-icon {
+    width: 40px;
+    height: 45px;
+    border-radius: 6px;
+    padding-bottom: 3px;
+  }
+
+  .file-icon-inner {
+    width: 13px;
+    height: 13px;
+    margin-bottom: 8px;
+  }
+
+  .file-type {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+  }
+
+  .file-details {
+    margin-left: 15px;
+  }
+
+  .file-name {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60vw;
+  }
+
+  .uploader {
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  .file-info {
+    margin-top: 8px;
+  }
+
+  .file-size {
+    font-size: 12px;
+  }
+
+  .action {
+    font-size: 11px;
+  }
+
+  .progress-bar {
+    height: 4px;
+    margin-top: 8px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .file-attachment {
+    margin-bottom: 12px;
+    padding: 8px;
+  }
+
+  .file-icon {
+    width: 36px;
+    height: 40px;
+    padding-bottom: 2px;
+  }
+
+  .file-type {
+    font-size: 10px;
+  }
+
+  .file-details {
+    margin-left: 12px;
+  }
+
+  .file-name {
+    font-size: 13px;
+    max-width: 55vw;
+  }
+
+  .uploader {
+    display: none; /* 隐藏上传者信息 */
+  }
+
+  .file-info {
+    margin-top: 6px;
+  }
+
+  .action {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.05);
+  }
+
+  .progress-bar {
+    height: 3px;
+  }
+
+  /* 适配长文件名显示 */
+  .file-name {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
 </style>

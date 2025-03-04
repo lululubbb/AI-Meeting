@@ -42,4 +42,21 @@ export default {
   background-color: #74b1f1;
   transform: translateY(-2px);
 }
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .custom-button {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .custom-button {
+    padding: 8px 16px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+}
 </style>

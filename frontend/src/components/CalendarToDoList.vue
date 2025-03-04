@@ -240,7 +240,6 @@ width:90%;
   margin-top: 15px;
   max-width: 100%;
   padding: 20px;
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   border-radius: 10px;
 }
 
@@ -299,6 +298,7 @@ align-items: center;
 margin-left: auto; 
 justify-content: center;
 }
+
 .todo-list li .edit-button {
   background: none;
   border: none;
@@ -365,5 +365,108 @@ button:last-child {
 background-color: #6e8bea; 
 color: white;
 margin-left: 15px;
+}
+
+@media (max-width: 768px) {
+  .calendar-todolist {
+    margin-top: 20px;
+    padding: 10px;
+  }
+
+  .calendar {
+    width: 100%;
+    height: 400px;
+    margin-bottom: 15px;
+  }
+
+  .todo-list {
+    width: 100%;
+    padding: 15px;
+  }
+
+  .todo-list li {
+    flex-direction: row; /* 恢复为水平排列 */
+    align-items: center;
+    gap: 8px;
+  }
+
+  .todo-list li .todo-text {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .todo-dialog {
+    padding: 10px;
+  }
+
+  .dialog-content {
+    width: 90%;
+    padding: 15px;
+  }
+
+  input[type="checkbox"] {
+    margin-left: 0;
+  }
+
+  .button-container {
+    margin-top: 0; /* 调整按钮容器的上边距 */
+    width: auto; /* 调整按钮容器的宽度 */
+    justify-content: center;
+  }
+
+  button {
+    width: 45%;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-todolist {
+    margin-top: 10px;
+  }
+
+  .calendar {
+    height: 300px;
+  }
+
+  .header h2 {
+    font-size: 20px;
+    margin-top: 20px;
+  }
+
+  .header h3 {
+    font-size: 14px;
+    margin-left: 15px;
+  }
+
+  .todo-list li .todo-text div {
+    font-size: 16px;
+  }
+
+  .todo-list li .date {
+    font-size: 12px;
+  }
+
+  .edit-button {
+    font-size: 20px;
+  }
+
+  .delete-button {
+    width: 16px;
+    height: 16px;
+  }
+
+  .dialog-content {
+    width: 95%;
+  }
+
+  input {
+    font-size: 14px;
+  }
+
+  button {
+    padding: 8px;
+    font-size: 14px;
+  }
 }
 </style>

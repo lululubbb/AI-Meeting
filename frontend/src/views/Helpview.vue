@@ -221,4 +221,161 @@
   margin-bottom: 20px;
   color: var(--text-color);
 }
+
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  /* 帮助容器样式调整 */
+  .help-container {
+    padding: 15px;
+    max-width: 100%;
+  }
+
+  /* 帮助标题样式调整 */
+  .help-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+
+  /* 帮助介绍样式调整 */
+  .help-intro {
+    font-size: 14px;
+    margin-bottom: 30px;
+  }
+
+  /* 每个帮助部分样式调整 */
+  .help-section {
+    margin-bottom: 30px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+  }
+
+  /* 功能列表样式调整 */
+  .feature-list li {
+    margin-bottom: 15px;
+  }
+
+  .feature-list h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .feature-list p {
+    font-size: 14px;
+  }
+
+  /* 使用指南列表样式调整 */
+  .guide-list li {
+    margin-bottom: 15px;
+    padding-left: 35px;
+  }
+
+  .guide-list li::before {
+    width: 25px;
+    height: 25px;
+    line-height: 25px;
+    font-size: 14px;
+  }
+
+  .guide-list h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .guide-list p {
+    font-size: 14px;
+  }
+
+  /* 常见问题解答列表样式调整 */
+  .faq-list dt {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .faq-list dd {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  /* 帮助容器样式进一步调整 */
+  .help-container {
+    padding: 10px;
+  }
+
+  /* 帮助标题样式进一步调整 */
+  .help-title {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  /* 帮助介绍样式进一步调整 */
+  .help-intro {
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  /* 每个帮助部分样式进一步调整 */
+  .help-section {
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+
+  /* 功能列表样式进一步调整 */
+  .feature-list li {
+    margin-bottom: 12px;
+  }
+
+  .feature-list h3 {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .feature-list p {
+    font-size: 12px;
+  }
+
+  /* 使用指南列表样式进一步调整 */
+  .guide-list li {
+    margin-bottom: 12px;
+    padding-left: 30px;
+  }
+
+  .guide-list li::before {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    font-size: 12px;
+  }
+
+  .guide-list h3 {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .guide-list p {
+    font-size: 12px;
+  }
+
+  /* 常见问题解答列表样式进一步调整 */
+  .faq-list dt {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .faq-list dd {
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+}
 </style>

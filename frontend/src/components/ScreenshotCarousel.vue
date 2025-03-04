@@ -94,7 +94,7 @@
     overflow: hidden;
     position: relative;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1000px;
     height: auto;
     margin: 0 auto;
     border-radius: 15px;
@@ -182,4 +182,62 @@
   .carousel-indicators .indicator:hover {
     background-color: rgba(255, 255, 255, 0.8);
   }
+
+  /* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .screenshot-carousel {
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .carousel-buttons {
+    padding: 0 10px;
+  }
+
+  .carousel-buttons button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .carousel-buttons button .arrow {
+    font-size: 18px;
+  }
+
+  .carousel-indicators {
+    bottom: 10px;
+    gap: 8px;
+  }
+
+  .carousel-indicators .indicator {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .carousel-buttons {
+    padding: 0 5px;
+  }
+
+  .carousel-buttons button {
+    width: 25px;
+    height: 25px;
+  }
+
+  .carousel-buttons button .arrow {
+    font-size: 14px;
+  }
+
+  .carousel-indicators {
+    bottom: 8px;
+    gap: 6px;
+  }
+
+  .carousel-indicators .indicator {
+    width: 6px;
+    height: 6px;
+  }
+}
   </style>

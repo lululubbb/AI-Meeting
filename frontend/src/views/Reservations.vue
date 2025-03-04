@@ -1,12 +1,11 @@
 <!-- src/views/Reservations.vue -->
-<!-- src/views/Chat.vue -->
 <template>
   <div class="home-container">
   <!-- 主体布局 -->
   <main class="main-layout">
       <!-- 左侧区域 -->
       <div class="left-section">
-        <Mood/>
+        <!-- <Mood/> -->
         <CalendarTodoList />
       </div>
 
@@ -103,6 +102,77 @@ footer {
   align-items: center;
   justify-content: center;
   border-top: 1px solid #ddd;
+}
+
+
+/* 公共移动端样式 */
+@media screen and (max-width: 768px) {
+  .main-layout {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 15px;
+    padding: 10px 15px;
+  }
+
+  .left-section,
+  .middle-section,
+  .right-section {
+    flex: 0 0 85vw !important;
+    min-width: 85vw !important;
+    height: calc(100vh - 150px);
+    scroll-snap-align: start;
+    border-radius: 12px;
+    box-shadow: var(--global-box-shadow);
+    padding: 15px;
+  }
+
+  .right-section img {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main-layout {
+    padding: 10px;
+  }
+
+  .left-section,
+  .middle-section,
+  .right-section {
+    flex: 0 0 90vw !important;
+    min-width: 90vw !important;
+    height: calc(100vh - 130px);
+    padding: 10px;
+  }
+}
+@media screen and (min-width: 769px) {
+  .main-layout {
+    flex-wrap: wrap;
+    overflow: hidden !important;
+  }
+  
+  .left-section { flex: 0.8 }
+  .middle-section { flex: 1.3 }
+  .right-section { flex: 0.8 }
+}
+/* 防止移动端输入框缩放 */
+@media screen and (max-width: 480px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 增加触控热区 */
+@media (pointer: coarse) {
+  .action {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
   </style>
   
