@@ -6,7 +6,7 @@
     </button>
 
   <!-- 抽屉组件 -->
-  <el-drawer v-model="drawer" title="AI 助手" :with-header="true" size="600px">
+  <el-drawer v-model="drawer" title="AI 助手" :with-header="true" >
       <!-- 聊天内容 -->
       <div class="chat-container">
         <!-- 消息列表 -->
@@ -642,5 +642,140 @@ export default {
   color: #434040;
   text-align: right;
   align-self: flex-end; /* 让气泡贴右边 */
+}
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  /* 悬浮按钮 */
+  .ai-float-button {
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .ai-float-button img {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* 抽屉组件 */
+  el-drawer {
+    height: 60vh !important;
+    width: 55% !important;
+    top: 20% !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+
+  /* 输入框定位优化 */
+  .chat-input {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 12px 16px;
+    box-shadow: 0 -2px 8px rgba(56,103,255,0.05);
+    display: flex;
+    gap: 8px;
+  }
+
+  /* 消息区域高度优化 */
+  .chat-messages {
+    height: calc(100% - 68px); /* 减去输入框高度 */
+  }
+
+   /* 聊天容器布局 */
+   .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+
+  .chat-input input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 24px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+  }
+
+  .chat-input button {
+    padding: 10px 18px;
+    border-radius: 24px;
+    background-color: #bcd9ffe0;
+    color: #434040;
+    border: none;
+  }
+
+.chat-input button:hover {
+  background-color: #7ab4ffe0;
+}
+  /* 消息气泡 */
+  .message-bubble {
+    max-width: 70%;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  /* 头像容器 */
+  .avatar-container {
+    width: 25px;
+    height: 25px;
+    margin: 0 6px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  /* 悬浮按钮 */
+  .ai-float-button {
+    bottom: 15px;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .ai-float-button img {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* 聊天消息区域 */
+  .chat-messages {
+    padding: 6px;
+  }
+
+  .el-drawer {
+    height: 65vh !important;
+    width:70% !important;
+    top: 10% !important;
+  }
+
+  .chat-input {
+    padding: 10px;
+  }
+
+  .chat-input input {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .chat-input button {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
+  /* 消息气泡 */
+  .message-bubble {
+    max-width: 80%;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* 头像容器 */
+  .avatar-container {
+    width: 20px;
+    height: 20px;
+    margin: 0 4px;
+  }
 }
 </style>

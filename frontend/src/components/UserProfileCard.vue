@@ -212,5 +212,91 @@ const closeCard = () => {
 .el-button + .el-button {
   margin-left: 10px;
 }
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .user-card {
+    right: 15px;
+    top: 60px;
+    width: 280px;
+    padding: 20px;
+    font-size: 16px;
+  }
+
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .user-name {
+    font-size: 20px;
+  }
+
+  .user-email {
+    font-size: 16px;
+  }
+
+  .edit-btn {
+    font-size: 14px;
+  }
+
+  .el-input {
+    font-size: 14px;
+  }
+
+  .el-select {
+    font-size: 18px;
+  }
+
+  .el-button {
+    font-size: 14px;
+    padding: 8px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .user-card {
+    right: 10px;
+    top: 50px;
+    width: 250px;
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  .user-avatar {
+    width: 35px;
+    height: 35px;
+  }
+
+  .user-name {
+    font-size: 18px;
+  }
+
+  .user-email {
+    font-size: 14px;
+  }
+
+  .edit-btn {
+    font-size: 12px;
+  }
+
+  .el-input {
+    font-size: 12px;
+  }
+
+  .el-select {
+    font-size: 16px;
+  }
+
+  .el-button {
+    font-size: 12px;
+    padding: 6px;
+    margin-top: 8px;
+  }
+
+  .el-button + .el-button {
+    margin-left: 8px;
+  }
+}
 </style>
 

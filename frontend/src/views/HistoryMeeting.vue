@@ -90,6 +90,7 @@
           <!-- 判断会议状态是否为已结束 -->
           <div v-if="selectedMeeting.status === 'finished'">
             <p>{{ meetingTranscriptions }}</p>
+            <button @click="downloadMeetingRecord" class="share">📤 分享</button>
           </div>
           <div v-else class="info-message">
             🕒 会议未结束，无法查看记录。
@@ -111,6 +112,7 @@
             <div v-if="summary" class="summary-output">
               <p><strong>📝 摘要:</strong></p>
               <p>{{ summary }}</p>
+              <button @click="downloadKeywordsSummary" class="share">📤分享</button>
             </div>
           </div>
           <div v-else class="info-message">
@@ -380,11 +382,12 @@ const nextPage = () => {
     currentPage.value++;
   }
 };
-    // 定义后端 API 地址
-    const BACKEND_URL = 'http://localhost:8003'; // 根据实际情况修改
+
+// 定义后端 API 地址
+const BACKEND_URL = 'http://localhost:8003'; // 根据实际情况修改
     
-  // 函数：生成流式摘要（保持不变）
-  const generateStreamedSummary = async () => {
+// 函数：生成流式摘要（保持不变）
+const generateStreamedSummary = async () => {
     if (isLoadingSummary.value) {
       return;
     }
@@ -460,9 +463,9 @@ const nextPage = () => {
         }
       }
 
-      // 确保所有内容都已追加
-      // 等待缓冲区清空
-      const waitUntilBufferEmpty = () => {
+// 确保所有内容都已追加
+// 等待缓冲区清空
+const waitUntilBufferEmpty = () => {
         return new Promise(resolve => {
           const checkBuffer = () => {
             if (contentBuffer.length === 0) {
@@ -587,12 +590,40 @@ const formatDate = (timestamp) => {
      meetingTranscriptions.value = ''; //重置
   };
 
-//     // 新增函数：下载参会者数据为 CSV
-    const downloadParticipantsData = () => {
+
+// 定义分享会议记录的函数
+const downloadMeetingRecord = () => {
+  const content = meetingTranscriptions.value;
+  const blob = new Blob([content], { type: 'application/msword' });
+  const fileName = `${selectedMeeting.value.sessionName}-会议记录.doc`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// 定义分享关键提取的函数
+const downloadKeywordsSummary = () => {
+  const content = summary.value;
+  const blob = new Blob([content], { type: 'application/msword' });
+  const fileName = `${selectedMeeting.value.sessionName}-关键提取.doc`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+
+// 新增函数：下载参会者数据为 CSV
+const downloadParticipantsData = () => {
         if (!selectedMeeting.value || !selectedMeeting.value.participants) {
             showSnackBar('没有参会者数据可供下载。');
             return;
-         }
+        }
 
         // BOM + UTF-8 编码
         let csvContent = '\uFEFF';
@@ -601,10 +632,10 @@ const formatDate = (timestamp) => {
         csvContent += '用户名,角色,加入时间,离开时间,参会时长,视频开启次数,视频总开启时长,音频开启次数,音频总开启时长,屏幕共享次数,屏幕共享总时长,消息数\n';
 
         // CSV 数据行
-         selectedMeeting.value.participants.forEach(p => {
+        selectedMeeting.value.participants.forEach(p => {
      // 过滤 undefined 值
      if (Object.values(p).some(value => value === undefined)) {
-         console.warn('Skipping participant due to undefined values:', p);
+        console.warn('Skipping participant due to undefined values:', p);
         return; // 跳过此参会者
       }
     const joinTime = p.joinTime ? formatDate(p.joinTime) : 'N/A';
@@ -1266,7 +1297,7 @@ body {
   background-color: var(--background-color); /* 使用全局背景颜色 */
   border-radius: 15px;
   /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  /* box-shadow: var(--global-box-shadow); 应用全局边框阴影 */
   position: relative;
   overflow-y: auto;
   color: #000;
@@ -1661,25 +1692,191 @@ button:disabled {
   background-color: #f5f5f5;
   font-weight: bold;
 }
+.share{
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  background-color: #bedeff;
+  color: #000;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background-color 0.3s ease;
+}
+.share:hover{
+  transform: translateY(-5px);
+  background-color: #90c4f8;
 
+}
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .function-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    .function-buttons button{
-        max-width: none;
-        width: 80%;
-    }
-    .meeting-actions {
-      flex-direction: column; /* 垂直排列 */
-      align-items: flex-start; /* 左对齐 */
-    }
+  /* 通用调整 */
+  .history-container {
+    padding: 15px 10px;
+    width: 100%;
+    margin: 10px auto;
+    max-height: 95vh;
+  }
 
-    .meeting-actions p {
-      margin-bottom: 10px; /* 段落之间添加间距 */
-    }
+  h2 {
+    font-size: 20px !important;
+    margin-bottom: 15px !important;
+  }
+
+  /* 搜索框 */
+  .input-wrapper {
+    max-width: 100%;
+  }
+
+  .search-container {
+    padding: 0 10px;
+    max-width: 100%;
+  }
+
+  .search-input {
+    padding: 10px 40px 10px 15px;
+    font-size: 14px;
+    padding-left: 50px;
+    width: 70%;
+  }
+  .search-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* 会议列表 */
+  .meeting-list li {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  .meeting-list strong {
+    width: 80px;
+    font-size: 14px;
+  }
+
+  .meeting-list li > br {
+    display: none;
+  }
+
+  /* 分页 */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pagination button {
+    margin: 0 5px;
+    padding: 4px 8px;
+  }
+
+  /* 会议详情弹窗 */
+  .meeting-detail-modal {
+    width: 95%;
+    padding: 15px 10px;
+    max-height: 90vh;
+  }
+
+  #meetingDetails h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+
+  /* 功能按钮 */
+  .function-buttons button {
+    flex: 1 1 100%;
+    max-width: 100%;
+    margin: 5px 0;
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  /* 表格调整 */
+  .table-scrollable-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .participants-table {
+    font-size: 12px;
+  }
+
+  .participants-table th,
+  .participants-table td {
+    padding: 8px 10px;
+    min-width: 80px;
+  }
+
+  /* 评分说明弹窗 */
+  .modal-content {
+    width: 90%;
+    padding: 15px;
+  }
+
+  .modal-content h4 {
+    font-size: 18px;
+  }
+
+  /* 下载按钮 */
+  .download-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* 分享按钮 */
+  .share {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  /* 关闭按钮 */
+  .close-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* 图表容器 */
+  .chart-container img {
+    max-width: 100%;
+  }
+
+  /* 文本内容 */
+  .section-content p {
+    font-size: 14px;
+  }
+
+  /* 参与度分析标题 */
+  .chat-record-container h3 {
+    font-size: 16px;
+  }
 }
+
+@media (max-width: 480px) {
+  /* 更小屏幕的额外调整 */
+  .meeting-list strong {
+    width: 70px;
+    font-size: 12px;
+  }
+
+  .participants-table {
+    font-size: 11px;
+  }
+
+  .function-buttons button {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  .search-input {
+    padding-left: 50px;
+    border-width: 1px;
+    border-radius: 20px;
+    width: 70%;
+  }
+  #meetingDetails p {
+    font-size: 14px;
+  }
+}
+
+
 </style>
 

@@ -156,4 +156,70 @@ button {
 button:hover {
   background-color: #66b1ff;
 }
+
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .create-activity-container {
+    width: 95%;
+    padding: 15px;
+  }
+
+  .title {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+
+  .form {
+    font-size: 16px;
+    gap: 15px;
+  }
+
+  .form-item {
+    gap: 3px;
+  }
+
+  input,
+  select {
+    padding: 8px;
+    font-size: 16px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 8px 16px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .create-activity-container {
+    width: 100%;
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .form {
+    font-size: 14px;
+    gap: 10px;
+  }
+
+  .form-item {
+    gap: 2px;
+  }
+
+  input,
+  select {
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+}
 </style>

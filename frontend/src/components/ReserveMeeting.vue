@@ -276,4 +276,94 @@ CustomButton {
   max-width: 200px; /* 限制按钮最大宽度 */
   text-align: center;
 }
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .reserve-container {
+    padding: 20px 15px;
+    width: 90%;
+    margin: 15px auto;
+  }
+
+  #reservation-form {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+
+  .input-group {
+    margin-bottom: 15px;
+  }
+
+  .input-group label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .input-group input,
+  .input-group select {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  .close-btn img {
+    width: 25px;
+    height: 25px;
+  }
+
+  .button-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .button-container > * {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .reserve-container {
+    padding: 15px 10px;
+    width: 95%;
+    margin: 10px auto;
+  }
+
+  #reservation-form {
+    padding: 15px;
+  }
+
+  h1 {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .input-group {
+    margin-bottom: 12px;
+  }
+
+  .input-group label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .input-group input,
+  .input-group select {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .close-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .button-container {
+    gap: 12px;
+  }
+}
 </style>

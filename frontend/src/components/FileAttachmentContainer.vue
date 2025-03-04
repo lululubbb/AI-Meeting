@@ -79,4 +79,49 @@ export default {
   flex-direction: column;
   gap: 15px;
 }
+
+@media screen and (max-width: 768px) {
+  .file-attachment-container {
+    width: 95%;
+    padding: 8px;
+  }
+
+  .header h2 {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  .attachments {
+    gap: 12px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .file-attachment-container {
+    width: 98%;
+    padding: 5px;
+    max-height: 85vh; /* 增加垂直空间利用率 */
+  }
+
+  .header h2 {
+    font-size: 12px;
+    margin-bottom: 12px;
+    font-weight: 700; /* 小屏幕加粗更易识别 */
+  }
+
+  .attachments {
+    gap: 8px;
+  }
+
+  /* 如果需要适配文件项组件内的样式 */
+  .file-attachment {
+    padding: 8px !important;
+  }
+
+  /* 如果文件名在小屏幕需要换行 */
+  .file-name {
+    word-break: break-word;
+    max-width: 65vw;
+  }
+}
 </style>

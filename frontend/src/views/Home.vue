@@ -4,7 +4,7 @@
     <main class="main-layout">
       <!-- 左侧区域 -->
       <div class="left-section">
-        <Mood />
+        <!-- <Mood /> -->
         <div class="options">
           <MeetingOption 
             @new-meeting="navigateToCreateMeeting" 
@@ -148,5 +148,74 @@ footer {
   align-items: center;
   justify-content: center;
   border-top: 1px solid #ddd;
+}
+
+@media screen and (max-width: 768px) {
+  .main-layout {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 10px;
+  }
+
+  .left-section {
+    flex: 1 1 45%;
+    min-width: 300px;
+    border-radius: 12px;
+  }
+
+  .middle-section {
+    flex: 2 1 50%;
+    order: 3;
+  }
+
+  .right-section {
+    flex: 1 1 45%;
+    border-radius: 12px;
+  }
+
+  .options {
+    margin: 20px auto;
+    padding: 15px;
+    max-width: 320px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .left-section,
+  .right-section {
+    flex: none;
+    width: 95%;
+    margin: 10px auto;
+  }
+
+  .middle-section {
+    width: 95%;
+    margin: 0 auto 15px;
+    border-radius: 12px;
+  }
+
+  .options {
+    padding: 10px;
+    max-width: 280px;
+  }
+}
+/* 防止移动端输入框缩放 */
+@media screen and (max-width: 480px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 增加触控热区 */
+@media (pointer: coarse) {
+  .action {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 </style>

@@ -9,11 +9,11 @@ body.light {
   
   /* 深色主题 */
   body.dark {
-    --background-color: #333333;
+    --background-color: #424242;
     --text-color: #fefefe;
     --primary-color: #79bbff;
     --secondary-color: #85ce61;
-    --global-box-shadow: 2px 2px 3px 4px rgba(255, 255, 255, 0.3); 
+    --global-box-shadow: 2px 2px 3px 4px rgba(255, 255, 255, 0.2); 
   }
   
   /* 应用全局样式 */

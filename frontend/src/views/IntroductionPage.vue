@@ -229,7 +229,6 @@ const screenshots = [chat1, chat2];
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
   background-color: #2d8cf0;
 }
- 
 
   .logo-container {
     display: flex;
@@ -243,7 +242,7 @@ const screenshots = [chat1, chat2];
   }
   
   .features-section {
-    padding: 100px 50px;
+    padding: 90px 50px;
     text-align: center;
   }
   
@@ -287,4 +286,199 @@ const screenshots = [chat1, chat2];
     font-size: 14px;
     color: #666;
   }
-  </style>
+
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .header {
+    padding: 1% 20px;
+    flex-direction: column;
+    align-items: center;
+  }
+  .logo-container {
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .logo {
+    height: 60px;
+  }
+  nav {
+    width: 100%;
+    order: 2; /* 导航菜单下移 */
+    margin-top: 12px;
+  }
+  .nav-links {
+    margin-top: 10px;
+    height: auto;
+    justify-content: center;
+  }
+
+  .nav-links li {
+    margin-right: 10px;
+  }
+
+  .nav-links a {
+    font-size: 16px;
+    padding: 12px 20px;
+    margin: 0;
+    width: 100%;
+    display: block;
+    color: #2c3e50;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .nav-links a:last-child {
+    border-bottom: none;
+  }
+
+  .nav-links a:hover {
+    color: #409eff;
+    box-shadow: none;
+    transform: none;
+    font-size: 18px;
+  }
+
+  .login-button {
+    width: 60px;
+    height: 40px;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+
+  .hero-section {
+    flex-direction: column;
+    padding: 10px 20px;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+  .login-button {
+    display: none !important;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .cta-button {
+    padding: 10px 30px;
+    font-size: 16px;
+  }
+
+  .hero-image {
+    max-width: 100%;
+    margin-left: 0;
+    margin-top: 20px;
+  }
+
+  .features-section {
+    padding: 50px 20px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    margin-bottom: 30px;
+  }
+
+  .screenshots-section {
+    padding: 10px 20px;
+  }
+
+  .about-section {
+    padding: 10px 20px;
+  }
+
+  .about-description {
+    font-size: 16px;
+  }
+
+  .footer {
+    font-size: 14px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .header {
+    flex-wrap: wrap;
+    padding: 8px 12px !important;
+    justify-content: center !important;
+  }
+
+  /* 隐藏所有导航元素 */
+  .nav-links,
+  .login-button {
+    display: none !important;
+  }
+
+  /* 品牌标识居中显示 */
+  .logo-container {
+    width: 100%;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .logo {
+    height: 40px !important;
+    margin: 0 10px !important;
+  }
+
+  /* 主标题优化 */
+  .hero-title {
+    font-size: 24px;
+    line-height: 1.3;
+  }
+
+  /* 功能卡片间距调整 */
+  .feature-cards-container {
+    gap: 15px;
+  }
+
+  /* 保持立即体验按钮可见 */
+  .cta-button {
+    display: block !important;
+    margin: 0 auto;
+  }
+
+
+  .nav-links a {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+
+  .login-button {
+    padding: 6px 12px;
+    font-size: 13px;
+    right: 12px;
+    top: 10px;
+  }
+
+  .nav-links li {
+    margin-right: 10px;
+  }
+
+
+  .hero-subtitle {
+    font-size: 16px;
+  }
+
+  .section-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  .about-description {
+    font-size: 14px;
+  }
+
+  .footer {
+    font-size: 12px;
+  }
+}
+
+
+</style>

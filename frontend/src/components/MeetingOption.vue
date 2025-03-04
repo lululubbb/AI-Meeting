@@ -86,6 +86,7 @@ const handleHistoryMeeting = () => {
   padding: 15px; /* 增大内边距 */
   border-radius: 50%;
   transition: background-color 0.2s ease; /* 背景色过渡效果 */
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1); /* 悬浮时的阴影效果 */
 }
 
 .icon-wrapper {
@@ -108,11 +109,12 @@ const handleHistoryMeeting = () => {
 
 .option:hover .icon-wrapper1,
 .option:hover .icon-wrapper {
-  background-color: #6266DD; /* 新会议悬浮背景色 */
+  background-color: #9296ff; /* 新会议悬浮背景色 */
+  
 }
 
 .option:hover .icon-wrapper {
-  background-color: #6266DD; /* 其他按钮悬浮背景色 */
+  background-color: #65a9fd; /* 其他按钮悬浮背景色 */
 }
 
 .icon-wrapper1 img,
@@ -137,5 +139,139 @@ span {
 
 .option:hover span {
   color: #333; /* 悬浮时文字颜色加深 */
+}
+
+@media screen and (max-width: 768px) {
+  .meeting-options {
+    gap: 15px;
+    padding: 20px;
+  }
+
+  .option {
+    margin: 15px;
+  }
+
+  .icon-wrapper1,
+  .icon-wrapper {
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(56,103,255,0.15); /* 增强科技感阴影 */
+  }
+
+  .icon-wrapper1 img,
+  .icon-wrapper img {
+    width: 70px;
+    height: 70px;
+  }
+  .icon-wrapper:active {
+  transform: translateY(-5px); /* 点击时上移 */
+  border-radius: 50%;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+}
+  span {
+    font-size: 18px;
+    margin-top: 8px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .meeting-options {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .option {
+    margin: 8px;
+  }
+
+  .icon-wrapper1,
+  .icon-wrapper {
+    padding: 8px;
+    box-shadow: 0 3px 8px rgba(56,103,255,0.1);
+  }
+
+  .icon-wrapper1 img,
+  .icon-wrapper img {
+    width: 50px;
+    height: 50px;
+  }
+  .icon-wrapper:active {
+  transform: translateY(-5px); /* 点击时上移 */
+  border-radius: 50%;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+}
+  span {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* 优化触控体验 */
+  .option:active .icon-wrapper {
+    transform: scale(0.95);
+    box-shadow: 0 2px 6px rgba(56,103,255,0.2);
+  }
+}
+@media screen and (max-width: 768px) {
+  .meeting-options {
+    gap: 15px;
+    padding: 20px;
+  }
+
+  .option {
+    margin: 15px;
+  }
+
+  .icon-wrapper1,
+  .icon-wrapper {
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(56,103,255,0.15); /* 增强科技感阴影 */
+  }
+
+  .icon-wrapper1 img,
+  .icon-wrapper img {
+    width: 70px;
+    height: 70px;
+  }
+
+  span {
+    font-size: 18px;
+    margin-top: 8px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .meeting-options {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .option {
+    margin: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  }
+
+  .icon-wrapper1,
+  .icon-wrapper {
+    padding: 8px;
+    box-shadow: 0 3px 8px rgba(56,103,255,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .icon-wrapper1 img,
+  .icon-wrapper img {
+    width: 50px;
+    height: 50px;
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* 优化触控体验 */
+  .option:active .icon-wrapper {
+    transform: scale(0.95);
+    box-shadow: 0 2px 6px rgba(56,103,255,0.2);
+  }
 }
 </style>

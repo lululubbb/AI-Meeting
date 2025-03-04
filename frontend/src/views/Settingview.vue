@@ -98,4 +98,64 @@ label {
   font-weight: bold;
   color: var(--text-color);
 }
+
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .settings-container {
+    max-width: 100%;
+    padding: 15px;
+  }
+
+  .setting-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+
+  .setting-item {
+    margin-bottom: 15px;
+  }
+
+  label {
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+
+  /* 调整 ElementPlus 组件的样式 */
+  .el-select {
+    width: 100%;
+  }
+
+  .el-switch {
+    transform: scale(0.9);
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .settings-container {
+    padding: 10px;
+  }
+
+  .setting-title {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .setting-item {
+    margin-bottom: 12px;
+  }
+
+  label {
+    font-size: 12px;
+  }
+
+  /* 进一步调整 ElementPlus 组件的样式 */
+  .el-select {
+    font-size: 12px;
+  }
+
+  .el-switch {
+    transform: scale(0.8);
+  }
+}
 </style>

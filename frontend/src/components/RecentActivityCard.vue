@@ -136,6 +136,60 @@ transition: background-color 0.3s, transform 0.2s;
 .add-activity-btn:hover {
 background-color: #84befd;
 transform: translateY(-2px);
+}
 
+/* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .recent-activity-container {
+    gap: 20px;
+    padding: 15px;
+    margin: 8px;
+    margin-top: 15px;
+  }
+
+  .recent-activity-card {
+    width: 95%;
+    padding: 20px 23px;
+  }
+
+  .title {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .add-activity-btn {
+    padding: 8px 16px;
+    font-size: 16px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .recent-activity-container {
+    gap: 15px;
+    padding: 10px;
+    margin: 5px;
+    margin-top: 10px;
+  }
+
+  .recent-activity-card {
+    width: 100%;
+    padding: 15px 18px;
+  }
+
+  .title {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+
+  .add-activity-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+
+  .empty-state {
+    padding: 15px;
+    font-size: 14px;
+  }
 }
 </style>

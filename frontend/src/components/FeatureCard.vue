@@ -33,13 +33,13 @@
   
   <style scoped>
   .feature-card {
-    width: 550px;
+    width: 450px;
     height: auto;
-    padding: 30px;
+    padding: 25px;
     background-color: white;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     border-radius: 10px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     transition: transform 0.3s ease;
   }
   
@@ -68,4 +68,51 @@
     height: auto; /* 保持图片比例 */
     border-radius: 10px; /* 与卡片保持一致的圆角 */
   }
+  /* 手机端样式（屏幕宽度小于 768px） */
+@media (max-width: 768px) {
+  .feature-card {
+    width: 350px;
+    padding: 20px;
+  }
+
+  .feature-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+  }
+
+  .feature-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .feature-description {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+}
+
+/* 更小屏幕手机端样式（屏幕宽度小于 480px） */
+@media (max-width: 480px) {
+  .feature-card {
+    width: 280px;
+    padding: 15px;
+  }
+
+  .feature-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+  }
+
+  .feature-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .feature-description {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+}
   </style>

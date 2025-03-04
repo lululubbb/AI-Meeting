@@ -193,7 +193,7 @@ export default {
   flex-direction: column;
   width: 100%;
   max-width: 400px;
-  color: #5b5b5c;
+  color: #3d3d3d;
   margin-bottom: 30px;
 }
 .label {
@@ -202,8 +202,9 @@ export default {
   font-weight: 500;
 }
 .input {
-  padding: 14px;
+  padding: 20px;
   margin-bottom: 20px;
+  padding-left: 10px;
   border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 16px;
@@ -222,7 +223,8 @@ export default {
 
 .password-input {
   width: 100%; 
-  padding-right: 40px; 
+  padding-right: 30px; 
+  padding-left: 10px;
   height: 45px;
   box-sizing: border-box; 
   border-radius: 10px;
@@ -230,6 +232,7 @@ export default {
   font-size: 16px;
   transition: border-color 0.3s ease;
 }
+
 .password-input:focus {
   outline: none;
   border-color: #3867ff;
@@ -305,5 +308,148 @@ justify-content: center;
   border-color: #a0d0ff;
   color: #0845fe;
   transform: translateY(-5px); /* 点击时上移 */
+}
+
+@media screen and (max-width: 768px) {
+  .login-wrapper {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    padding: 20px;
+    background: linear-gradient(to bottom, #f8f7fa, #c8dbff);
+  }
+
+  .login-section {
+    margin: 20px;
+    padding: 25px;
+    border-radius: 15px;
+    order: 2;
+  }
+
+  .intro-section {
+    display: none; /* 中等屏幕隐藏图片区域 */
+  }
+
+  .title {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 22px;
+    margin-bottom: 15px;
+  }
+
+  .welcome-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+
+  .input,
+  .password-input {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .login-btn {
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .toggle-btn {
+    font-size: 14px;
+  }
+
+  .social-btn {
+    height: 45px;
+    font-size: 16px;
+    padding: 0 12px;
+  }
+
+  .social-btn img {
+    width: 25px;
+    height: 25px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .login-wrapper {
+    padding: 10px;
+  }
+
+  .login-section {
+    margin: 10px;
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .title {
+    font-size: 24px;
+    letter-spacing: 0.5px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+  }
+
+  .label {
+    font-size: 16px;
+  }
+
+  .input,
+  .password-input {
+    padding: 14px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+  }
+
+  .hide {
+    width: 20px;
+    height: 20px;
+    right: 8px;
+  }
+
+  .login-btn {
+    margin-bottom: 15px;
+    font-size: 15px;
+  }
+
+  .social-btn {
+    height: 40px;
+    font-size: 14px;
+    padding: 0 10px;
+  }
+
+  .social-btn img {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+  }
+
+  /* 移动端输入法优化 */
+  input[type="email"],
+  input[type="password"] {
+    transform: translateZ(0); /* 修复iOS缩放问题 */
+  }
+}
+
+/* 防止移动端输入框缩放 */
+@media screen and (max-width: 480px) {
+  input {
+    font-size: 16px !important;
+  }
+}
+
+/* 触控热区优化 */
+@media (pointer: coarse) {
+  button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* 防止键盘弹出遮挡 */
+.login-section {
+  scroll-margin-top: 50px;
 }
 </style>

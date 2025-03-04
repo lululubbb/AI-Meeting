@@ -209,8 +209,9 @@ html, body, #app {
 }
 
 body {
-  background-color: transparent;
-  color: rgb(0, 0, 0);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  box-shadow: var(--global-box-shadow);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
