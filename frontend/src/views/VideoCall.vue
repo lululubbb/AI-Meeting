@@ -266,14 +266,6 @@ const store = useStore();
 const route = useRoute();
 const router = useRouter();
 
-// 录音状态
-const isRecording = ref(false);
-// WebSocket 连接
-const ws = ref(null); // ASR服务器 WebSocket
-// 存储转录文本
-const fullTranscription = ref('');
-// 存储字幕文本
-const subtitle = ref(''); // 保留，用于显示字幕
 
 //* 会议相关状态 */
 const config = reactive({
@@ -546,14 +538,7 @@ const handleSession = async () => {
   }
 };
 
-// 更新滚动字幕的方法
-const updateSubtitle = (text) => {
-  subtitle.value = text;
-  // 限制滚动字幕长度 (只显示最后 50 个字符)
-  if (subtitle.value.length > 50) {
-    subtitle.value = subtitle.value.slice(-50);
-  }
-};
+
 
 
 // 点击服务质量按钮时，初始化图表并显示弹窗
@@ -1296,117 +1281,9 @@ const updateChatReceivers = async () => {
   console.log('[updateChatReceivers]', receivers);
 };
 
-/** 录音相关 */
-function toggleRecording() {
-  if (isRecording.value) stopRecording();
-  else startRecording();
-}
 
-async function startRecording() {
-    if (isRecording.value) return;
 
-  try {
-   // 重置字幕
-   subtitle.value = '';
 
-    // 请求麦克风权限
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-
-    // 添加 AudioWorklet 处理器
-    await audioContext.audioWorklet.addModule('/processor.js'); // 确保路径正确
-    const audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
-
-    // 连接音频节点
-    const source = audioContext.createMediaStreamSource(stream);
-    source.connect(audioWorkletNode);
-    audioWorkletNode.connect(audioContext.destination);
-
-    // 建立 WebSocket 连接
-    ws.value = new WebSocket('ws://localhost:8000/ws'); // 修改为实际服务器地址
-    ws.value.binaryType = 'arraybuffer';
-
-    ws.value.onopen = () => {
-      console.log('WebSocket 连接已打开');
-      showSnackBar('ASR 服务器连接已打开，开始录音...');
-      isRecording.value = false;
-    };
-
-    ws.value.onerror = (error) => {
-      console.error('WebSocket 错误:', error);
-      showSnackBar('ASR 服务器连接错误，停止录音。');
-      isRecording.value = false;
-      stopRecording();
-    };
-
-    ws.value.onclose = () => {
-      console.log('WebSocket 连接已关闭');
-      showSnackBar('ASR 服务器连接已关闭，停止录音。');
-      isRecording.value = false;
-    };
-
-    // 监听来自 AudioWorklet 的音频数据
-    audioWorkletNode.port.onmessage = (event) => {
-      const audioBuffer = event.data;
-      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-        ws.value.send(audioBuffer);
-      }
-    };
-
-    // 接收服务端消息
-    ws.value.onmessage = (event) => {
-      try {
-        // 尝试解析为JSON
-        const data = JSON.parse(event.data);
-        handleJsonMessage(data);
-      } catch (e) {
-        // 如果不是JSON，则视为旧版本的字符流
-        const char = event.data;
-        updateSubtitle(subtitle.value + char); // 直接更新字幕
-      }
-    };
-
-    // 保存引用以便后续清理
-    config.audioContext = audioContext;
-    config.audioWorkletNode = audioWorkletNode;
-    config.stream = stream;
-  } catch (error) {
-    console.error('录音启动失败:', error);
-    showSnackBar('无法启动录音，请检查麦克风权限或浏览器支持情况。');
-  }
-}
-
-function handleJsonMessage(data) {
-  const type = data.type;
-  switch (type) {
-    case "connection_status":
-      console.log(`连接状态: ${data.status}`);
-      break;
-    case "incremental_text":
-    //   // 增量更新字幕
-       if(data.full_current_segment){
-           updateSubtitle(data.full_current_segment)
-       }
-      break;
-
-    case "segment_complete":  // *修改：在这里保存转录*
-      // 添加后端发来的已完成段落
-      // 注意：我们现在主要依靠后端的时间分段
-      if (data.segment && data.segment.text) {
-         // currentSegment.value = "";  // 不需要了
-        // 将文本添加到累积文本,  我们在这里保存
-        // accumulatedText.value += data.segment.text + " ";  // 不需要
-        // updateSubtitle(accumulatedText.value);  // 不需要
-        saveTranscription(data.segment.text); // 保存转录
-      }
-       break;
-
-     case "full_transcription":
-      // 更新完整转录
-      fullTranscription.value = data.text;  // 保留, 在 stopRecording 中使用
-      break;
-  }
-}
 
 // 新增: 保存转录文本
 const saveTranscription = async(text) =>{
@@ -1426,60 +1303,6 @@ const saveTranscription = async(text) =>{
     }
 }
 
-async function stopRecording() {
-if (!isRecording.value) return;
-
-  isRecording.value = false;
-
-  // 如果正在录音，发送停止命令
-  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-    ws.value.send(JSON.stringify({ command: "stop" }));
-  }
-
-  // 关闭 WebSocket 连接
-  if (ws.value) {
-    ws.value.close();
-    ws.value = null;
-  }
-
-  // 关闭 AudioWorklet 和 AudioContext
-  if (config.audioWorkletNode) {
-    config.audioWorkletNode.port.postMessage({ command: 'stop' });
-    config.audioWorkletNode.disconnect();
-    config.audioWorkletNode = null;
-  }
-
-  if (config.audioContext) {
-    await config.audioContext.close();
-    config.audioContext = null;
-  }
-
-  if (config.stream) {
-    config.stream.getTracks().forEach((track) => track.stop());
-    config.stream = null;
-  }
-
-    // 在 stopRecording 中保存最终的 fullTranscription.value
-    if (config.meetingId && fullTranscription.value.length > 0) {
-        const user = store.getters.getUser;
-        if (user) {
-            try {
-                await FirestoreService.saveTranscriptions(user.uid, config.meetingId, fullTranscription.value); //保存全部
-                console.log("最终转录保存成功!");
-                showSnackBar('转录文本已保存');
-            }
-            catch (err) {
-                showSnackBar('保存最终转录失败:' + err.message);
-                console.error("保存最终转录失败:", err);
-            }
-        }
-    }
-
-    fullTranscription.value = ""; //清空
-    subtitle.value = "";  //清空
-
-  showSnackBar('已停止录音');
-}
 
 
 function forceCloseServiceQuality() {
