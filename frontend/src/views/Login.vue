@@ -1,31 +1,30 @@
-<!-- src/views/Login.vue -->
 <template>
   <div class="login-wrapper">
     <!-- 登录和注册区域 -->
     <div class="login-section">
-      <h1>慧议先锋</h1>
-      <h2>AI Meeting</h2>
-      <p>欢迎回来！请登录您的账号</p>
+      <h1 class="title">慧议先锋</h1>
+      <h2 class="subtitle">AI Meeting</h2>
+      <p class="welcome-text">欢迎回来！请登录您的账号</p>
       <div class="email-section">
-        <label for="email">邮箱地址</label>
-        <input v-model="email" type="email" id="email" placeholder="请输入您的邮箱地址" />
-        <label for="password"> 密码 </label>
+        <label for="email" class="label">邮箱地址</label>
+        <input v-model="email" type="email" id="email" placeholder="请输入您的邮箱地址" class="input" />
+        <label for="password" class="label"> 密码 </label>
         <div class="password-container">
-          <input :type="showPassword ? 'text' : 'password'" v-model="password"  class="password-input" placeholder="请输入您的密码" />
-          <img :src="showPassword ? showIcon : hideIcon" alt="toggle" @click="toggleShow" class="hide" />
+          <input :type="showPassword? 'text' : 'password'" v-model="password" class="password-input" placeholder="请输入您的密码" />
+          <img :src="showPassword? showIcon : hideIcon" alt="toggle" @click="toggleShow" class="hide" />
         </div>
 
         <div class="button-section">
           <button @click="toggleMode" class="toggle-btn"> 
-            {{ isLoginMode ? "没有账号？注册" : "已有账号？登录" }}
+            {{ isLoginMode? "没有账号？注册" : "已有账号？登录" }}
           </button>
           <button @click="handleAuth" class="login-btn"> 
-            {{ isLoginMode ? "邮箱登录": "邮箱注册"}}
+            {{ isLoginMode? "邮箱登录": "邮箱注册"}}
           </button>
         </div>
         <div class="social-login">
           <!-- <p class="oruse">或者使用</p> -->
-          <button @click="loginWithGoogle">
+          <button @click="loginWithGoogle" class="social-btn">
             <img src="@/assets/Google.png" alt="Google" />Google
           </button>
         </div>
@@ -83,7 +82,7 @@ export default {
 
       if (res) {
         document.body.classList.add('light');
-        ElMessage.success(isLoginMode.value ? "登录成功" : "注册成功");        router.push('/home');  // 跳转到 /home 页面
+        ElMessage.success(isLoginMode.value? "登录成功" : "注册成功");        router.push('/home');  // 跳转到 /home 页面
       }else {
         ElMessage.error("操作失败，请重试");  // 显示失败信息
       }
@@ -144,11 +143,11 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 40px;
   margin: 40px;
   border-radius: 20px;
   background: linear-gradient(to bottom right, #f6f6f6c0, #b9d1ff);
-
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
 }
 .intro-section {
   flex: 1;
@@ -167,18 +166,27 @@ export default {
   max-height: 100%;
   border-radius: 20px;
 }
-h1 {
-  font-size: 30px;
+.title {
+  font-size: 36px;
   color: #3867ff;
+  margin-bottom: 10px;
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
-h2 {
-  font-size: 24px;
+.subtitle {
+  font-size: 28px;
   color: #3867ff;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
 }
-p {
-  margin-bottom: 22px;
+.welcome-text {
+  margin-bottom: 30px;
   color: #747474;
-  font-size: 18px;
+  font-size: 20px;
+  text-align: center;
+  line-height: 1.4;
 }
 .email-section {
   display: flex;
@@ -186,17 +194,25 @@ p {
   width: 100%;
   max-width: 400px;
   color: #5b5b5c;
-  margin-bottom: 22px;
+  margin-bottom: 30px;
 }
-.email-section label {
-  margin-bottom: 5px;
+.label {
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 500;
 }
-.email-section input {
-  padding: 12px;
-  margin-bottom: 15px;
-  border-radius: 8px;
+.input {
+  padding: 14px;
+  margin-bottom: 20px;
+  border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+.input:focus {
+  outline: none;
+  border-color: #3867ff;
+  box-shadow: 0 0 5px rgba(56, 103, 255, 0.2);
 }
 .password-container {
   position: relative;
@@ -207,13 +223,22 @@ p {
 .password-input {
   width: 100%; 
   padding-right: 40px; 
-  height: 40px;
+  height: 45px;
   box-sizing: border-box; 
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+.password-input:focus {
+  outline: none;
+  border-color: #3867ff;
+  box-shadow: 0 0 5px rgba(56, 103, 255, 0.2);
 }
 
 .hide {
   position: absolute;
-  top: 40%; 
+  top: 50%; 
   right: 10px; 
   transform: translateY(-50%); 
   cursor: pointer;
@@ -228,23 +253,25 @@ p {
 }
 .login-btn
 {
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
-  font-size: 16px;
-}
-.login-btn {
-  background-color: #002affd3;
+  font-size: 18px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  background-color: #4763ff;
   color: white;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); 
+
 }
 
-.oruse{
-  margin-bottom: 22px;
-  color: #747474;
-  font-size: 16px;
+.login-btn:hover {
+  background-color: #203ad1;
+  transform: translateY(-5px); /* 点击时上移 */
 }
+
 .social-login {
 display: flex;
 flex-direction: row;
@@ -252,31 +279,31 @@ align-items: center;
 margin-top: 10px;
 justify-content: center;
 }
-.social-login p {
-margin-bottom: 10px;
-height: 35px;
+.social-btn {
+  margin: 0 5px;
+  border-radius: 10px;
+  border: 1px solid #c8dbff;
+  cursor: pointer;
+  color: #3867ff;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  font-size: 20px;
+  padding: 0 15px;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
-.social-login button img{
-  width: 25px;
-  height: 25px;
+.social-btn img{
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   margin-right: 10px;
 }
-.social-login button {
-margin: auto; 
-border-radius: 10px;
-border-color:#c8dbff;
-cursor: pointer;
-color: #3867ff;
-height: 35px;
-display: flex;
-align-items: center;
-background-color: transparent;
-font-size: 16px;
-padding-top: 5px;
-padding-bottom: 5px;
-}
-.social-login button:hover {
-color: #0845fe;
+.social-btn:hover {
+  background-color: #e6f2ff;
+  border-color: #a0d0ff;
+  color: #0845fe;
+  transform: translateY(-5px); /* 点击时上移 */
 }
 </style>

@@ -152,7 +152,6 @@ const screenshots = [chat1, chat2];
   
   .nav-links li {
     margin-right: 100px;
-    
   }
   
   .nav-links a {
@@ -160,11 +159,15 @@ const screenshots = [chat1, chat2];
     color: #333;
     font-size: 25px;
     margin-right: 20px;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease; 
+    padding: 20px;
+    border-radius: 20px;
+    font-weight: bold;
   }
   
   .nav-links a:hover {
     color: #409eff;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
   }
   
   .login-button {
@@ -174,7 +177,7 @@ const screenshots = [chat1, chat2];
     padding: 10px 10px;
     background-color: #409eff;
     color: white;
-    border: none;
+    border: solid #3484da;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
@@ -183,6 +186,8 @@ const screenshots = [chat1, chat2];
   .login-button:hover {
     background-color: #2d8cf0;
     border-radius: 5px;
+    transform: translateY(-5px); /* 点击时上移 */
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
   }
   
   .hero-section {
@@ -216,11 +221,16 @@ const screenshots = [chat1, chat2];
     border-radius: 5px;
     font-size: 18px;
     transition: background-color 0.3s ease;
-  }
-  
+    border: solid #286bb3;
+  }  
+
   .cta-button:hover {
-    background-color: #2d8cf0;
-  }
+  transform: translateY(-5px); /* 点击时上移 */
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+  background-color: #2d8cf0;
+}
+ 
+
   .logo-container {
     display: flex;
     align-items: center;
