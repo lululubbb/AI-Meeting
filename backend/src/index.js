@@ -28,6 +28,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+
+
+// 中间件
+app.use(cors({
+  origin: 'http://localhost:5173', // 根据需要调整
+}));
+app.use(express.json({ limit: '100mb' })); // 增加请求体大小限制 (例如 50MB)
+app.use(express.urlencoded({ limit: '100mb', extended: true })); // 也要增加 urlencoded 的限制
+
 // 配置内容安全策略 (CSP) 和 SharedArrayBuffer 支持
 app.use((req, res, next) => {
   // 设置Cross-Origin-Opener-Policy和Cross-Origin-Embedder-Policy头
@@ -35,13 +44,6 @@ app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   next();
 });
-
-// 中间件
-app.use(express.json());
-app.use(cors({
-  origin: 'http://localhost:5173', // 根据需要调整
-}));
-
 // 设置静态文件服务（用于下载文件）
 app.use('/files', express.static(path.join(__dirname, 'files')));
 
@@ -164,7 +166,185 @@ app.post('/api/chat/completions', async (req, res) => {
     });
   }
 });
+app.post('/api/analyze-file', async (req, res) => {
+  try {
+    const { fileData, fileType, type, question, conversation, stream } = req.body;
 
+    if (!fileData || !fileType) {
+      return res.status(400).json({ error: "fileData and fileType are required" });
+    }
+
+    const fileBuffer = Buffer.from(fileData, 'base64');
+
+    function cleanExtractedText(text) {
+      text = text.replace(/\s+/g, ' ');
+      text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+      return text;
+    }
+
+    let extractedText = '';
+    if (fileType === 'pdf') {
+       // ... (PDF 处理逻辑) ...
+    } else if (fileType === 'doc' || fileType === 'docx') {
+        const result = await mammoth.extractRawText({ buffer: fileBuffer });
+        extractedText = result.value;
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type' });
+    }
+
+    extractedText = cleanExtractedText(extractedText);
+
+    const maxContentLength = 500000;
+    const truncatedText = extractedText.length > maxContentLength
+      ? extractedText.substring(0, maxContentLength) + "..."
+      : extractedText;
+
+    if (type === 'summary') {
+      const aiRequestBody = {
+        model: "lite",
+        messages: [{
+          role: "user",
+          content: `请为以下文档内容生成一个摘要：\n\n${truncatedText}`
+        }],
+        temperature: 0.5,
+        max_tokens: 1000,
+        stream: true, //  开启流式
+      };
+
+        const aiResponse = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', aiRequestBody, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.XF_API_PASSWORD}`
+            },
+          responseType: 'stream', //  重要:  流式响应
+       });
+
+      //  设置响应头,  SSE
+       res.setHeader('Content-Type', 'text/event-stream');
+       res.setHeader('Cache-Control', 'no-cache');
+       res.setHeader('Connection', 'keep-alive');
+    
+       aiResponse.data.on('data', (chunk) => {
+        const lines = chunk.toString('utf8').split('\n').filter(line => line.trim() !== '');
+         for (const line of lines) {
+           if (line.startsWith('data:')) {
+             const dataStr = line.replace(/^data:/, '').trim();
+              if (dataStr !== '[DONE]') {
+                try {
+                    const data = JSON.parse(dataStr);
+                   if (data.choices && data.choices.length > 0) {
+                      const delta = data.choices[0].delta;
+                      if (delta && delta.content) {
+                        // 逐字发送
+                        for (const char of delta.content) {
+                          res.write(`data: ${JSON.stringify({ content: char })}\n\n`);
+                          }
+                           }
+                        }
+                  } catch (error) {
+                   console.error('解析JSON失败:', error);
+                 }
+               }
+            }
+           }
+         });
+
+       aiResponse.data.on('end', () => {
+       res.write('data: [DONE]\n\n');  //  发送 [DONE] 标记
+       res.end(); //  结束响应
+       });
+
+    } else if (type === 'question') {
+        //  ... (question 处理逻辑,  与 summary 类似,  也要逐字拆分)
+
+       if (!question) {
+        return res.status(400).json({ error: 'Question is required for question type' });
+        }
+     const messages = [
+       { role: 'system', content: '你是一个文档助手，你的任务是根据提供的文档内容回答用户的问题。' },
+       { role: 'user', content: `文档内容:\n${truncatedText}` }
+     ];
+
+   if (conversation && Array.isArray(conversation)) {
+       const filteredConversation = conversation.filter(item => !(item.role === 'assistant' && item.content === ''));
+       messages.push(...filteredConversation);
+     }
+     messages.push({ role: 'user', content: question });
+      const aiRequestBody = {
+       model: "lite",
+       messages: messages,
+       temperature: 0.5,
+       max_tokens: 4096, //可以适当调小，按需处理
+       stream: true
+     };
+
+     const aiResponse = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', aiRequestBody, {
+         headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${process.env.XF_API_PASSWORD}`
+           },
+         responseType: 'stream'
+      });
+
+
+   res.setHeader('Content-Type', 'text/event-stream');
+   res.setHeader('Cache-Control', 'no-cache');
+   res.setHeader('Connection', 'keep-alive');
+
+       //  *** 关键修改:  逐字/逐词拆分 (与 summary 类似) ***
+      aiResponse.data.on('data', (chunk) => {
+        const lines = chunk.toString('utf8').split('\n').filter(line => line.trim() !== '');
+         for (const line of lines) {
+            if (line.startsWith('data:')) {
+             const dataStr = line.replace(/^data:/, '').trim();
+              if (dataStr !== '[DONE]') {
+                 try {
+                      const data = JSON.parse(dataStr);
+                    if (data.choices && data.choices.length > 0) {
+                      const delta = data.choices[0].delta;
+                     if (delta && delta.content) {
+                           // 逐字发送
+                        for (const char of delta.content) {
+                           res.write(`data: ${JSON.stringify({ content: char })}\n\n`); // 发送单个字符,  注意格式
+                          }
+                      }
+                   }
+               } catch (error) {
+                   console.error('解析JSON失败:', error);
+               }
+             }
+         }
+     }
+         });
+
+  aiResponse.data.on('end', () => {
+    res.write('data: [DONE]\n\n');  // 发送 [DONE] 标记
+    res.end();
+   });
+    }
+ else {
+       return res.status(400).json({ error: 'Invalid analysis type' });
+   }
+ }
+  catch (error) {
+           console.error('文件分析出错:', error);
+           let errorMessage = "文件分析失败"; // 默认错误消息
+         if (error.response) {
+            // 来自服务器的错误响应 (有状态码)
+            errorMessage = error.response.data?.error || error.response.statusText;
+         } else if (error.request) {
+         // 请求已发送，但没有收到响应 (网络错误)
+             errorMessage =               "无法连接到服务器";
+            } else {
+                // 其他错误 (例如代码中的错误)
+                errorMessage = error.message;
+            }
+            return res.status(500).json({ error: errorMessage });
+        }
+    });
+           
+ 
+ 
 // 文件上传与摘要生成路由
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
@@ -221,7 +401,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         content: `请为以下文档内容生成一个摘要：\n\n${extractedText}`
       }],
       temperature: 0.5,
-      max_tokens: 1000           // 根据需要调整生成摘要的 token 数量
+      max_tokens: 1000          // 根据需要调整生成摘要的 token 数量
     };
 
     const aiResponse = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', aiRequestBody, {

@@ -1,4 +1,4 @@
-<!-- src/components/AIFloatingChat.vue -->
+`<!-- src/components/AIFloatingChat.vue -->
 <template>
   <div>
     <button class="ai-float-button" @click="drawer = true">
@@ -9,6 +9,10 @@
   <el-drawer v-model="drawer" title="AI 助手" :with-header="true" size="600px">
       <!-- 聊天内容 -->
       <div class="chat-container">
+        <div v-if="fileToAnalyze && aiSummary" class="ai-summary">
+           <h4>文档摘要：</h4>
+            <p>{{ aiSummary }}</p>
+           </div>
         <!-- 消息列表 -->
         <div class="chat-messages" ref="chatMessages">
           <!-- 使用统一的 .message-row 包裹单条消息，根据 msg.from 动态添加 ai-row / user-row 控制布局 -->
@@ -36,6 +40,22 @@
               <img src="@/assets/user.png" alt="User Avatar" class="avatar" />
             </div>
           </div>
+          <!-- 新增: AI 问答消息 -->
+          <div v-for="(item, index) in aiConversation" :key="'qa-' + index"
+          class="message-row" :class="item.role === 'user' ? 'user-row' : 'ai-row'">
+
+              <div v-if="item.role === 'ai'" class="avatar-container">
+                <img src="@/assets/AI.png" alt="AI Avatar" class="avatar" />
+              </div>
+
+              <div class="message-bubble"
+                    :class="[item.role === 'user' ? 'user-message' : 'ai-message']">
+                    <p><strong>{{ item.role === 'user' ? '您' : '' }}</strong> {{ item.content }}</p>
+              </div>
+          <div v-if="item.role === 'user'" class="avatar-container">
+            <img src="@/assets/user.png" alt="User Avatar" class="avatar" />
+          </div>
+        </div>
 
           <!-- AI 正在思考提示 -->
           <div v-if="isLoading && !isCreatingMeeting" class="loading">
@@ -48,7 +68,7 @@
           <input
             v-model="userInput"
             @keyup.enter="sendMessage"
-            placeholder="输入您的问题..."
+            :placeholder="fileToAnalyze ? '请输入关于文档的问题...' : '输入您的问题...'"
           />
           <button @click="sendMessage">发送</button>
         </div>
@@ -58,6 +78,7 @@
 </template>
 
 <script>
+import {ref, watch, onMounted, nextTick} from 'vue';  // 导入 ref
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js'; // 确保有一个显示消息的工具函数
 import { useStore } from 'vuex';
@@ -65,18 +86,71 @@ import { useRouter } from 'vue-router'; // 引入 useRouter
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import FirestoreService from '../services/FirestoreService.js';
+import ZoomVideoService from '../services/ZoomVideoService.js';
+
+async function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      // 从 data URL 中提取 Base64 部分
+      const base64 = dataUrl.split(',')[1];
+      resolve(base64);
+    };
+
+    reader.onerror = (error) => {
+      reject(error);
+    };
+
+    reader.readAsDataURL(blob); // 使用 readAsDataURL 读取 Blob
+  });
+}
 
 export default {
   name: 'AIFloatingChat',
-  data() {
+  props:{
+    fileToAnalyze:{
+       type: Object,
+       default: null
+    },
+    fileMsgId:{ // 新增 prop
+      type: String,
+      default: null
+    }
+  },
+  watch: {
+    fileToAnalyze(newFile) {
+        if (newFile) {
+            this.drawer = true;
+            //  首次加载文件, 只需要获取摘要
+            if (!this.fileAnalyzed) { // 新增标志
+                this.fetchAiSummary();
+                this.fileAnalyzed = true; // 设置标志, 避免重复分析
+            }
+        }
+    },
+},
+data() {
     return {
-      drawer: false,
-      isChatOpen: false,
-      messages: [],
-      userInput: '',
-      isLoading: false,
-      isCreatingMeeting: false, // 标记是否在创建会议
+        drawer: false,
+        isChatOpen: false,
+        messages: [],          // 普通聊天
+        userInput: '',
+        isLoading: false,
+        isCreatingMeeting: false,
+        aiSummary: '',   //  摘要
+        aiConversation: [],  //  AI 问答记录
+        fileBlobs: new Map(), // 用于存储 msgId 和 fileBlob 的映射, 现在不再需要
+        downloadPromises: new Map(), // 用于存储 msgId 和 Promise 的映射
+        fileAnalyzed: false,  // 新增标志, 记录文件是否已经被分析过 (下载并转换为 Base64)
+        fileBase64: '', //  保存文件的 base64 数据.
     };
+},
+  mounted() {
+
+   },
+   beforeUnmount() {
   },
   methods: {
     // 切换AI聊天窗口显示
@@ -88,10 +162,52 @@ export default {
         });
       }
     },
-    // 发送消息到AI
+    
+      // 打开聊天窗口 (由 videocall.vue 调用)
+      openChat(){
+        this.drawer = true; // 打开抽屉
+      },
+      async fetchAiSummary() {
+  if (!this.fileToAnalyze || !this.fileToAnalyze.fileUrl) return;
+  if (this.fileAnalyzed) return; //已经分析过，则返回
+
+  this.isLoading = true;
+  this.aiSummary = '';
+  this.aiConversation = []; // 清空问答历史
+  this.messages = [];      //  清空普通消息
+
+  try {
+    const cancelDownload = await ZoomVideoService.downloadFile(
+      this.fileMsgId,
+      this.fileToAnalyze.fileUrl,
+      true  // 下载为 blob
+    );
+
+    // 2. 等待 fileBlob
+    const fileBlob = await new Promise((resolve) => {
+       this.downloadPromises.set(this.fileMsgId, resolve);
+    });
+        //  3. 调用 sendFileDataToAnalyze 
+        this.sendFileDataToAnalyze(fileBlob, 'summary');
+
+  } catch (error) {
+    console.error('获取摘要失败:', error);
+    showSnackBar('获取摘要失败: ' + error.message);
+    this.isLoading = false;
+  }
+},
+
+    // 发送消息到AI 
     async sendMessage() {
-  const message = this.userInput.trim();
-  if (message === '') return;
+      const message = this.userInput.trim();
+      if (message === '') return;
+
+      this.userInput = '';
+
+      if (this.fileToAnalyze) {
+        await this.askAiQuestion(message); // 直接调用, 不再经过普通消息逻辑
+        return;
+      }
 
   this.messages.push({
     from: 'user',
@@ -246,7 +362,129 @@ export default {
   } finally {
     this.isLoading = false;
   }
-},  // 监听预约的会议
+}, 
+
+
+//  AI 问答
+async askAiQuestion(question) {
+   if (!this.fileToAnalyze || !this.fileToAnalyze.fileUrl || !question.trim()) return;
+
+   this.aiConversation.push({ role: 'user', content: question }); // 添加用户问题
+   this.isLoading = true;
+
+   try {
+       //  添加一个 AI 消息占位符, 用于后续更新
+        this.aiConversation.push({ role: 'assistant', content: '' }); //  AI 消息占位
+        const aiMessageIndex = this.aiConversation.length - 1; // 记录索引
+
+
+     if (!this.fileAnalyzed) {
+       const cancelDownload = await ZoomVideoService.downloadFile(this.fileMsgId, this.fileToAnalyze.fileUrl, true);
+       const fileBlob = await new Promise((resolve) => {
+         this.downloadPromises.set(this.fileMsgId, resolve);
+       });
+       this.sendFileDataToAnalyze(fileBlob, 'question', aiMessageIndex, question); // 传入 index
+       this.fileAnalyzed = true;
+     } else {
+       this.sendFileDataToAnalyze(null, 'question', aiMessageIndex, question); // 传入 index
+     }
+   } catch (err) {
+     console.error("AI 问答出错", err);
+     showSnackBar("AI 问答出错:" + err.message);
+     //  这里不再需要 push 一个错误消息了, 因为已经在 sendFileDataToAnalyze 中处理了
+   } finally {
+     this.isLoading = false;  //  这里不再调用 scrollToBottom, 因为在流式输出过程中会多次调用
+   }
+ },
+       
+ async sendFileDataToAnalyze(fileBlob, type, aiMessageIndex, question = '') {
+  console.log("sendFileDataToAnalyze called with:", { fileBlob, type, question });
+
+  try {
+    let base64Data = this.fileBase64;
+    if (!base64Data && fileBlob) {
+      base64Data = await blobToBase64(fileBlob);
+      this.fileBase64 = base64Data;
+    }
+
+    const requestData = {
+      fileData: base64Data,
+      fileType: this.fileToAnalyze.name.split(".").pop(),
+      type: type,
+      stream: true, // 开启流式
+    };
+
+    if (type === "question") {
+      requestData.question = question;
+      requestData.conversation = this.aiConversation;
+    }
+
+    const response = await fetch("http://localhost:4000/api/analyze-file", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+             const dataStr = line.replace(/^data:/, '').trim();
+
+             if (dataStr === '[DONE]') {
+              done = true;
+              break; // 结束循环
+             }
+
+             try {
+                 const data = JSON.parse(dataStr);
+                 //  *** 关键修改: 处理逐字/逐词数据 ***
+                if (data.content) { //  注意: 现在 data  是 { content: '字' }
+                    if (type === 'summary') {
+                      this.aiSummary += data.content; // 直接累加 content
+                     } else if (type === 'question') {
+                      this.aiConversation[aiMessageIndex].content += data.content; // 增量更新
+                      this.$nextTick(() => this.scrollToBottom());
+                    }
+                 }
+              } catch (err) {
+                console.error('解析流式数据失败:', err);
+             }
+          }
+        }
+      }
+    }
+
+  } catch (err) {
+     console.error("分析失败:", err);
+     showSnackBar("分析失败:" + err.message);
+      //  添加错误处理
+       if(type === 'question' && aiMessageIndex !== undefined){
+           this.aiConversation[aiMessageIndex].content = '抱歉, AI 助手遇到问题, 无法回答.';
+       }
+   } finally {
+     this.isLoading = false;
+     this.$nextTick(() => this.scrollToBottom());// 确保最后滚动到底部
+   }
+ },
+
+
+// 监听预约的会议
     listenToScheduledMeetings() {
       const user = this.$store.getters.getUser;
       if (!user) {
@@ -315,13 +553,13 @@ export default {
         this.scrollToBottom();
       }
     },
-    // 滚动到聊天底部
     scrollToBottom() {
-      const container = this.$refs.chatMessages;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    },
+         nextTick(() => {
+            if (this.$refs.chatMessages) {
+              this.$refs.chatMessages.scrollTop = this.$refs.chatMessages.scrollHeight;
+           }
+        });
+      },
     // 处理AI指令
     async handleAIDirectives(commandData) {
       console.log('处理AI指令:', commandData); // 调试信息
@@ -426,7 +664,8 @@ export default {
     // Render markdown to HTML
     renderMarkdown(markdownText) {
       if (!markdownText) return '';
-      const rawHtml = marked(markdownText);
+      const cleanedText = markdownText.replace(/[*_]/g, ''); //  移除 * 和 _
+      const rawHtml = marked(cleanedText);  //  使用 cleanedText
       return DOMPurify.sanitize(rawHtml);
     },
     // Escape HTML to prevent XSS
@@ -440,6 +679,22 @@ export default {
 </script>
 
 <style scoped>
+
+/* 新增: AI 摘要样式 */
+.ai-summary {
+  margin-bottom: 15px;
+   padding: 10px;
+   background-color: #f0f8ff;
+   border: 1px solid #add8e6;
+   border-radius: 5px;
+   max-height: 200px;  /*  添加最大高度,  可自行调整 */
+   overflow-y: auto;  /*  如果内容超出, 允许滚动 */
+}
+.ai-summary h4 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  color: #336699; /* 深蓝色标题 */
+}
 /* ======= 悬浮按钮 ======= */
 .ai-float-button {
   position: fixed;
@@ -644,3 +899,4 @@ export default {
   align-self: flex-end; /* 让气泡贴右边 */
 }
 </style>
+`

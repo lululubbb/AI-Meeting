@@ -1,3 +1,4 @@
+<!-- aActivityItem.vue -->
 <template>
     <div class="activity-item">
       <div class="icon-container">

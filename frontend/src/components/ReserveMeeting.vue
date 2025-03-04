@@ -76,13 +76,12 @@ const generateInvitationContent = () => {
   const invitationContent = generateInvitationContent();
   try {
     await navigator.clipboard.writeText(invitationContent);
-    showSnackBar('会议邀请已复制到剪贴板');
+    ElMessage.success('会议邀请已复制到剪贴板');
   } catch (err) {
-    showSnackBar('复制失败，请手动复制');
+    ElMessage.error('复制失败，请手动复制');
   }
   };
-// 获取 AIFloatingChat 组件的引用
-const aiFloatingChat = inject('aiFloatingChat');
+
 
 // 获取当前路由和路由实例
 const route = useRoute();
@@ -95,7 +94,8 @@ const config = reactive({
   sessionPasscode: '',
   meetingDateRange: [],
 });
-
+const role = ref(1); // 默认是主持人角色
+const timer = ref(null); // 使用 ref 声明 timer
 const scheduledMeeting = ref(null); // 保留, 但不再是关键
 const isJoining = ref(false);
 
@@ -124,13 +124,13 @@ const handleReservation = async () => {
     !config.meetingDateRange ||
     config.meetingDateRange.length !== 2
   ) {
-    showSnackBar('请填写完整的会议信息');
+    ElMessage.warning('请填写完整的会议信息');
     return;
   }
 
   try {
     if (!userId.value) {
-      showSnackBar('用户未登录!');
+      ElMessage.warning('用户未登录!');
       return;
     }
     isJoining.value = true; // 显示加载动画
@@ -159,8 +159,7 @@ const handleReservation = async () => {
 
     ElMessage.success('预约成功!');
   } catch (error) {
-    console.error('预约失败', error);
-    showSnackBar('预约失败:' + error.message);
+    ElMessage.error('预约失败:' + error.message);
   } finally {
     isJoining.value = false; // 隐藏加载动画
   }
