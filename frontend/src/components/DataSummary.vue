@@ -14,7 +14,7 @@
   <script setup>
   import { ref, onMounted, nextTick } from 'vue';
   import * as echarts from 'echarts';  // 如果体积重要, 使用按需引入
-
+  import { useRouter } from 'vue-router'; // 导入 useRouter
   import { useStore } from 'vuex';
   import FirestoreService from '../services/FirestoreService';
   
@@ -23,7 +23,7 @@
   let meetingsChartInstance = null;
   let durationChartInstance = null;
   const store = useStore();
-  
+    const router = useRouter(); // 获取 router 实例
   const userId = store.getters.getUser?.uid;
   
   onMounted(() => {
@@ -31,7 +31,15 @@
       fetchData();
     }
   });
-  
+  // 辅助函数：格式化日期为 YYYY-MM-DD (DataSummary.vue 和 HistoryMeeting.vue 都要用)
+function formatDateForComparison(date) {
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
   async function fetchData() {
     try {
       const meetings = await FirestoreService.getAllMeetingHistory(userId);
@@ -53,17 +61,17 @@
     // 数据处理：按日期统计会议数量
     const dateCounts = {};
     meetings.forEach(meeting => {
-      if (!meeting || (!meeting.startTime && !meeting.joinTime)) {
-        console.warn('Invalid meeting data:', meeting);
-        return;
-      }
-      const timestamp = meeting.joinTime || meeting.startTime;
-      if (typeof timestamp.toDate !== 'function') {
-        console.warn('startTime 或 joinTime 类型错误', timestamp);
-        return;
-      }
-      const date = timestamp.toDate().toLocaleDateString();
-      dateCounts[date] = (dateCounts[date] || 0) + 1;
+      if (!meeting || !meeting.startTime) {
+            //console.warn('Invalid meeting data:', meeting);
+            return;
+        }
+        const timestamp = meeting.startTime;
+        if (typeof timestamp.toDate !== 'function') {
+            console.warn('startTime 类型错误', timestamp, meeting);
+            return;
+        }
+        const date = formatDateForComparison(timestamp.toDate());
+        dateCounts[date] = (dateCounts[date] || 0) + 1;
     });
   
     // 对日期进行排序（正序，最早的在左边）
@@ -110,7 +118,7 @@
           color: '#555',
           fontSize: 12,
           formatter: function (value) {
-            const [year, month, day] = value.split('/');
+            const [year, month, day] = value.split('-');
             return `${month}/${day}`;
           }
         },
@@ -177,16 +185,10 @@
     meetingsChartInstance.on('click', function (params) {
       if (params.componentType === 'series') {
         const date = params.name;
-        const formattedDate = date.split('/').join('-');
-        try {
-          window.open(`/history?date=${formattedDate}`, '_blank');
-        } catch (error) {
-          console.error("跳转到历史记录页面失败:", error);
-          // ElMessage.error('跳转失败') // 如果有 ElMessage
-        }
+           router.push(`/history?date=${date}`); 
       }
     });
-  }
+}
   function initDurationChart(meetings) {
       if (!durationChart.value) return;
   
@@ -200,17 +202,19 @@
       };
   
       meetings.forEach(meeting => {
-          if (!meeting || (!meeting.startTime && !meeting.joinTime) || !meeting.endTime) {
-              console.warn('Invalid meeting data for duration calculation:', meeting);
-              return;
+        if (!meeting || !meeting.startTime || !meeting.endTime) {
+            return;
           }
-          const startTimestamp = meeting.joinTime || meeting.startTime;
+          const startTimestamp = meeting.startTime;
   
-          // 检查 timestamp 是否是有效的 Firestore Timestamp 对象
-          if (!startTimestamp || typeof startTimestamp.toDate !== 'function') {
-              console.warn('Invalid timestamp:', startTimestamp, 'in meeting:', meeting);
-              return;
-          }
+          if (typeof startTimestamp.toDate !== 'function') {
+            console.warn('Invalid startTime:', startTimestamp, 'in meeting:', meeting);
+            return;
+        }
+        if (typeof meeting.endTime.toDate !== 'function') {
+          console.warn('Invalid endTime:', meeting.endTime, 'in meeting:', meeting);
+          return;
+        }
   
           const durationMs = meeting.endTime.toDate() - startTimestamp.toDate();
           const durationMin = durationMs / (1000 * 60);
@@ -394,4 +398,3 @@
     }
   }
   </style>
-  

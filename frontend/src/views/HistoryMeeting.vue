@@ -364,7 +364,14 @@ const hideExplanationModal = () => {
   showExplanation.value = false;
 };
 
-
+// 辅助函数：格式化日期用于比较 (YYYY-MM-DD) 
+const formatDateForComparison = (date) => {
+    if (!date) return ''; // 处理 null/undefined
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 添加前导零
+    const day = String(date.getDate()).padStart(2, '0');     // 添加前导零
+    return `${year}-${month}-${day}`;
+};
 // 计算总页数
 const totalPages = computed(() => {
   return Math.ceil(allFilteredMeetings.value.length / pageSize.value);
@@ -780,30 +787,70 @@ const showSection = async (section) => {
 
 
 onMounted(() => {
-  const dateFromRoute = route.query.date;
-  if (dateFromRoute) {
-    // 确保 userId 已经就绪
-    if (store.getters.getUser?.uid) {
-      fetchMeetingsByDate(dateFromRoute);
-    } else {
-      // 如果 userId 还没准备好，设置一个临时的 watcher
-      const unwatch = store.watch(
-        (state) => state.user.uid,
-        (newUid) => {
-          if (newUid) {
-            fetchMeetingsByDate(dateFromRoute);
-            unwatch(); // 取消 watcher
-          }
-        }
-      );
-    }
-  } else {
-    // 如果没有日期参数，监听所有会议
-    if (store.state.user) {
-      store.dispatch('listenToMeetings');
-    }
-  }
+  // const dateFromRoute = route.query.date;
+  // if (dateFromRoute) {
+  //   // 确保 userId 已经就绪
+  //   if (store.getters.getUser?.uid) {
+  //     fetchMeetingsByDate(dateFromRoute);
+  //   } else {
+  //     // 如果 userId 还没准备好，设置一个临时的 watcher
+  //     const unwatch = store.watch(
+  //       (state) => state.user.uid,
+  //       (newUid) => {
+  //         if (newUid) {
+  //           fetchMeetingsByDate(dateFromRoute);
+  //           unwatch(); // 取消 watcher
+  //         }
+  //       }
+  //     );
+  //   }
+  // } else {
+  //   // 如果没有日期参数，监听所有会议
+  //   if (store.state.user) {
+  //     store.dispatch('listenToMeetings');
+  //   }
+  // }
 });
+// 获取会议
+const fetchMeetingsByDate = async (date) => {
+    loading.value = true;
+    const userId = store.getters.getUser?.uid;
+
+    if (!userId) {
+        console.error("User ID is missing.");
+        loading.value = false;
+        return;
+    }
+
+    try {
+        const meetingsOnDate = await FirestoreService.getAllMeetingHistory(userId);
+
+        // 1. 将 Firestore 时间戳转换为 JavaScript Date 对象，*然后*过滤
+        const filteredMeetings = meetingsOnDate.filter(meeting => {
+             if (!meeting || !meeting.startTime) { //只需要判断startTime
+               //console.warn('Invalid meeting data:', meeting);
+               return false; // 排除无效的会议
+        }
+
+          //将 Firestore Timestamps 转换为 JavaScript Date 对象
+          const timestamp = meeting.startTime;  //  只使用 startTime
+          if (typeof timestamp.toDate !== 'function') {
+               console.warn('startTime 或 joinTime 类型错误', timestamp); //修改
+                return false;
+            }
+            const meetingDate = timestamp.toDate();
+            return formatDateForComparison(meetingDate) === date;
+        });
+        store.commit('SET_MEETINGS', filteredMeetings);
+            await nextTick(); //重要！
+
+    } catch (error) {
+           console.error('获取会议失败:', error);
+        ElMessage.error('获取会议失败：' + error.message);
+    } finally {
+        loading.value = false;
+    }
+};
 // 监听 Vuex store 中的用户状态变化
 watch(
   () => store.getters.getUser,
@@ -811,46 +858,16 @@ watch(
     if (user && user.uid) {
       const dateFromRoute = route.query.date;
       if (dateFromRoute) {
-        fetchMeetingsByDate(dateFromRoute); // 确保在 userId 和 date 都存在时调用
+          fetchMeetingsByDate(dateFromRoute); // 按日期获取
       } else {
-        // 如果没有 date 参数, 也要获取数据 (直接访问 /history 的情况)
-        store.dispatch('listenToMeetings');
+        store.dispatch('listenToMeetings'); // 获取所有，如果没有指定日期
       }
     }
-  }
-
+  },
+  { immediate: true } 
 );
-//  根据日期获取会议
-const fetchMeetingsByDate = async (date) => {
-  loading.value = true;
-  const userId = store.getters.getUser?.uid;
-  if (!userId) {
-    console.error("User ID is missing.");
-    loading.value = false;
-    return;
-  }
 
-  try {
-    const meetingsOnDate = await FirestoreService.getAllMeetingHistory(userId);
-    const filteredMeetings = meetingsOnDate.filter(meeting => {
-      const meetingDate = meeting.startTime
-        ? (meeting.joinTime || meeting.startTime).toDate().toISOString().split('T')[0]
-        : null;
-      return meetingDate === date;
-    });
 
-    store.commit('SET_MEETINGS', filteredMeetings);
-
-    // 关键:  使用 nextTick 确保 DOM 更新 *之后* 再触发 computed 重新计算
-    await nextTick(); //  什么都不用做,  等待即可
-
-  } catch (error) {
-    console.error('获取会议失败:', error);
-    ElMessage.error('获取会议失败：' + error.message);
-  } finally {
-    loading.value = false;
-  }
-};
 
 // 获取所有过滤后的会议记录
 const allFilteredMeetings = computed(() => {

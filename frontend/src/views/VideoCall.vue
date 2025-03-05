@@ -996,7 +996,7 @@ const leaveSession = async () => { //普通用户离开会议
       console.log('endSession - filteredUsers:', filteredUsers); //  检查
       console.log('endSession - filteredChatMessages:', filteredChatMessages); // 检查
       // 先停止录音（里面会保存转录记录）
-      stopRecording();
+      // stopRecording();
       const user = store.getters.getUser; // 获取当前用户信息
       //  更新 Firestore 中的状态和结束时间
       if (user && config.meetingId) {
@@ -1558,7 +1558,7 @@ function subscribeEvents() {
 
   client.on('session-closed', async () => { // 改为 async 函数
        showSnackBar('会议已结束');
-       stopRecording();  //  *不要*在这里停止录音
+      //  stopRecording();  //  *不要*在这里停止录音
        // 直接更新状态为 finished
         const user = store.getters.getUser;
         if (user && config.meetingId) {
@@ -1730,7 +1730,7 @@ onBeforeUnmount(() => {
     ZoomVideoService.leaveSession(false);
     sessionJoined.value = false;
   }
-  stopRecording(); 
+  // stopRecording(); 
   ZoomVideoService.client.off('chat-file-download-progress', handleFileDownloadProgress); 
 });
 </script>
