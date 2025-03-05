@@ -90,27 +90,31 @@
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleVideo" :class="{ active: isVideoOn }">
-              {{ isVideoOn ? '关闭视频' : '开启视频' }}
+              <img v-if="isVideoOn" src="@/assets/video_off.png" alt="关闭视频" />
+              <img v-else src="@/assets/video_on.png" alt="开启视频" />
             </button>
             <button @click="toggleAudio" :class="{ active: !isAudioOn }">
-              {{ isAudioOn ? '静音' : '开启麦克风' }}
+              <img v-if="isAudioOn" src="@/assets/audio_off.png" alt="静音" />
+              <img v-else src="@/assets/audio_on.png" alt="开启麦克风" />
             </button>
             <button @click="toggleScreenShare" :class="{ active: isSharing }">
-              {{ isSharing ? '停止共享屏幕' : '共享屏幕' }}
+              <img v-if="isSharing" src="@/assets/share_off.png" alt="停止共享屏幕" />
+              <img v-else src="@/assets/share_on.png" alt="共享屏幕" />
             </button>
             <!-- 新增：转录按钮 -->
             <button @click="toggleRecording" :class="{ active: isRecording }">
-              {{ isRecording ? '取消实时字幕' : '实时字幕' }}
+              <img v-if="isRecording" src="@/assets/字幕_off.png" alt="取消实时字幕" />
+              <img v-else src="@/assets/字幕_on.png" alt="实时字幕" />
             </button>
             <!-- 服务质量按钮 -->
             <button @click="toggleServiceQuality" :class="{ active: showServiceQuality }">
-              服务质量
+              <img src="@/assets/服务质量.png" alt="服务质量" />
             </button>
             <button v-if="isHost" @click="endSession" class="exit-button">
-              结束会议
+              <img src="@/assets/end.png" alt="结束会议" />
             </button>
             <button v-else @click="leaveSession" class="exit-button">
-              退出会议
+              <img src="@/assets/exit2.png" alt="退出会议" />
             </button>
           </div>
 
@@ -1800,6 +1804,24 @@ main {
   margin-top: 20px;
 }
 
+
+.controls button {
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color
+}
+
+.controls button img {
+    width: 20px; /* 根据需求调整宽度 */
+    height: 20px; /* 根据需求调整高度 */
+    vertical-align: middle; /* 使图标在按钮中垂直居中 */
+}
+
 .switch-button {
   background-color: #9dccff; /* 蓝色背景 */
   color: rgb(0, 0, 0); /* 白色文字 */
@@ -1995,7 +2017,7 @@ canvas.video-element.share-video {
     position: absolute;
     bottom: 100px;
     right: 20px;
-    width: 300px;
+    width: 300px; 
     max-height: 400px;
     display: flex;
     flex-direction: column;
@@ -2099,7 +2121,20 @@ canvas.video-element.share-video {
     width: 100%;
     height: 400px;
   }
-
+  .controls {
+        flex-wrap: wrap; /* 使按钮在空间不足时换行 */
+        justify-content: center; /* 按钮左对齐 */
+        padding: 5px; /* 减少内边距 */
+        gap: 20px; /* 减少按钮间距 */
+    }
+  .controls button {
+        padding: 10px 12px; /* 调整按钮内边距 */
+        font-size: 12px; /* 减小字体大小 */
+    }
+  .controls button img {
+    width: 20px; /* 减小图标宽度 */
+    height: 20px; /* 减小图标高度 */
+    }
   .subtitle {
     position: absolute;
     bottom: 20px;
@@ -2147,7 +2182,20 @@ canvas.video-element.share-video {
     height: 250px;
   }
 }
-
+  .controls {
+        flex-wrap: wrap; /* 使按钮在空间不足时换行 */
+        justify-content:center; /* 按钮左对齐 */
+        padding: 10px; /* 减少内边距 */
+        gap: 20px; /* 减少按钮间距 */
+    }
+  .controls button {
+        padding: 10px 10px; /* 调整按钮内边距 */
+        font-size: 10px; /* 减小字体大小 */
+    }
+  .controls button img {
+        width: 16px; /* 减小图标宽度 */
+        height: 16px; /* 减小图标高度 */
+    }
 .service-quality-overlay {
   position: fixed;
   top: 50%;
