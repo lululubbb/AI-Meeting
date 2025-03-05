@@ -184,42 +184,46 @@ class FirestoreService {
   }
 
   // 获取用户的所有会议, 包括主持的和参与的
-    async getAllMeetingHistory(userId) {
-        try {
-            const meetingsColRef = collection(db, 'users', userId, 'meetings');
-            const q = query(meetingsColRef, orderBy('createdAt', 'desc'));
-            const querySnapshot = await getDocs(q);
-            const meetings = [];
-            for (const docSnap of querySnapshot.docs) { // 使用 for...of 循环
-                const data = docSnap.data();
-              if(data.isParticipant){ //如果是参与者
-                const hostMeetingRef = doc(db, 'users', data.hostId, 'meetings', docSnap.id); //这里的docSnap.id就是meetingId
-                const hostDocSnap = await getDoc(hostMeetingRef);
-                if(hostDocSnap.exists()){ //如果主会议存在
-                    meetings.push({
-                        meetingId: hostDocSnap.id,
-                        ...hostDocSnap.data(), // 使用主会议的数据
-                        isParticipant: true,  // 标记为参与的会议
-                        joinTime: data.joinTime,          // 参与者加入时间
-                        leaveTime: data.leaveTime, //和video-active-change事件
-                    })
-                }
-              }
-              else{ //如果是主持人
+  async getAllMeetingHistory(userId) {
+    if (!userId) { // 添加 userId 判空
+         console.error("User ID is required to get meeting history.");
+        return []; // 或者抛出错误,  根据你的需求
+     }
+    try {
+        const meetingsColRef = collection(db, 'users', userId, 'meetings');
+        const q = query(meetingsColRef, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const meetings = [];
+        for (const docSnap of querySnapshot.docs) { // 使用 for...of 循环
+            const data = docSnap.data();
+          if(data.isParticipant){ //如果是参与者
+            const hostMeetingRef = doc(db, 'users', data.hostId, 'meetings', docSnap.id); //这里的docSnap.id就是meetingId
+            const hostDocSnap = await getDoc(hostMeetingRef);
+            if(hostDocSnap.exists()){ //如果主会议存在
                 meetings.push({
-                        meetingId: docSnap.id,
-                       ...data
-                    });
-              }
-
+                    meetingId: hostDocSnap.id,
+                    ...hostDocSnap.data(), // 使用主会议的数据
+                    isParticipant: true,  // 标记为参与的会议
+                    joinTime: data.joinTime,          // 参与者加入时间
+                    leaveTime: data.leaveTime, //和video-active-change事件
+                })
             }
-            return meetings;
-        } catch (error) {
-           console.error('获取所有会议历史记录失败:', error);
-           ElMessage.error('获取所有会议历史记录失败：' + error.message); // 使用 ElMessage
-           throw error;
+          }
+          else{ //如果是主持人
+            meetings.push({
+                    meetingId: docSnap.id,
+                   ...data
+                });
+          }
+
         }
+        return meetings;
+    } catch (error) {
+       console.error('获取所有会议历史记录失败:', error);
+       ElMessage.error('获取所有会议历史记录失败：' + error.message); // 使用 ElMessage
+       throw error;
     }
+}
      // 新增：添加待办事项
   async addTodoItem(userId, todo) {
     const userDocRef = doc(db, 'users', userId);

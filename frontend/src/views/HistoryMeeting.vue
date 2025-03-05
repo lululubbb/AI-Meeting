@@ -329,31 +329,32 @@
 </template>
 
 <script setup>
- import { computed, onMounted, ref, watch,onUnmounted  } from 'vue';
-  import { useStore } from 'vuex';
-  import { useRouter, useRoute } from 'vue-router';
-    import { ElMessage } from 'element-plus';
-  import FirestoreService from '../services/FirestoreService.js';
-    import { showSnackBar } from '../utils/utils.js';
-    import { generateSummaryAPI } from '../api/chat.js';
-    import axios from 'axios'; // 导入 Axios
-    import * as XLSX from 'xlsx';
+import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter, useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import FirestoreService from '../services/FirestoreService.js';
+import { showSnackBar } from '../utils/utils.js';
+import { generateSummaryAPI } from '../api/chat.js';
+import axios from 'axios'; // 导入 Axios
+import * as XLSX from 'xlsx';
+import { nextTick } from 'vue'; 
 
-  const isLoadingSummary = ref(false);
-  const summary = ref('');
-    // 初始化情感分析图片
-    const sentimentImages = ref({
-    wordcloud: '',
-    bar_chart: '',
-    pie_chart: '',
-    radar_chart: ''
-  });
+const isLoadingSummary = ref(false);
+const summary = ref('');
+// 初始化情感分析图片
+const sentimentImages = ref({
+  wordcloud: '',
+  bar_chart: '',
+  pie_chart: '',
+  radar_chart: ''
+});
 
-  const currentPage = ref(1);
-  const pageSize = ref(10);
-  const loading = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const loading = ref(false);
 
-  const showExplanation = ref(false);
+const showExplanation = ref(false);
 
 const showExplanationModal = () => {
   showExplanation.value = true;
@@ -385,141 +386,141 @@ const nextPage = () => {
 
 // 定义后端 API 地址
 const BACKEND_URL = 'http://localhost:8003'; // 根据实际情况修改
-    
+
 // 函数：生成流式摘要（保持不变）
 const generateStreamedSummary = async () => {
-    if (isLoadingSummary.value) {
-      return;
+  if (isLoadingSummary.value) {
+    return;
+  }
+
+  if (!meetingTranscriptions.value) {
+    summary.value = '会议记录为空，无法生成摘要。';
+    return;
+  }
+
+  isLoadingSummary.value = true;
+  summary.value = '';
+
+  try {
+    const response = await generateSummaryAPI(meetingTranscriptions.value);
+
+    if (!response.body) {
+      throw new Error('响应体为空');
     }
 
-    if (!meetingTranscriptions.value) {
-      summary.value = '会议记录为空，无法生成摘要。';
-      return;
-    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let doneReading = false;
 
-    isLoadingSummary.value = true;
-    summary.value = '';
+    // 创建一个缓冲区来存储接收到的内容
+    const contentBuffer = [];
 
-    try {
-      const response = await generateSummaryAPI(meetingTranscriptions.value);
+    // 定义每次追加的时间间隔（毫秒）
+    const appendInterval = 50;
 
-      if (!response.body) {
-        throw new Error('响应体为空');
+    // 定义每次追加的内容长度
+    const chunkSize = 5;
+
+    // 定义一个定时器来定期追加内容
+    const intervalId = setInterval(() => {
+      if (contentBuffer.length > 0) {
+        // 从缓冲区中取出一部分内容
+        const chunk = contentBuffer.shift();
+        summary.value += chunk;
+      } else if (doneReading) {
+        // 如果读取已完成且缓冲区为空，清除定时器
+        clearInterval(intervalId);
       }
+    }, appendInterval);
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let doneReading = false;
-
-      // 创建一个缓冲区来存储接收到的内容
-      const contentBuffer = [];
-
-      // 定义每次追加的时间间隔（毫秒）
-      const appendInterval = 50;
-
-      // 定义每次追加的内容长度
-      const chunkSize = 5;
-
-      // 定义一个定时器来定期追加内容
-      const intervalId = setInterval(() => {
-        if (contentBuffer.length > 0) {
-          // 从缓冲区中取出一部分内容
-          const chunk = contentBuffer.shift();
-          summary.value += chunk;
-        } else if (doneReading) {
-          // 如果读取已完成且缓冲区为空，清除定时器
-          clearInterval(intervalId);
-        }
-      }, appendInterval);
-
-      while (!doneReading) {
-        const { value, done } = await reader.read();
-        doneReading = done;
-        if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-          for (const line of lines) {
-            if (line.startsWith('data:')) {
-              const dataStr = line.replace(/^data:/, '').trim();
-              if (dataStr === '[DONE]') {
-                doneReading = true;
-                break;
-              }
-              try {
-                const data = JSON.parse(dataStr);
-                const delta = data.choices[0].delta;
-                if (delta && delta.content) {
-                  // 将接收到的内容分割成更小的块并推入缓冲区
-                  for (let i = 0; i < delta.content.length; i += chunkSize) {
-                    const subChunk = delta.content.substring(i, i + chunkSize);
-                    contentBuffer.push(subChunk);
-                  }
+    while (!doneReading) {
+      const { value, done } = await reader.read();
+      doneReading = done;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const dataStr = line.replace(/^data:/, '').trim();
+            if (dataStr === '[DONE]') {
+              doneReading = true;
+              break;
+            }
+            try {
+              const data = JSON.parse(dataStr);
+              const delta = data.choices[0].delta;
+              if (delta && delta.content) {
+                // 将接收到的内容分割成更小的块并推入缓冲区
+                for (let i = 0; i < delta.content.length; i += chunkSize) {
+                  const subChunk = delta.content.substring(i, i + chunkSize);
+                  contentBuffer.push(subChunk);
                 }
-              } catch (err) {
-                console.error('解析流式摘要失败:', err);
               }
+            } catch (err) {
+              console.error('解析流式摘要失败:', err);
             }
           }
         }
       }
-
-// 确保所有内容都已追加
-// 等待缓冲区清空
-const waitUntilBufferEmpty = () => {
-        return new Promise(resolve => {
-          const checkBuffer = () => {
-            if (contentBuffer.length === 0) {
-              clearInterval(intervalId);
-              resolve();
-            } else {
-              setTimeout(checkBuffer, appendInterval);
-            }
-          };
-          checkBuffer();
-        });
-      };
-
-      await waitUntilBufferEmpty();
-    } catch (error) {
-      console.error('生成摘要失败:', error);
-      summary.value = '抱歉，生成摘要失败，请稍后重试。';
-    } finally {
-      isLoadingSummary.value = false;
     }
-    onUnmounted(() => abortController.abort());
-  };
+
+    // 确保所有内容都已追加
+    // 等待缓冲区清空
+    const waitUntilBufferEmpty = () => {
+      return new Promise(resolve => {
+        const checkBuffer = () => {
+          if (contentBuffer.length === 0) {
+            clearInterval(intervalId);
+            resolve();
+          } else {
+            setTimeout(checkBuffer, appendInterval);
+          }
+        };
+        checkBuffer();
+      });
+    };
+
+    await waitUntilBufferEmpty();
+  } catch (error) {
+    console.error('生成摘要失败:', error);
+    summary.value = '抱歉，生成摘要失败，请稍后重试。';
+  } finally {
+    isLoadingSummary.value = false;
+  }
+  onUnmounted(() => abortController.abort());
+};
 
 
-  // 获取 Vuex store
-  const store = useStore();
-  const router = useRouter();
-  const route = useRoute();
+// 获取 Vuex store
+const store = useStore();
+const router = useRouter();
+const route = useRoute();
 
-  // 获取当前用户的邮箱
-  const getUserEmail = () => {
-      const user = store.getters.getUser;
-      // console.log('当前用户ID:', user.uid);
-      return user?.email || 'unknown@domain.com'
-  };
+// 获取当前用户的邮箱
+const getUserEmail = () => {
+  const user = store.getters.getUser;
+  // console.log('当前用户ID:', user.uid);
+  return user?.email || 'unknown@domain.com'
+};
 // 获取用户 ID
 const getUserId = () => {
-        const user = store.getters.getUser;
-    return user?.uid;  //  user  null, ?
+  const user = store.getters.getUser;
+  return user?.uid;  //  user  null, ?
 }
 
-  // 获取会议列表
-  const meetings = computed(() => store.getters.getMeetings);
+// 获取会议列表
+const meetings = computed(() => store.getters.getMeetings);
 
-  // 搜索框的绑定数据
-  const searchQuery = ref('');
-  // 选中的会议详情
-  const selectedMeeting = ref(null);
-  const showModal = ref(false);
-  const activeSection = ref(''); // 用于控制显示哪个区域
+// 搜索框的绑定数据
+const searchQuery = ref('');
+// 选中的会议详情
+const selectedMeeting = ref(null);
+const showModal = ref(false);
+const activeSection = ref(''); // 用于控制显示哪个区域
 
-  // 转录文本
-  const meetingTranscriptions = ref('');
-  const showCloseButton = ref(false);
+// 转录文本
+const meetingTranscriptions = ref('');
+const showCloseButton = ref(false);
 
 // 监听 route.path 变化
 watch(() => route.path, (newPath) => {
@@ -529,14 +530,6 @@ watch(() => route.path, (newPath) => {
 watch(searchQuery, () => {
   currentPage.value = 1;
 });
-
-// 格式化日期
-// const formatDate = (timestamp) => {
-//   if (!timestamp) return '';
-//   const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
-//   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-// };
-
 
 // 格式化日期
 const formatDate = (timestamp) => {
@@ -566,29 +559,29 @@ const formatDate = (timestamp) => {
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 };
 
-  // 显示会议详情
-  const showMeetingDetails = (meeting) => {
-    selectedMeeting.value = meeting;
-    console.log('All properties of selected meeting:', Object.keys(meeting)); 
-    console.log('Selected meeting:', meeting); // 打印会议对象
-    console.log('Selected meeting participants:', meeting.participants); // 打印参会者数组
-    console.log('Selected meeting:', meeting);
+// 显示会议详情
+const showMeetingDetails = (meeting) => {
+  selectedMeeting.value = meeting;
+  console.log('All properties of selected meeting:', Object.keys(meeting));
+  console.log('Selected meeting:', meeting); // 打印会议对象
+  console.log('Selected meeting participants:', meeting.participants); // 打印参会者数组
+  console.log('Selected meeting:', meeting);
   if (meeting.host) {
     console.log('Host data:', meeting.host);
   } else {
     console.log('Host data is missing or empty.');
   }
-    showModal.value = true;
-      activeSection.value = ''; //  重置 activeSection
-  };
+  showModal.value = true;
+  activeSection.value = ''; //  重置 activeSection
+};
 
-  // 关闭详情弹窗
-    const closeModal = () => {
-    showModal.value = false;
-    selectedMeeting.value = null;
-     activeSection.value = ''; //重置
-     meetingTranscriptions.value = ''; //重置
-  };
+// 关闭详情弹窗
+const closeModal = () => {
+  showModal.value = false;
+  selectedMeeting.value = null;
+  activeSection.value = ''; //重置
+  meetingTranscriptions.value = ''; //重置
+};
 
 
 // 定义分享会议记录的函数
@@ -620,24 +613,24 @@ const downloadKeywordsSummary = () => {
 
 // 新增函数：下载参会者数据为 CSV
 const downloadParticipantsData = () => {
-        if (!selectedMeeting.value || !selectedMeeting.value.participants) {
-            showSnackBar('没有参会者数据可供下载。');
-            return;
-        }
+  if (!selectedMeeting.value || !selectedMeeting.value.participants) {
+    showSnackBar('没有参会者数据可供下载。');
+    return;
+  }
 
-        // BOM + UTF-8 编码
-        let csvContent = '\uFEFF';
+  // BOM + UTF-8 编码
+  let csvContent = '\uFEFF';
 
-        // CSV 头部 (修改)
-        csvContent += '用户名,角色,加入时间,离开时间,参会时长,视频开启次数,视频总开启时长,音频开启次数,音频总开启时长,屏幕共享次数,屏幕共享总时长,消息数\n';
+  // CSV 头部 (修改)
+  csvContent += '用户名,角色,加入时间,离开时间,参会时长,视频开启次数,视频总开启时长,音频开启次数,音频总开启时长,屏幕共享次数,屏幕共享总时长,消息数\n';
 
-        // CSV 数据行
-        selectedMeeting.value.participants.forEach(p => {
-     // 过滤 undefined 值
-     if (Object.values(p).some(value => value === undefined)) {
-        console.warn('Skipping participant due to undefined values:', p);
-        return; // 跳过此参会者
-      }
+  // CSV 数据行
+  selectedMeeting.value.participants.forEach(p => {
+    // 过滤 undefined 值
+    if (Object.values(p).some(value => value === undefined)) {
+      console.warn('Skipping participant due to undefined values:', p);
+      return; // 跳过此参会者
+    }
     const joinTime = p.joinTime ? formatDate(p.joinTime) : 'N/A';
     const leaveTime = p.leaveTime ? formatDate(p.leaveTime) : '未离开';
     const duration = calculateDuration(p.joinTime, p.leaveTime);
@@ -648,8 +641,8 @@ const downloadParticipantsData = () => {
     const audioOnCount = p.isAudioOn ? getAudioOnCount(p.isAudioOn.timeline) : 0;
     const audioTotalOnTime = p.isAudioOn ? getAudioTotalOnTime(p.isAudioOn.timeline) : '0秒';
     const sharingCount = p.isSharing ? getSharingCounts(p.isSharing.timeline) : 0;
-    const sharingTotalOnTime = p.isSharing ? getSharingTotalTime(p.isSharing.timeline):'0秒';
-     // 新增
+    const sharingTotalOnTime = p.isSharing ? getSharingTotalTime(p.isSharing.timeline) : '0秒';
+    // 新增
     // const uploads = p.uploads || 0; // 移除
     // const downloads = p.downloads || 0; // 移除
     const messagesSent = p.messagesSent || 0;
@@ -670,26 +663,7 @@ const downloadParticipantsData = () => {
   URL.revokeObjectURL(link.href);
 };
 
-  // // 下载数据
-  // const downloadData = () => {
-  //     if(!selectedMeeting.value) return;
-  //   const data = {
-  //     meetingId: selectedMeeting.value.meetingId,
-  //     participants: selectedMeeting.value.participants,
-  //   //   participationRate: selectedMeeting.value.participationRate, // 如有
-  //     transcriptions: selectedMeeting.value.transcriptions,
-  //     chatMessages: selectedMeeting.value.chatMessages,
-  //   };
-
-  //   const json = JSON.stringify(data, null, 2);
-  //   const blob = new Blob([json], { type: 'application/json' });
-  //   const link = document.createElement('a');
-  //   link.href = URL.createObjectURL(blob);
-  //   link.download = `${selectedMeeting.value.sessionName}-data.json`;
-  //   link.click();
-  // };
-
-  // 格式化日期和时间（精确到秒）
+// 格式化日期和时间（精确到秒）
 const formatDateTimeForCSV = (timestamp) => {
   if (!timestamp) return '';
   let date;
@@ -717,130 +691,183 @@ const formatDateTimeForCSV = (timestamp) => {
 
   return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
 };
-      // 新增函数：下载聊天数据
-      const downloadChatData = () => {
-    if (!selectedMeeting.value || !selectedMeeting.value.chatMessages) {
-      showSnackBar('没有聊天数据可供下载。');
-      return;
+// 新增函数：下载聊天数据
+const downloadChatData = () => {
+  if (!selectedMeeting.value || !selectedMeeting.value.chatMessages) {
+    showSnackBar('没有聊天数据可供下载。');
+    return;
+  }
+
+  // CSV 头部, 添加 BOM
+  let csvContent = '\uFEFF类型,发送者,接收者,消息内容,时间戳\n';
+
+  // CSV 数据行
+  selectedMeeting.value.chatMessages.forEach(msg => {
+    // 过滤掉 undefined 值
+    if (Object.values(msg).some(value => value === undefined)) {
+      console.warn('Skipping chat message due to undefined values:', msg);
+      return; // 跳过此消息
     }
+    const type = msg.type === 'group' ? '群聊' : '私聊';
+    const sender = msg.senderName;
+    const receiver = msg.type === 'private' ? getReceiverName(msg.receiverId) : '所有人';
+    const message = msg.message ? msg.message.replace(/,/g, '，') : `[文件] ${msg.file?.name || '未知文件名'}`;  // 使用可选链和空值合并
+    //  const timestamp = formatDate(msg.timestamp); // 使用新的格式化函数
+    const timestamp = formatDateTimeForCSV(msg.timestamp);
+    csvContent += `${type},${sender},${receiver},"${message}",${timestamp}\n`; // 使用双引号包裹消息内容
+  });
 
-   // CSV 头部, 添加 BOM
-      let csvContent = '\uFEFF类型,发送者,接收者,消息内容,时间戳\n';
+  // 创建 Blob 对象，并触发下载,  和上面下载参会者类似
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${selectedMeeting.value.sessionName}-聊天记录.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+};
 
-      // CSV 数据行
-      selectedMeeting.value.chatMessages.forEach(msg => {
-         // 过滤掉 undefined 值
-        if (Object.values(msg).some(value => value === undefined)) {
-          console.warn('Skipping chat message due to undefined values:', msg);
-          return; // 跳过此消息
+// 根据 receiverId 获取接收者名称（用于私聊）
+const getReceiverName = (receiverId) => {
+  // 如果是群发消息，直接返回 "所有人"
+  if (receiverId === '0' || receiverId === 0) {
+    return '所有人';
+  }
+
+  // 如果不是群发消息，查找对应的用户
+  if (!selectedMeeting.value || !selectedMeeting.value.participants) {
+    return `未知用户 (ID: ${receiverId})`; // 显示 ID
+  }
+  const receiver = selectedMeeting.value.participants.find(p => p.userId === receiverId);
+
+  // 同时显示用户名和 ID
+  return receiver ? `${receiver.userName} (ID: ${receiverId})` : `未知用户 (ID: ${receiverId})`;
+};
+
+// 切换功能区域
+const showSection = async (section) => {
+  if (selectedMeeting.value && selectedMeeting.value.status === 'finished') {
+    activeSection.value = section;
+
+    if (section === 'record') {
+      // 获取转录文本
+      const user = store.getters.getUser;
+      if (user && selectedMeeting.value.meetingId) {
+        try {
+          const transcription = await FirestoreService.getTranscriptions(user.uid, selectedMeeting.value.meetingId);
+          meetingTranscriptions.value = transcription;
+          console.log('获取到的转录文本:', transcription);
+        } catch (error) {
+          console.error('获取转录文本失败:', error);
+          showSnackBar('获取转录文本失败: ' + error.message);
         }
-        const type = msg.type === 'group' ? '群聊' : '私聊';
-        const sender = msg.senderName;
-        const receiver = msg.type === 'private' ? getReceiverName(msg.receiverId) : '所有人';
-        const message = msg.message ? msg.message.replace(/,/g, '，') : `[文件] ${msg.file?.name || '未知文件名'}`;  // 使用可选链和空值合并
-        //  const timestamp = formatDate(msg.timestamp); // 使用新的格式化函数
-        const timestamp = formatDateTimeForCSV(msg.timestamp);
-      csvContent += `${type},${sender},${receiver},"${message}",${timestamp}\n`; // 使用双引号包裹消息内容
-      });
-
-       // 创建 Blob 对象，并触发下载,  和上面下载参会者类似
-        const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${selectedMeeting.value.sessionName}-聊天记录.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    };
-
-  // 根据 receiverId 获取接收者名称（用于私聊）
-  const getReceiverName = (receiverId) => {
-    // 如果是群发消息，直接返回 "所有人"
-    if (receiverId === '0' || receiverId === 0) {
-      return '所有人';
-    }
-
-    // 如果不是群发消息，查找对应的用户
-    if (!selectedMeeting.value || !selectedMeeting.value.participants) {
-        return `未知用户 (ID: ${receiverId})`; // 显示 ID
-    }
-    const receiver = selectedMeeting.value.participants.find(p => p.userId === receiverId);
-
-    // 同时显示用户名和 ID
-     return receiver ? `${receiver.userName} (ID: ${receiverId})` : `未知用户 (ID: ${receiverId})`;
-  };
-
-  // 切换功能区域
-  const showSection = async (section) => {
-      if (selectedMeeting.value && selectedMeeting.value.status === 'finished') {
-          activeSection.value = section;
-
-          if (section === 'record') {
-            // 获取转录文本
-            const user = store.getters.getUser;
-            if (user && selectedMeeting.value.meetingId) {
-              try {
-                const transcription = await FirestoreService.getTranscriptions(user.uid, selectedMeeting.value.meetingId);
-                meetingTranscriptions.value = transcription;
-                console.log('获取到的转录文本:', transcription);
-              } catch (error) {
-                console.error('获取转录文本失败:', error);
-                showSnackBar('获取转录文本失败: ' + error.message);
-              }
-            } else {
-              console.warn('用户信息或 meetingId 不存在');
-            }
-          }
-          // 如果切换到 'sentiment'，则调用 fetchSentimentImages
-          if (section === 'sentiment') {
-            await fetchSentimentImages();
-        }
-        if (section === 'statistics') {
-        await analyzeParticipation();
-    }
       } else {
-        ElMessage.warning("请等会议结束后再进行查看");
+        console.warn('用户信息或 meetingId 不存在');
       }
+    }
+    // 如果切换到 'sentiment'，则调用 fetchSentimentImages
+    if (section === 'sentiment') {
+      await fetchSentimentImages();
+    }
+    if (section === 'statistics') {
+      await analyzeParticipation();
+    }
+  } else {
+    ElMessage.warning("请等会议结束后再进行查看");
+  }
 };
 
 
-  // 生命周期钩子
-    onMounted(() => {
-    // console.log("history onMounted");
-        if (store.state.user) {
-            store.dispatch('listenToMeetings');
+onMounted(() => {
+  const dateFromRoute = route.query.date;
+  if (dateFromRoute) {
+    // 确保 userId 已经就绪
+    if (store.getters.getUser?.uid) {
+      fetchMeetingsByDate(dateFromRoute);
+    } else {
+      // 如果 userId 还没准备好，设置一个临时的 watcher
+      const unwatch = store.watch(
+        (state) => state.user.uid,
+        (newUid) => {
+          if (newUid) {
+            fetchMeetingsByDate(dateFromRoute);
+            unwatch(); // 取消 watcher
+          }
         }
+      );
+    }
+  } else {
+    // 如果没有日期参数，监听所有会议
+    if (store.state.user) {
+      store.dispatch('listenToMeetings');
+    }
+  }
+});
+// 监听 Vuex store 中的用户状态变化
+watch(
+  () => store.getters.getUser,
+  (user) => {
+    if (user && user.uid) {
+      const dateFromRoute = route.query.date;
+      if (dateFromRoute) {
+        fetchMeetingsByDate(dateFromRoute); // 确保在 userId 和 date 都存在时调用
+      } else {
+        // 如果没有 date 参数, 也要获取数据 (直接访问 /history 的情况)
+        store.dispatch('listenToMeetings');
+      }
+    }
+  }
+
+);
+//  根据日期获取会议
+const fetchMeetingsByDate = async (date) => {
+  loading.value = true;
+  const userId = store.getters.getUser?.uid;
+  if (!userId) {
+    console.error("User ID is missing.");
+    loading.value = false;
+    return;
+  }
+
+  try {
+    const meetingsOnDate = await FirestoreService.getAllMeetingHistory(userId);
+    const filteredMeetings = meetingsOnDate.filter(meeting => {
+      const meetingDate = meeting.startTime
+        ? (meeting.joinTime || meeting.startTime).toDate().toISOString().split('T')[0]
+        : null;
+      return meetingDate === date;
     });
 
-  // 根据搜索条件过滤会议列表
-  // const filteredMeetings = computed(() => {
-  //   if (!searchQuery.value) return meetings.value;
+    store.commit('SET_MEETINGS', filteredMeetings);
 
-  //   const query = searchQuery.value.toLowerCase();
-  //   return meetings.value.filter((meeting) => {
-  //     const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query);
-  //     const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query);
-  //     const createdAtMatch = meeting.startTime && formatDate(meeting.startTime).toLowerCase().includes(query);  // startTime
-  //     const endedAtMatch = meeting.endTime && formatDate(meeting.endTime).toLowerCase().includes(query);       //endTime
+    // 关键:  使用 nextTick 确保 DOM 更新 *之后* 再触发 computed 重新计算
+    await nextTick(); //  什么都不用做,  等待即可
 
-  //     return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
-  //   });
-  // });
+  } catch (error) {
+    console.error('获取会议失败:', error);
+    ElMessage.error('获取会议失败：' + error.message);
+  } finally {
+    loading.value = false;
+  }
+};
 
-  // 获取所有过滤后的会议记录
+// 获取所有过滤后的会议记录
 const allFilteredMeetings = computed(() => {
+    // 如果提供了查询参数，且 meetings 数组不为空，则进行过滤
   if (!searchQuery.value) return meetings.value;
+     const query = searchQuery.value.toLowerCase();
+     return meetings.value.filter((meeting) => {
+     // 确保 meeting 对象和必要的属性都存在
+     const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query); // 会议名称搜索
+    const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query); // 会议状态搜索
+        // 确保 startTime 和 endTime 存在，并且是有效的 Date 对象
+     const createdAtMatch = meeting.startTime && formatDate(meeting.startTime).toLowerCase().includes(query);
+    const endedAtMatch = meeting.endTime && formatDate(meeting.endTime).toLowerCase().includes(query); // 假设这是会议结束时间
 
-  const query = searchQuery.value.toLowerCase();
-  return meetings.value.filter((meeting) => {
-    const meetingNameMatch = meeting.sessionName && meeting.sessionName.toLowerCase().includes(query);
-    const statusMatch = meeting.status && meeting.status.toLowerCase().includes(query);
-    const createdAtMatch = meeting.startTime && formatDate(meeting.startTime).toLowerCase().includes(query);  // startTime
-    const endedAtMatch = meeting.endTime && formatDate(meeting.endTime).toLowerCase().includes(query);       //endTime
-
-    return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
-  });
+        // 返回所有匹配条件的或运算结果
+     return meetingNameMatch || statusMatch || createdAtMatch || endedAtMatch;
+    });
 });
 
 // 当前可见的会议记录
@@ -851,49 +878,49 @@ const visibleMeetings = computed(() => {
 });
 
 
-  // 返回主页
-  const goHome = () => {
-    showModal.value = false;
-    router.push('/home');
-  };
+// 返回主页
+const goHome = () => {
+  showModal.value = false;
+  router.push('/home');
+};
 
-    // 函数：发送转录文本到后端并获取情感分析图表
-    const fetchSentimentImages = async () => {
-      if (!meetingTranscriptions.value) {
-        ElMessage.error('会议转录文本为空，无法进行情感分析');
-        return;
+// 函数：发送转录文本到后端并获取情感分析图表
+const fetchSentimentImages = async () => {
+  if (!meetingTranscriptions.value) {
+    ElMessage.error('会议转录文本为空，无法进行情感分析');
+    return;
+  }
+
+  try {
+    // 发送 POST 请求到后端
+    const response = await axios.post(`${BACKEND_URL}/generate-charts/`, new URLSearchParams({
+      text: meetingTranscriptions.value
+    }), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
+    });
 
-      try {
-        // 发送 POST 请求到后端
-        const response = await axios.post(`${BACKEND_URL}/generate-charts/`, new URLSearchParams({
-          text: meetingTranscriptions.value
-        }),{
-         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-        });
+    if (response.data.error) {
+      console.error('后端错误:', response.data.error);
+      ElMessage.error(`后端错误: ${response.data.error}`);
+      return;
+    }
 
-        if (response.data.error) {
-          console.error('后端错误:', response.data.error);
-          ElMessage.error(`后端错误: ${response.data.error}`);
-          return;
-        }
-
-        // 更新情感分析图表
-        sentimentImages.value = {
-          wordcloud: response.data.wordcloud || '',
-          bar_chart: response.data.bar_chart || '',
-          pie_chart: response.data.pie_chart || '',
-          radar_chart: response.data.radar_chart || ''
-        };
-
-        console.log('接收到的情感分析图表:', sentimentImages.value);
-      } catch (error) {
-        console.error('获取情感分析图表失败:', error);
-        ElMessage.error('获取情感分析图表失败，请稍后重试。');
-      }
+    // 更新情感分析图表
+    sentimentImages.value = {
+      wordcloud: response.data.wordcloud || '',
+      bar_chart: response.data.bar_chart || '',
+      pie_chart: response.data.pie_chart || '',
+      radar_chart: response.data.radar_chart || ''
     };
+
+    console.log('接收到的情感分析图表:', sentimentImages.value);
+  } catch (error) {
+    console.error('获取情感分析图表失败:', error);
+    ElMessage.error('获取情感分析图表失败，请稍后重试。');
+  }
+};
 
 // 计算视频开启次数
 const getVideoOnCount = (timeline) => {
@@ -931,7 +958,7 @@ const getAudioOnCount = (timeline) => {
 
 // 计算视频总开启时长
 const getVideoTotalOnTime = (timeline) => {
-    if (!timeline || timeline.length === 0) return '0秒';
+  if (!timeline || timeline.length === 0) return '0秒';
   let totalOnTime = 0;
   let onTimeStart = null;
 
@@ -948,12 +975,12 @@ const getVideoTotalOnTime = (timeline) => {
   if (onTimeStart !== null) {
     totalOnTime += Date.now() - onTimeStart;
   }
-    return formatDuration(totalOnTime);
+  return formatDuration(totalOnTime);
 };
 
 // 计算音频总开启时长
 const getAudioTotalOnTime = (timeline) => {
-    if (!timeline || timeline.length === 0) return '0秒';
+  if (!timeline || timeline.length === 0) return '0秒';
   let totalOnTime = 0;
   let onTimeStart = null;
 
@@ -965,22 +992,22 @@ const getAudioTotalOnTime = (timeline) => {
       onTimeStart = null;
     }
   }
-    if (onTimeStart !== null) {
+  if (onTimeStart !== null) {
     totalOnTime += Date.now() - onTimeStart;
   }
-    return formatDuration(totalOnTime);
+  return formatDuration(totalOnTime);
 };
 
 // 计算屏幕共享次数
-const getSharingCounts = (timeline) =>{
-  if(!timeline || timeline.length === 0) return 0;
+const getSharingCounts = (timeline) => {
+  if (!timeline || timeline.length === 0) return 0;
   let count = 0;
   let previousValue = timeline[0].value;
-    if (previousValue) {
+  if (previousValue) {
     count = 1;
   }
-     for (let i = 1; i < timeline.length; i++) {
-       if (timeline[i].value && !previousValue) {
+  for (let i = 1; i < timeline.length; i++) {
+    if (timeline[i].value && !previousValue) {
       count++;
     }
     previousValue = timeline[i].value;
@@ -988,28 +1015,28 @@ const getSharingCounts = (timeline) =>{
   return count;
 }
 //计算屏幕共享总开启时长
-const getSharingTotalTime = (timeline) =>{
-    if (!timeline || timeline.length === 0) return '0秒';
-     let totalOnTime = 0;
+const getSharingTotalTime = (timeline) => {
+  if (!timeline || timeline.length === 0) return '0秒';
+  let totalOnTime = 0;
   let onTimeStart = null;
 
-    for (const entry of timeline) {
+  for (const entry of timeline) {
     if (entry.value && onTimeStart === null) {
       onTimeStart = entry.time;
     } else if (!entry.value && onTimeStart !== null) {
       totalOnTime += entry.time - onTimeStart;
       onTimeStart = null;
-      }
     }
-    if(onTimeStart !== null){
-        totalOnTime += Date.now() - onTimeStart;
-    }
-    return formatDuration(totalOnTime);
+  }
+  if (onTimeStart !== null) {
+    totalOnTime += Date.now() - onTimeStart;
+  }
+  return formatDuration(totalOnTime);
 }
 
 // 将毫秒数格式化为 "x小时 y分钟 z秒"
 const formatDuration = (milliseconds) => {
-    if(milliseconds === 0) return '0秒';
+  if (milliseconds === 0) return '0秒';
 
   const seconds = Math.floor(milliseconds / 1000);
   const hours = Math.floor(seconds / 3600);
@@ -1017,37 +1044,37 @@ const formatDuration = (milliseconds) => {
   const remainingSeconds = seconds % 60;
 
   let result = '';
-    if(hours > 0){
-        result += `${hours}小时 `;
-    }
-    if(minutes > 0){
-        result += `${minutes}分钟 `;
-    }
-    if(remainingSeconds > 0 || result === ''){ // 如果只有秒, 或者毫秒数为0, 都显示秒
-        result += `${remainingSeconds}秒`;
-    }
-    return result.trim();
+  if (hours > 0) {
+    result += `${hours}小时 `;
+  }
+  if (minutes > 0) {
+    result += `${minutes}分钟 `;
+  }
+  if (remainingSeconds > 0 || result === '') { // 如果只有秒, 或者毫秒数为0, 都显示秒
+    result += `${remainingSeconds}秒`;
+  }
+  return result.trim();
 };
 
-  // 计算参会时长
-  const calculateDuration = (joinTime, leaveTime) => {
-    if (!joinTime) return '未知';
-    if (!leaveTime) return '未离开';
+// 计算参会时长
+const calculateDuration = (joinTime, leaveTime) => {
+  if (!joinTime) return '未知';
+  if (!leaveTime) return '未离开';
 
-    // 确保 joinTime 和 leaveTime 是 Date 对象
-    const joinDate = joinTime instanceof Date ? joinTime : joinTime.toDate();
-    const leaveDate = leaveTime instanceof Date ? leaveTime : leaveTime.toDate();
+  // 确保 joinTime 和 leaveTime 是 Date 对象
+  const joinDate = joinTime instanceof Date ? joinTime : joinTime.toDate();
+  const leaveDate = leaveTime instanceof Date ? leaveTime : leaveTime.toDate();
 
-    const diffInSeconds = Math.floor((leaveDate.getTime() - joinDate.getTime()) / 1000);
-    const hours = Math.floor(diffInSeconds / 3600);
-    const minutes = Math.floor((diffInSeconds % 3600) / 60);
-    const seconds = diffInSeconds % 60;
+  const diffInSeconds = Math.floor((leaveDate.getTime() - joinDate.getTime()) / 1000);
+  const hours = Math.floor(diffInSeconds / 3600);
+  const minutes = Math.floor((diffInSeconds % 3600) / 60);
+  const seconds = diffInSeconds % 60;
 
-    // 修改为 "时:分:秒" 格式，并补零
-    const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    return formattedTime;
-  };
-  
+  // 修改为 "时:分:秒" 格式，并补零
+  const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return formattedTime;
+};
+
 // ——————————参会者行为分析——————————————
 // 存储参与度分析结果
 const participationAnalysisResults = ref([]);
@@ -1060,8 +1087,8 @@ const analyzeParticipation = async () => {
     showSnackBar('没有参会者数据可供分析');
     return;
   }
-    // 检查是否切换了会议，如果是则重置分析结果
-    if (currentMeetingId.value !== selectedMeeting.value.meetingId) {
+  // 检查是否切换了会议，如果是则重置分析结果
+  if (currentMeetingId.value !== selectedMeeting.value.meetingId) {
     participationAnalysisResults.value = [];
     currentMeetingId.value = selectedMeeting.value.meetingId;
   }
@@ -1082,9 +1109,9 @@ const analyzeParticipation = async () => {
     const totalDuration = calculateDuration(selectedMeeting.value.startTime, selectedMeeting.value.endTime);
 
     // 提取用户的聊天消息
-  const messages = selectedMeeting.value.chatMessages
-    .filter(msg => msg.senderId === p.userId)
-    .map(msg => msg.message);
+    const messages = selectedMeeting.value.chatMessages
+      .filter(msg => msg.senderId === p.userId)
+      .map(msg => msg.message);
 
     return {
       userId: p.userId,
@@ -1107,11 +1134,11 @@ const analyzeParticipation = async () => {
     const response = await axios.post('http://localhost:5000/analyze-participation', {
       participants: participantsData,
       topicKeywords: summary.value,
-      meetingId: selectedMeeting.value.meetingId 
+      meetingId: selectedMeeting.value.meetingId
     });
 
-  // 检查返回结果的会议 ID 是否与当前会议 ID 一致
-  if (response.data.meetingId === currentMeetingId.value) {
+    // 检查返回结果的会议 ID 是否与当前会议 ID 一致
+    if (response.data.meetingId === currentMeetingId.value) {
       // 处理后端返回的结果
       participationAnalysisResults.value = response.data.results;
       console.log('参与度分析结果:', participationAnalysisResults.value);
@@ -1141,43 +1168,43 @@ const convertDurationToSeconds = (duration) => {
   }
   return 0;
 };
- // 计算属性：截取 selectedMeeting.participants 的前 5 条数据
- const limitedParticipants = computed(() => {
-      return selectedMeeting.value.participants.slice(0, 5);
-    });
+// 计算属性：截取 selectedMeeting.participants 的前 5 条数据
+const limitedParticipants = computed(() => {
+  return selectedMeeting.value.participants.slice(0, 5);
+});
 
-    // 计算属性：截取 participationAnalysisResults 的前 5 条数据
-    const limitedAnalysisResults = computed(() => {
-      return participationAnalysisResults.value.slice(0, 5);
-    });
+// 计算属性：截取 participationAnalysisResults 的前 5 条数据
+const limitedAnalysisResults = computed(() => {
+  return participationAnalysisResults.value.slice(0, 5);
+});
 // 新增函数：下载参与度分析结果为 Excel 文件
 const downloadParticipationAnalysis = () => {
-    console.log('开始下载参与度分析结果');
-    if (participationAnalysisResults.value.length === 0) {
-        console.log('参与度分析结果为空，无法下载');
-        showSnackBar('参与度分析结果未准备好，请等待');
-        return;
-    }
-    const customHeader = ['用户名', '角色', '行为参与度', '认知参与度', '综合参与度'];
-    const data = participationAnalysisResults.value.map(result => [
-        result.userName,
-        result.role,
-        result.behaviorScore.toFixed(2),
-        result.cognitiveScore.toFixed(2),
-        result.participationScore.toFixed(2)
-    ]);
-    console.log('准备生成的 Excel 数据:', data);
-    const worksheet = XLSX.utils.aoa_to_sheet([customHeader, ...data]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, '参与度分析结果');
-    try {
-        console.log('开始生成 Excel 文件');
-        XLSX.writeFile(workbook, `${selectedMeeting.value.sessionName}-参与度分析.xlsx`);
-        console.log('Excel 文件生成并下载成功');
-    } catch (error) {
-        console.error('文件生成失败:', error);
-        showSnackBar('文件生成失败，请稍后重试。');
-    }
+  console.log('开始下载参与度分析结果');
+  if (participationAnalysisResults.value.length === 0) {
+    console.log('参与度分析结果为空，无法下载');
+    showSnackBar('参与度分析结果未准备好，请等待');
+    return;
+  }
+  const customHeader = ['用户名', '角色', '行为参与度', '认知参与度', '综合参与度'];
+  const data = participationAnalysisResults.value.map(result => [
+    result.userName,
+    result.role,
+    result.behaviorScore.toFixed(2),
+    result.cognitiveScore.toFixed(2),
+    result.participationScore.toFixed(2)
+  ]);
+  console.log('准备生成的 Excel 数据:', data);
+  const worksheet = XLSX.utils.aoa_to_sheet([customHeader, ...data]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, '参与度分析结果');
+  try {
+    console.log('开始生成 Excel 文件');
+    XLSX.writeFile(workbook, `${selectedMeeting.value.sessionName}-参与度分析.xlsx`);
+    console.log('Excel 文件生成并下载成功');
+  } catch (error) {
+    console.error('文件生成失败:', error);
+    showSnackBar('文件生成失败，请稍后重试。');
+  }
 };
 // 下载参与者所有信息
 const downloadParticipantsAllData = () => {
@@ -1185,8 +1212,8 @@ const downloadParticipantsAllData = () => {
     showSnackBar('暂无参与度分析结果可供下载。');
     return;
   }
- // 合并参会者数据和参与度分析结果
- const combinedData = selectedMeeting.value.participants.map((participant) => {
+  // 合并参会者数据和参与度分析结果
+  const combinedData = selectedMeeting.value.participants.map((participant) => {
     const analysisResult = participationAnalysisResults.value.find((result) => result.userId === participant.userId);
     const joinTime = participant.joinTime ? formatDate(participant.joinTime) : 'N/A';
     const leaveTime = participant.leaveTime ? formatDate(participant.leaveTime) : '未离开';
@@ -1223,10 +1250,9 @@ const downloadParticipantsAllData = () => {
   XLSX.utils.book_append_sheet(workbook, worksheet, '参与度分析结果');
   XLSX.writeFile(workbook, `${selectedMeeting.value.sessionName}-参会数据.xlsx`);
 };
-  
+
 
 </script>
-
 <style scoped>
 /* ... 之前的样式 ... */
 /* 通用样式 */
