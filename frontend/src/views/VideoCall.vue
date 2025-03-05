@@ -996,7 +996,7 @@ const leaveSession = async () => { //普通用户离开会议
       console.log('endSession - filteredUsers:', filteredUsers); //  检查
       console.log('endSession - filteredChatMessages:', filteredChatMessages); // 检查
       // 先停止录音（里面会保存转录记录）
-      stopRecording();
+      // stopRecording();
       const user = store.getters.getUser; // 获取当前用户信息
       //  更新 Firestore 中的状态和结束时间
       if (user && config.meetingId) {
@@ -1803,22 +1803,31 @@ main {
   text-align: center;
   margin-top: 20px;
 }
-
-
+.controls {
+  flex-shrink: 0;
+  background: #1a1a1a;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
 .controls button {
   background-color: #333;
   color: #fff;
   border: none;
-  padding: 10px;
+  padding: 20px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color
+  font-size: 18px;
+  transition: background-color;
+  width:60px; /* 根据需求调整宽度 */
+  height: 60px; /* 根据需求调整高度 */
 }
 
 .controls button img {
-    width: 20px; /* 根据需求调整宽度 */
-    height: 20px; /* 根据需求调整高度 */
+    width: 90px; /* 根据需求调整宽度 */
+    height: 90px; /* 根据需求调整高度 */
+    transform: scale(2); /* 放大1.5倍 */
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
 }
 
@@ -1989,16 +1998,7 @@ canvas.video-element.share-video {
   gap: 12px;
 }
 
-.controls button {
-  background-color: #333;
-  color: #fff;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
+
 
 .controls button.active {
   background-color: #1a73e8;
@@ -2130,11 +2130,15 @@ canvas.video-element.share-video {
   .controls button {
         padding: 10px 12px; /* 调整按钮内边距 */
         font-size: 12px; /* 减小字体大小 */
+        width: 40px; /* 根据需求调整宽度 */
+        height: 40px; /* 根据需求调整高度 */
     }
   .controls button img {
-    width: 20px; /* 减小图标宽度 */
-    height: 20px; /* 减小图标高度 */
+    width: 16px; /* 减小图标宽度 */
+    height: 16px; /* 减小图标高度 */
+    vertical-align: middle; /* 使图标在按钮中垂直居中 */
     }
+
   .subtitle {
     position: absolute;
     bottom: 20px;
@@ -2186,15 +2190,16 @@ canvas.video-element.share-video {
         flex-wrap: wrap; /* 使按钮在空间不足时换行 */
         justify-content:center; /* 按钮左对齐 */
         padding: 10px; /* 减少内边距 */
-        gap: 20px; /* 减少按钮间距 */
+        gap: 15px; /* 减少按钮间距 */
     }
   .controls button {
         padding: 10px 10px; /* 调整按钮内边距 */
         font-size: 10px; /* 减小字体大小 */
+        width: 12%; /* 根据需求调整宽度 */
     }
   .controls button img {
-        width: 16px; /* 减小图标宽度 */
-        height: 16px; /* 减小图标高度 */
+        width: 10px; /* 减小图标宽度 */
+        height: 10px; /* 减小图标高度 */
     }
 .service-quality-overlay {
   position: fixed;

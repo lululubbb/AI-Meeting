@@ -10,9 +10,9 @@
       <!-- 聊天内容 -->
       <div class="chat-container">
         <div v-if="fileToAnalyze && aiSummary" class="ai-summary">
-           <h4>文档摘要：</h4>
+          <h4>文档摘要：</h4>
             <p>{{ aiSummary }}</p>
-           </div>
+          </div>
         <!-- 消息列表 -->
         <div class="chat-messages" ref="chatMessages">
           <!-- 使用统一的 .message-row 包裹单条消息，根据 msg.from 动态添加 ai-row / user-row 控制布局 -->
@@ -111,8 +111,8 @@ export default {
   name: 'AIFloatingChat',
   props:{
     fileToAnalyze:{
-       type: Object,
-       default: null
+      type: Object,
+      default: null
     },
     fileMsgId:{ // 新增 prop
       type: String,
@@ -144,12 +144,11 @@ data() {
         fileBlobs: new Map(), // 用于存储 msgId 和 fileBlob 的映射, 现在不再需要
         downloadPromises: new Map(), // 用于存储 msgId 和 Promise 的映射
         fileAnalyzed: false,  // 新增标志, 记录文件是否已经被分析过 (下载并转换为 Base64)
-        fileBase64: '', //  保存文件的 base64 数据.
+        fileBase64: '',
     };
 },
   mounted() {
-
-   },
+  },
    beforeUnmount() {
   },
   methods: {
@@ -162,7 +161,6 @@ data() {
         });
       }
     },
-    
       // 打开聊天窗口 (由 videocall.vue 调用)
       openChat(){
         this.drawer = true; // 打开抽屉
@@ -728,6 +726,9 @@ async askAiQuestion(question) {
   flex-direction: column;
   overflow: hidden;
   height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0; 
 }
 
 .chat-messages {
@@ -750,17 +751,15 @@ async askAiQuestion(question) {
   }
 }
 
-/* ======= 头部 ======= */
 .el-drawer {
   background-color: #bcd9ffe0;
-  border-radius: 12px 0 0 12px;
-  height: 70vh !important; /* 控制抽屉高度 */
+  height: 90vh !important; /* 控制抽屉高度 */
+  width:50vw !important; 
+
 }
-.el-drawer__body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+
+
+/* ======= 头部 ======= */
 
 .chat-header {
   display: flex;
@@ -795,37 +794,40 @@ async askAiQuestion(question) {
 
 /* 输入框容器（固定底部） */
 .chat-input {
-  padding: 16px;
+  padding: 0 10px 10px; /* 调整底部留白 */
   background: #fff;
   border-top: 1px solid #ebeef5;
   position: sticky;
   bottom: 0;
   z-index: 1;
-
+  display: flex;
+  border: none;
 }
 
 .chat-input input {
   flex: 1;
-  padding: 12px 16px;
+  padding: 12px 12px;
   border: solid 2px #ecebeb;
   border-bottom-left-radius: 12px;
+  width: calc(100% - 50px); /* 根据按钮宽度调整 */
   outline: none;
   font-size: 16px;
   background-color: white;
   color: #434040;
-  width: 78%;
 }
+
 
 .chat-input input::placeholder {
   color: #656565;
 }
 
 .chat-input button {
-  padding: 12px 20px;
+  padding: 12px 10px;
   background-color: #bcd9ffe0;
   color: #434040;
   border: solid 1px #ecebeb;
   cursor: pointer;
+  width: 20%;
   border-bottom-right-radius: 12px;
   transition: background-color 0.3s;
   font-size: 16px;
@@ -838,7 +840,7 @@ async askAiQuestion(question) {
 /* ======= AI 正在思考 ======= */
 .loading {
   text-align: center;
-  color: #000000;
+  color: #5c5c5c;
   margin-bottom: 10px;
 }
 
@@ -898,6 +900,10 @@ async askAiQuestion(question) {
   text-align: right;
   align-self: flex-end; /* 让气泡贴右边 */
 }
+::v-deep .el-drawer__title {
+  font-size: 20px !important; /* 调整字体大小 */
+  font-weight: 600; 
+}
 /* 手机端样式（屏幕宽度小于 768px） */
 @media (max-width: 768px) {
   /* 悬浮按钮 */
@@ -915,10 +921,9 @@ async askAiQuestion(question) {
 
   /* 抽屉组件 */
   el-drawer {
-    height: 60vh !important;
-    width: 55% !important;
-    top: 20% !important;
-    border-radius: 12px 12px 0 0 !important;
+    width: 80vw !important;  /* 全屏宽度 */
+    height: 85vh !important;
+    max-width: 100vw !important; /* 防止溢出屏幕 */
   }
 
   /* 输入框定位优化 */
@@ -926,7 +931,7 @@ async askAiQuestion(question) {
     position: sticky;
     bottom: 0;
     background: #fff;
-    padding: 12px 16px;
+    padding: 0 10px 10px;
     box-shadow: 0 -2px 8px rgba(56,103,255,0.05);
     display: flex;
     gap: 8px;
@@ -938,27 +943,24 @@ async askAiQuestion(question) {
   }
 
    /* 聊天容器布局 */
-   .chat-container {
+  .chat-container {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
+    padding: 0; 
   }
 
 
   .chat-input input {
     flex: 1;
-    padding: 10px 14px;
-    border-radius: 24px;
-    border: 1px solid #ddd;
-    font-size: 14px;
+    width: calc(100% - 30px); /* 缩小按钮宽度 */
+    padding: 10px 12px;
   }
 
   .chat-input button {
-    padding: 10px 18px;
-    border-radius: 24px;
-    background-color: #bcd9ffe0;
-    color: #434040;
-    border: none;
+    width: 70px;
+    padding: 10px 8px;
   }
 
 .chat-input button:hover {
@@ -977,8 +979,24 @@ async askAiQuestion(question) {
     height: 25px;
     margin: 0 6px;
   }
+    /* 横屏适配 */
+    @media (orientation: landscape) {
+    ::v-deep .el-drawer {
+      width: 70vw !important;
+      height: 95vh !important;
+    }
+  }
 }
 
+/* 优化抽屉内容区布局 */
+::v-deep .el-drawer__body {
+  padding: 0 10px !important;  /* 移除默认padding */
+}
+/* 修复消息列表宽度 */
+.chat-messages {
+  width: 100% !important;  /* 强制消息列表宽度 */
+  max-width: none !important;
+}
 /* 更小屏幕手机端样式（屏幕宽度小于 480px） */
 @media (max-width: 480px) {
   /* 悬浮按钮 */
@@ -998,11 +1016,19 @@ async askAiQuestion(question) {
   .chat-messages {
     padding: 6px;
   }
-
-  .el-drawer {
-    height: 65vh !important;
-    width:70% !important;
-    top: 10% !important;
+  .chat-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0; 
+}
+  ::v-deep .el-drawer {
+    width: 90% !important;  /* 移动端占屏幕90%宽度 */
+    max-width: 100vw !important;  /* 防止溢出屏幕 */
+    border-radius: 12px 12px 0 0 !important;
   }
 
   .chat-input {
@@ -1010,8 +1036,8 @@ async askAiQuestion(question) {
   }
 
   .chat-input input {
-    padding: 8px 12px;
-    font-size: 14px;
+    width: calc(100% - 40px);
+    padding: 8px 10px;
   }
 
   .chat-input button {
@@ -1033,5 +1059,6 @@ async askAiQuestion(question) {
     margin: 0 4px;
   }
 }
+
 </style>
 `
