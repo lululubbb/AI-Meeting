@@ -24,6 +24,7 @@
       <!-- 右侧部分 -->
       <div class="right-section">
         <RecentActivity />
+        <DataSummary/>  
       </div>
     </main>
 
@@ -43,6 +44,7 @@ import CalendarTodoList from '../components/CalendarToDoList.vue';
 import Mood from '../components/Mood.vue';
 import RecentActivity from '../components/RecentActivityCard.vue';
 import FileAttachmentContainer from '../components/FileAttachmentContainer.vue'; // 引入容器组件
+import DataSummary from '../components/DataSummary.vue';
 
 // 获取路由实例
 const router = useRouter();
