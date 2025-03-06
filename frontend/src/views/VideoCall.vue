@@ -101,11 +101,6 @@
               <img v-if="isSharing" src="@/assets/share_off.png" alt="停止共享屏幕" />
               <img v-else src="@/assets/share_on.png" alt="共享屏幕" />
             </button>
-            <!-- 新增：转录按钮 -->
-            <button @click="toggleRecording" :class="{ active: isRecording }">
-              <img v-if="isRecording" src="@/assets/字幕_off.png" alt="取消实时字幕" />
-              <img v-else src="@/assets/字幕_on.png" alt="实时字幕" />
-            </button>
             <!-- 服务质量按钮 -->
             <button @click="toggleServiceQuality" :class="{ active: showServiceQuality }">
               <img src="@/assets/服务质量.png" alt="服务质量" />
@@ -199,57 +194,26 @@
           </div>
         </div>
 
-        <!-- 右侧：聊天 -->
-        <div class="chat-container">
-          <div class="chat-header">
-            <span>聊天</span>
-             </div>
-          <div class="chat-controls">
-            <label>发送给：</label>
-            <select v-model="selectedReceiverId" class="receiver-select">
-              <option value="0">所有人</option>
-              <option v-for="userItem in chatReceivers" :key="userItem.userId" :value="userItem.userId">
-                {{ userItem.displayName }} (ID: {{ userItem.userId }})
-              </option>
-            </select>
-            <button @click="triggerFileInput" class="send-file-bitton">发送文件</button>
-            <input ref="fileInput" style="display:none;" type="file" @change="onFileInputChange" />
-          </div>
-          <div class="chat-messages" ref="chatMessages">
-            <div v-for="(msg,index) in chatMessagesList" :key="index" class="chat-message">
-              <div v-if="msg.file">
-                <strong>{{msg.senderName}}发来的文件</strong>
-                <span>{{msg.file.name}}({{msg.file.size}}) bytes</span>
-                <button @click="downloadFile(msg)" class="download-button">下载</button>
-                <button @click="openAiAssistant(msg)" class="analyze-button">文档分析</button>  <!-- 添加按钮 -->
-                <div v-if="msg.fileDownloadProgress !== undefined">
-                  下载进度: {{ msg.fileDownloadProgress }}%
-                  <span v-if="msg.fileDownloadStatus === 'Fail'">下载失败</span>
-                  <span v-if="msg.fileDownloadStatus === 'Cancel'">已取消</span>
-                </div>
-              </div>
-              <div v-else>
-                <strong>{{ msg.senderName }}:</strong> {{ msg.message }}
-              </div>
-            </div>
-          </div>
-          <div class="chat-input">
-            <input v-model="chatInput" type="text" placeholder="输入消息" @keyup.enter="sendChat">
-            <button @click="sendChat">发送</button>
-          </div>
-          <div v-if="uploadProgressInfo" class="upload-progress">
-            <p>
-              文件 "{{ uploadProgressInfo.fileName }}" 上传中:
-              {{ uploadProgressInfo.progress }}%
-              <button @click="cancelSendFile">取消</button>
-            </p>
-            <p v-if="uploadProgressInfo.status === 'Fail'">上传失败</p>
-            <p v-if="uploadProgressInfo.status === 'Cancel'">上传已取消</p>
-          </div>
-        </div>
+        <ChatPanel
+          :chat-messages-list="chatMessagesList"
+          :chat-receivers="chatReceivers"
+          :selected-receiver-id="selectedReceiverId"
+          :upload-progress-info="uploadProgressInfo"
+          @update:selected-receiver-id="newValue => selectedReceiverId = newValue"
+          @send-chat="handleSendChat"
+          @trigger-file-input="triggerFileInput"
+          @file-input-change="onFileInputChange"
+          @cancel-send-file="cancelSendFile"
+          @download-file="downloadFile"
+          @open-ai-assistant="openAiAssistant"
+          ref="chatPanel"
+        />
       </div>
     </div>
   </main>
+  <div class="transcription-float">
+      <RealtimeTranscription />
+    </div>
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
 </template>
@@ -264,6 +228,10 @@ import CustomButton from '../components/CustomButton.vue';
 import ZoomVideoService, { VideoQuality } from '../services/ZoomVideoService.js';
 import { showSnackBar } from '../utils/utils.js';
 import AIFloatingChat from '../components/AIFloatingChat.vue'; // 导入组件
+import ChatPanel from '../components/ChatContainer.vue';
+import RealtimeTranscription from '../components/RealTimeTranscription.vue'
+
+const chatPanel = ref(null);
 
 /// Vuex / Router
 const store = useStore();
@@ -323,9 +291,7 @@ const audioDecodeLossData = ref([]); // 音频接收avg_loss
 
 let networkChart = null;  // ECharts实例
 
-/* 聊天 */
-// const isChatVisible = ref(false); // 移除 isChatVisible
-const chatInput = ref('');
+
 const chatMessagesList = ref([]);
 // 用于私聊、文件传输
 const chatReceivers = ref([]);
@@ -341,9 +307,26 @@ const users = ref([]);       //  改回数组
 const currentUserId = ref(null);
 const isHost = ref(false);
 
+const handleSendChat = async (text) => {
+    if (!text) return;
+     const timestamp = new Date();
+  try {
+       if (selectedReceiverId.value === 0) {
+           await ZoomVideoService.sendMessageToAll(text, timestamp);
+      } else {
+          await ZoomVideoService.sendMessageToUser(text, selectedReceiverId.value, timestamp);
+     }
+       // chatInput.value = '';  // 在 ChatPanel 组件内部清除
+    } catch (err) {
+      console.error('发送消息失败:', err);
+    showSnackBar('发送消息失败:' + err.message);
+ }
+    };
+
+
 /* DOM引用 */
 // const speakerArea = ref(null); // 不再需要
-const chatMessages = ref(null);
+
 
 const goHome = () => {
   router.push('/home');
@@ -995,8 +978,6 @@ const leaveSession = async () => { //普通用户离开会议
 
       console.log('endSession - filteredUsers:', filteredUsers); //  检查
       console.log('endSession - filteredChatMessages:', filteredChatMessages); // 检查
-      // 先停止录音（里面会保存转录记录）
-      // stopRecording();
       const user = store.getters.getUser; // 获取当前用户信息
       //  更新 Firestore 中的状态和结束时间
       if (user && config.meetingId) {
@@ -1212,12 +1193,8 @@ function scrollToBottom() {
 
 /** --- 新增: 发送文件 --- */
 /** 1) 点击“发送文件”按钮 => 打开文件选择器 */
-const fileInput = ref(null);
-function triggerFileInput() {
-  if (fileInput.value) {
-    fileInput.value.click();
-  }
-}
+
+
 
 
 /** 2) 选择文件后，调用 sendFile 方法 */
@@ -1254,28 +1231,7 @@ async function onFileInputChange(e) {
   }
   e.target.value = ''; // 清空
 }
-/** 3) 取消文件上传 */
-function cancelSendFile() {
-  if (cancelSendFileFn) {
-    cancelSendFileFn(); // 调用SDK返回的取消方法
-    cancelSendFileFn = null;
-  }
-}
 
-/** --- 新增: 下载文件 --- */
-async function downloadFile(msg) {
-  if (!msg.file) return;
-  try {
-    const { msgId, file } = msg;
-    // 传给 ZoomVideoService
-    const cancelDownloadFn = await ZoomVideoService.downloadFile(msgId, file.fileUrl);
-    // 将返回的“取消下载”函数存储到 message 对象中(如果想提供“取消下载”按钮)
-    msg.cancelDownloadFn = cancelDownloadFn;
-  } catch (error) {
-    console.error('下载文件出错:', error);
-    showSnackBar('下载文件失败:' + error.message);
-  }
-}
 
 /** 更新可聊天用户列表(供私聊选择) */
 const updateChatReceivers = async () => {
@@ -1322,183 +1278,180 @@ function subscribeEvents() {
   const client = ZoomVideoService.client;
 
   client.on('user-added', async (userList) => {
-     if (!Array.isArray(userList)) return;
-      for (const user of userList) {
-        if (!users.value.find(u => u.userId === user.userId)) {
-          console.log('[user-added] =>', user);
+    if (!Array.isArray(userList)) return;
+    for (const user of userList) {
+      if (!users.value.find(u => u.userId === user.userId)) {
+        console.log('[user-added] =>', user);
 
-      // 将新用户添加到 users 数组
-      const newUser = {
-        userId: user.userId,
-        userName: user.displayName,
-        role: user.isHost ? 'host' : 'participant',
-        joinTime: new Date(),
-        leaveTime: null,
-        hasVideo: {
-          initial: user.bVideoOn,
-          final: user.bVideoOn,
-          timeline: [{ time: Date.now(), value: user.bVideoOn }],
-        },
-        isAudioOn: {
-          initial: true, // 假设新加入的用户默认开启音频
-          final: true,
-          timeline: [{ time: Date.now(), value: true }],
-        },
-        isSharing: {
-          initial: user.sharerOn,
-          final: user.sharerOn,
-          timeline: [{ time: Date.now(), value: user.sharerOn }],
-        },
-         // 新增
-        // uploads: 0, // 移除
-        // downloads: 0, // 移除
-        messagesSent: 0,
-      };
-      users.value.push(newUser);
+        // 将新用户添加到 users 数组
+        const newUser = {
+          userId: user.userId,
+          userName: user.displayName,
+          role: user.isHost ? 'host' : 'participant',
+          joinTime: new Date(),
+          leaveTime: null,
+          hasVideo: {
+            initial: user.bVideoOn,
+            final: user.bVideoOn,
+            timeline: [{ time: Date.now(), value: user.bVideoOn }],
+          },
+          isAudioOn: {
+            initial: true, // 假设新加入的用户默认开启音频
+            final: true,
+            timeline: [{ time: Date.now(), value: true }],
+          },
+          isSharing: {
+            initial: user.sharerOn,
+            final: user.sharerOn,
+            timeline: [{ time: Date.now(), value: user.sharerOn }],
+          },
+          messagesSent: 0,
+        };
+        users.value.push(newUser);
 
-      // 如果当前用户是主持人，更新 host 的 participants 字段
-      if (isHost.value) {
-        const loginUser = store.getters.getUser;
-        if (loginUser && config.meetingId) {
-          try {
-      // 过滤 undefined, *包括* timeline 数组中的 undefined
-            const filteredUsers = users.value.map(userData => {
-                  const filteredUser = { ...userData }; //  浅拷贝
+        // 如果当前用户是主持人，更新 host 的 participants 字段
+        if (isHost.value) {
+          const loginUser = store.getters.getUser;
+          if (loginUser && config.meetingId) {
+            try {
+              // 过滤 undefined, *包括* timeline 数组中的 undefined
+              const filteredUsers = users.value.map(userData => {
+                const filteredUser = { ...userData }; //  浅拷贝
 
-              // 深度过滤
-              function deepFilter(obj) {
-                for (const key in obj) {
-                  if (obj.hasOwnProperty(key)) {
-                    if (obj[key] === undefined) {
-                      delete obj[key]; // 删除 undefined 属性
-                    } else if (Array.isArray(obj[key])) {
-                         // 过滤数组中的 undefined 元素
+                // 深度过滤
+                function deepFilter(obj) {
+                  for (const key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                      if (obj[key] === undefined) {
+                        delete obj[key]; // 删除 undefined 属性
+                      } else if (Array.isArray(obj[key])) {
+                        // 过滤数组中的 undefined 元素
                         obj[key] = obj[key].filter(item => item !== undefined);
                         // 如果数组是 timeline, 进一步检查
-                        if(key === 'timeline'){
-                            obj[key] = obj[key].filter(item => {
-                              return item !== null && typeof item === 'object' && Object.values(item).every(val => val !== undefined);
-                            })
+                        if (key === 'timeline') {
+                          obj[key] = obj[key].filter(item => {
+                            return item !== null && typeof item === 'object' && Object.values(item).every(val => val !== undefined);
+                          })
                         }
 
-                    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-                      deepFilter(obj[key]); // 递归处理嵌套对象
+                      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        deepFilter(obj[key]); // 递归处理嵌套对象
+                      }
                     }
                   }
+                  return obj;
                 }
-                return obj;
-              }
 
-              return deepFilter(filteredUser); // 返回过滤后的对象
-            });
+                return deepFilter(filteredUser); // 返回过滤后的对象
+              });
 
 
-            await FirestoreService.updateMeetingHistory(
-              loginUser.uid,
-              config.meetingId,
-              { participants:   filteredUsers}
-            );
-          } catch (err) {
-            console.error('更新会议信息失败 (user-added, host):', err);
+              await FirestoreService.updateMeetingHistory(
+                loginUser.uid,
+                config.meetingId,
+                { participants: filteredUsers }
+              );
+            } catch (err) {
+              console.error('更新会议信息失败 (user-added, host):', err);
+            }
           }
         }
       }
     }
-  }
-      // 等 Vue DOM 渲染
-      await nextTick();
-      // Attach 视频/共享
-       for (const user of userList) {
+    // 等 Vue DOM 渲染
+    await nextTick();
+    // Attach 视频/共享
+    for (const user of userList) {
       if (user.bVideoOn) {
-          console.log('[user-added -> attachVideo]', user.userId);
-            await ZoomVideoService.attachUserVideo(user.userId, VideoQuality.VIDEO_360P);
+        console.log('[user-added -> attachVideo]', user.userId);
+        await ZoomVideoService.attachUserVideo(user.userId, VideoQuality.VIDEO_360P);
       }
-        if (user.sharerOn) {
-            console.log('[user-added -> attachScreenShare]', user.userId);
-           await ZoomVideoService.attachScreenShare(user.userId);
+      if (user.sharerOn) {
+        console.log('[user-added -> attachScreenShare]', user.userId);
+        await ZoomVideoService.attachScreenShare(user.userId);
       }
-   }
+    }
 
-  updateChatReceivers();
-    });
+    updateChatReceivers(); // 移到这里
+  });
 
-    client.on('user-removed', async (userList) => {
-            if (!Array.isArray(userList)) return;
+  client.on('user-removed', async (userList) => {
+    if (!Array.isArray(userList)) return;
 
-            for (const user of userList) {
-              console.log('[user-removed]', user.userId);
-              const userIndex = users.value.findIndex(u => u.userId === user.userId);
+    for (const user of userList) {
+      console.log('[user-removed]', user.userId);
+      const userIndex = users.value.findIndex(u => u.userId === user.userId);
 
-              if (userIndex !== -1) {
-                // 更新内存中的用户信息
-                const userObj = users.value[userIndex];
-                userObj.leaveTime = new Date();
-                userObj.hasVideo.final = userObj.hasVideo.timeline[userObj.hasVideo.timeline.length - 1].value;
-                userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
+      if (userIndex !== -1) {
+        // 更新内存中的用户信息
+        const userObj = users.value[userIndex];
+        userObj.leaveTime = new Date();
+        userObj.hasVideo.final = userObj.hasVideo.timeline[userObj.hasVideo.timeline.length - 1].value;
+        userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
 
-                userObj.isAudioOn.final = userObj.isAudioOn.timeline[userObj.isAudioOn.timeline.length - 1].value;
-                userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
+        userObj.isAudioOn.final = userObj.isAudioOn.timeline[userObj.isAudioOn.timeline.length - 1].value;
+        userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
 
-                userObj.isSharing.final = userObj.isSharing.timeline[userObj.isSharing.timeline.length - 1].value;
-                userObj.isSharing.timeline.push({ time: userObj.leaveTime, value: userObj.isSharing.final });
+        userObj.isSharing.final = userObj.isSharing.timeline[userObj.isSharing.timeline.length - 1].value;
+        userObj.isSharing.timeline.push({ time: userObj.leaveTime, value: userObj.isSharing.final });
 
-                //  user-removed 事件 *不再* 更新 Firestore 中的 participants。
-                //  *只更新当前离开用户自己的信息*。
-                if (user.userId === currentUserId.value) { // 确保是当前用户
-                    const loginUser = store.getters.getUser;
-                    if (loginUser && config.meetingId && !userObj.isUpdated) {  //  添加 !userObj.isUpdated 判断
-                        try {
-                          // 只更新当前离开的用户的数据，不需要participants这个字段了
-                            const updatedData = {
-                              leaveTime: new Date(),
-                              hasVideo: {
-                                final: userObj.hasVideo.final,
-                                timeline: userObj.hasVideo.timeline
-                              },
-                               isAudioOn: {
-                                final: userObj.isAudioOn.final,
-                                timeline: userObj.isAudioOn.timeline
-                              },
-                              isSharing: {
-                                 final: userObj.isSharing.final,
-                                timeline: userObj.isSharing.timeline
-                              }
-                            };
-
-                            await FirestoreService.updateMeetingHistory(loginUser.uid, config.meetingId, updatedData);
-                            userObj.isUpdated = true; // 标记为已更新
-                        } catch (err) {
-                            console.error('更新会议信息失败 (user-removed, self):', err);
-                        }
-                    }
+        //  user-removed 事件 *不再* 更新 Firestore 中的 participants。
+        //  *只更新当前离开用户自己的信息*。
+        if (user.userId === currentUserId.value) { // 确保是当前用户
+          const loginUser = store.getters.getUser;
+          if (loginUser && config.meetingId && !userObj.isUpdated) {  //  添加 !userObj.isUpdated 判断
+            try {
+              // 只更新当前离开的用户的数据，不需要participants这个字段了
+              const updatedData = {
+                leaveTime: new Date(),
+                hasVideo: {
+                  final: userObj.hasVideo.final,
+                  timeline: userObj.hasVideo.timeline
+                },
+                isAudioOn: {
+                  final: userObj.isAudioOn.final,
+                  timeline: userObj.isAudioOn.timeline
+                },
+                isSharing: {
+                  final: userObj.isSharing.final,
+                  timeline: userObj.isSharing.timeline
                 }
+              };
 
-                users.value.splice(userIndex, 1);  // 从 users 数组中移除
+              await FirestoreService.updateMeetingHistory(loginUser.uid, config.meetingId, updatedData);
+              userObj.isUpdated = true; // 标记为已更新
+            } catch (err) {
+              console.error('更新会议信息失败 (user-removed, self):', err);
             }
-
-            ZoomVideoService.detachUserVideo(user.userId);
-            ZoomVideoService.detachScreenShare(user.userId);
-            updateChatReceivers();
           }
-        });
+        }
+
+        users.value.splice(userIndex, 1);  // 从 users 数组中移除
+      }
+
+      ZoomVideoService.detachUserVideo(user.userId);
+      ZoomVideoService.detachScreenShare(user.userId);
+      updateChatReceivers(); // 移到这里
+    }
+  });
 
 
   client.on('peer-video-state-change', async ({ action, userId }) => {
-      console.log('[peer-video-state-change]', action, ' user=', userId);
-     const userObj = users.value.find(u => u.userId === userId);
-      if (!userObj) return;
-      const now = Date.now();
-      if (action === 'Start') {
-        userObj.hasVideo.final = true; // 更新 hasVideo
-        userObj.hasVideo.timeline.push({ time: now, value: true }); // 更新时间线
-        await nextTick();
-        await ZoomVideoService.attachUserVideo(userId, VideoQuality.VIDEO_360P);
+    console.log('[peer-video-state-change]', action, ' user=', userId);
+    const userObj = users.value.find(u => u.userId === userId);
+    if (!userObj) return;
+    const now = Date.now();
+    if (action === 'Start') {
+      userObj.hasVideo.final = true; // 更新 hasVideo
+      userObj.hasVideo.timeline.push({ time: now, value: true }); // 更新时间线
+      await nextTick();
+      await ZoomVideoService.attachUserVideo(userId, VideoQuality.VIDEO_360P);
 
-      } else if (action === 'Stop') {
-        userObj.hasVideo.final = false;
-        userObj.hasVideo.timeline.push({ time: now, value: false}); // 更新时间线
-        ZoomVideoService.detachUserVideo(userId);
-      }
+    } else if (action === 'Stop') {
+      userObj.hasVideo.final = false;
+      userObj.hasVideo.timeline.push({ time: now, value: false }); // 更新时间线
+      ZoomVideoService.detachUserVideo(userId);
+    }
   });
 
   /**
@@ -1507,49 +1460,49 @@ function subscribeEvents() {
    * - 若是他人，则调用 attachScreenShare
    */
   client.on('active-share-change', async ({ state, userId }) => {
-   console.log('[active-share-change]', state, ' user=', userId);
-     const userObj = users.value.find(u => u.userId === userId);
+    console.log('[active-share-change]', state, ' user=', userId);
+    const userObj = users.value.find(u => u.userId === userId);
     if (!userObj) return;
     const now = Date.now();
 
     if (state === 'Active') {
       userObj.isSharing.final = true;
-      userObj.isSharing.timeline.push({ time: now, value: true}); // 更新时间线
+      userObj.isSharing.timeline.push({ time: now, value: true }); // 更新时间线
 
       //  强制关闭服务质量窗口:
-        forceCloseServiceQuality();
+      forceCloseServiceQuality();
 
       // 如果是别人共享 => 渲染远端共享
-        if (userId !== currentUserId.value) {
-            await ZoomVideoService.attachScreenShare(userId);
-        }
+      if (userId !== currentUserId.value) {
+        await ZoomVideoService.attachScreenShare(userId);
+      }
 
-    }else if(state === 'Inactive'){
-        userObj.isSharing.final = false;
-        userObj.isSharing.timeline.push({ time: now, value: false});// 更新时间线
-         ZoomVideoService.detachScreenShare(userId);
+    } else if (state === 'Inactive') {
+      userObj.isSharing.final = false;
+      userObj.isSharing.timeline.push({ time: now, value: false });// 更新时间线
+      ZoomVideoService.detachScreenShare(userId);
     }
   });
 
-    client.on('video-active-change', (payload) => {
-      const { state, userId } = payload;
-      console.log('[video-active-change]', state, ' user=', userId);
-    });
+  client.on('video-active-change', (payload) => {
+    const { state, userId } = payload;
+    console.log('[video-active-change]', state, ' user=', userId);
+  });
 
   client.on('connection-change', (payload) => {
     const { state, reason } = payload;
     console.log('[connection-change]', state, reason)
-      if (state === 'Closed') {
-          showSnackBar(`会议连接已关闭:${reason}`);
-          leaveSession();
-      } else if (state === "Reconnecting") {
-          showSnackBar("正在重新连接...")
-      } else if (state === "Connected") {
-          showSnackBar("已重新连接")
-      } else if (state === 'Fail') {
-          showSnackBar("连接失败")
-          leaveSession();
-      }
+    if (state === 'Closed') {
+      showSnackBar(`会议连接已关闭:${reason}`);
+      leaveSession();
+    } else if (state === "Reconnecting") {
+      showSnackBar("正在重新连接...")
+    } else if (state === "Connected") {
+      showSnackBar("已重新连接")
+    } else if (state === 'Fail') {
+      showSnackBar("连接失败")
+      leaveSession();
+    }
   });
 
   client.on('device-change', () => {
@@ -1557,173 +1510,112 @@ function subscribeEvents() {
   });
 
   client.on('session-closed', async () => { // 改为 async 函数
-       showSnackBar('会议已结束');
-      //  stopRecording();  //  *不要*在这里停止录音
-       // 直接更新状态为 finished
-        const user = store.getters.getUser;
-        if (user && config.meetingId) {
- // 如果是主持人主动结束,已经在 endSession() 里更新, 这里主要是处理因为其他原因导致的 session-closed (例如网络问题)
-        // 因此,最好先尝试读取 Firestore 的数据,防止覆盖 endSession() 的更新.
+    showSnackBar('会议已结束');
+    //  stopRecording();  //  *不要*在这里停止录音
+    // 直接更新状态为 finished
+    const user = store.getters.getUser;
+    if (user && config.meetingId) {
+      // 如果是主持人主动结束,已经在 endSession() 里更新, 这里主要是处理因为其他原因导致的 session-closed (例如网络问题)
+      // 因此,最好先尝试读取 Firestore 的数据,防止覆盖 endSession() 的更新.
 
-          try {
-              const existingMeeting = await FirestoreService.getMeetingHistory(config.hostId, config.meetingId);
-              if(existingMeeting && existingMeeting.status !== 'finished'){ // 如果还不是 finished, 才更新
-                   await FirestoreService.updateMeetingHistory(config.hostId, config.meetingId, { // config.hostId
-                      status: 'finished',
-                      endTime: new Date()
-                   });
-              }
+      try {
+        const existingMeeting = await FirestoreService.getMeetingHistory(config.hostId, config.meetingId);
+        if (existingMeeting && existingMeeting.status !== 'finished') { // 如果还不是 finished, 才更新
+          await FirestoreService.updateMeetingHistory(config.hostId, config.meetingId, { // config.hostId
+            status: 'finished',
+            endTime: new Date()
+          });
+        }
 
-          }
-          catch(err){
-              console.error("更新会议状态失败(session-closed):", err);
-          }
-          finally{
-              router.push('/home');  // 一定
-          }
       }
-      else {
-          // 不是主持人,或者没有 meetingId,也跳转
-           router.push('/home');
+      catch (err) {
+        console.error("更新会议状态失败(session-closed):", err);
       }
-    });
+      finally {
+        router.push('/home');  // 一定
+      }
+    }
+    else {
+      // 不是主持人,或者没有 meetingId,也跳转
+      router.push('/home');
+    }
+  });
 
-    client.on('session-expired', () => {
-        showSnackBar("会议会话已过期")
-        leaveSession();
-    });
-    client.on("session-kicked-out", (payload) => {
-        showSnackBar(`已被踢出会议:${payload.reason}`);
-        leaveSession();
-    });
+  client.on('session-expired', () => {
+    showSnackBar("会议会话已过期")
+    leaveSession();
+  });
+  client.on("session-kicked-out", (payload) => {
+    showSnackBar(`已被踢出会议:${payload.reason}`);
+    leaveSession();
+  });
 
- // 聊天事件
- client.on('chat-on-message', (payload) => {
-           handleChatMessage(payload);
-          // 增加发送者的 messagesSent，只在收到“文本消息”时增加.
-          if(!payload.file){
-                const sender = users.value.find(u => u.userId === payload.sender.userId);
-              if (sender) {
-                  sender.messagesSent += 1;
-              }
-          }
-    });
+  // 聊天事件 (以下部分保持不变，因为 ChatPanel 会触发父组件的相应方法)
+  client.on('chat-on-message', (payload) => {
+    handleChatMessage(payload);
+    // 增加发送者的 messagesSent，只在收到“文本消息”时增加.
+    if (!payload.file) {
+      const sender = users.value.find(u => u.userId === payload.sender.userId);
+      if (sender) {
+        sender.messagesSent += 1;
+      }
+    }
+  });
 
   ZoomVideoService.getChatHistory().then((history) => {
-        handleChatHistory(history);
-        // 增加历史消息中每个发送者的消息数
-              history.forEach(msg=>{
-                    const sender = users.value.find(u=> u.userId === msg.sender.userId);
-                if(sender){
-                    sender.messagesSent +=1;
-                }
-              })
+    handleChatHistory(history);
+    // 增加历史消息中每个发送者的消息数
+    history.forEach(msg => {
+      const sender = users.value.find(u => u.userId === msg.sender.userId);
+      if (sender) {
+        sender.messagesSent += 1;
+      }
+    })
   });
   ZoomVideoService.setMessageSentCallback(handleMessageSent);
 
-      /**
-   * 文件上传进度事件
-   */
-   client.on('chat-file-upload-progress', (payload) => {
-      const { fileName, progress, status, id } = payload;
-      uploadProgressInfo.value = {
-        fileName,
-        progress,
-        status,
-      };
-
-      if (status === 3 || status === 4) {
-        cancelSendFileFn = null;
-        setTimeout(() => {
-          uploadProgressInfo.value = null;
-        }, 3000);
-      }
-
-      // 上传成功，增加发送者的 messagesSent
-      if (status === 2) {
-        cancelSendFileFn = null;
-        const msgObj = chatMessagesList.value.find((m) => m.msgId === id);
-        if (msgObj) {
-          const senderUser = users.value.find((u) => u.userId === msgObj.senderId);
-          if (senderUser) {
-            senderUser.messagesSent += 1; // 增加消息数
-          }
-        }
-        setTimeout(() => {
-          uploadProgressInfo.value = null;
-        }, 3000);
-      }
-    });
-
   /**
-   * 文件下载进度事件
-   */
-    client.on('chat-file-download-progress', (payload) => {
-    const { fileName, progress, status, id, fileBlob } = payload;
-    // 找到对应的消息
-    const msgObj = chatMessagesList.value.find((m) => m.msgId === id);
-    if (!msgObj) return;
+* 文件上传进度事件
+*/
+  client.on('chat-file-upload-progress', (payload) => {
+    const { fileName, progress, status, id } = payload;
+    uploadProgressInfo.value = {  // 这个 uploadProgressInfo 仍然在 videocall.vue
+      fileName,
+      progress,
+      status,
+    };
 
-    msgObj.fileDownloadProgress = progress;
-    switch (status) {
-      case 1: // InProgress
-        msgObj.fileDownloadStatus = 'InProgress';
-        break;
-      case 2: // Success
-        msgObj.fileDownloadStatus = 'Success';
-        // 如果是 blob 下载，可以自己处理
-        if (fileBlob) {
-          // 例如自动显示图片，或手动下载
-          const objUrl = URL.createObjectURL(fileBlob);
-          // 这里演示：自动触发浏览器下载
-          const link = document.createElement('a');
-          link.href = objUrl;
-          link.download = fileName;
-          link.click();
-          URL.revokeObjectURL(objUrl); // 释放
-        }
-        // SDK会自动触发浏览器下载
-        msgObj.cancelDownloadFn = null;
+    if (status === 3 || status === 4) {
+      cancelSendFileFn = null;
+      setTimeout(() => {
+        uploadProgressInfo.value = null;
+      }, 3000);
+    }
 
-        //=======修改开始=======
-        // 找到下载者（根据 receiverId 判断）
-        let downloaderId;
-        if (msgObj.receiverId === '0') {
-          // 群发消息，下载者是当前用户
-          downloaderId = currentUserId.value;
-        } else {
-          // 私聊消息，下载者是消息的接收者
-          downloaderId = msgObj.receiverId;
+    // 上传成功，增加发送者的 messagesSent
+    if (status === 2) {
+      cancelSendFileFn = null;
+      const msgObj = chatMessagesList.value.find((m) => m.msgId === id);
+      if (msgObj) {
+        const senderUser = users.value.find((u) => u.userId === msgObj.senderId);
+        if (senderUser) {
+          senderUser.messagesSent += 1; // 增加消息数
         }
-
-        const downloadUser = users.value.find((u) => u.userId === downloaderId);
-        if (downloadUser) {
-          downloadUser.messagesSent += 1; // 增加消息数
-        }
-        //=======修改结束=======
-        break;
-      case 3: // Fail
-        msgObj.fileDownloadStatus = 'Fail';
-        msgObj.cancelDownloadFn = null;
-        break;
-      case 4: // Cancel
-        msgObj.fileDownloadStatus = 'Cancel';
-        msgObj.cancelDownloadFn = null;
-        break;
+      }
+      setTimeout(() => {
+        uploadProgressInfo.value = null;
+      }, 3000);
     }
   });
-    // 聊天事件
-      client.on('chat-on-message', (payload) => {
-        handleChatMessage(payload);
-        // 增加发送者的 messagesSent，只在收到“文本消息”时增加.
-        if(!payload.file){
-              const sender = users.value.find(u => u.userId === payload.sender.userId);
-            if (sender) {
-                sender.messagesSent += 1;
-            }
-        }
-    });
+
+  /**
+  * 文件下载进度事件 (此事件监听器 *必须* 留在 videocall.vue, 因为它涉及到 AI 分析)
+  */
+ client.on('chat-file-download-progress', handleFileDownloadProgress); // 必须保留, 且放在 videocall.vue
+
+
 }
+
 
 onBeforeUnmount(() => {
   if (sessionJoined.value) {
@@ -2403,5 +2295,18 @@ canvas.video-element.share-video {
   padding: 10px;
   background-color: #f0f0f0;
   border-top: 1px solid #ddd;
+}
+
+.meeting-container {
+  position: relative;  /* 确保子元素定位基准 */
+  height: 100vh;
+}
+
+.transcription-float {
+  position: absolute;
+  bottom: 80px;    /* 根据原有布局调整 */
+  right: 30px;
+  z-index: 9999;   /* 确保覆盖其他元素 */
+  width: 300px;    /* 根据需要调整 */
 }
 </style>
