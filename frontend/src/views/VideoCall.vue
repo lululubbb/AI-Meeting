@@ -223,21 +223,28 @@ import { ref, reactive, onMounted, onBeforeUnmount, nextTick, computed } from 'v
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
-import * as echarts from 'echarts';
-import CustomButton from '../components/CustomButton.vue';
 import ZoomVideoService, { VideoQuality } from '../services/ZoomVideoService.js';
 import { showSnackBar } from '../utils/utils.js';
 import AIFloatingChat from '../components/AIFloatingChat.vue'; // 导入组件
 import ChatPanel from '../components/ChatContainer.vue';
 import RealtimeTranscription from '../components/RealTimeTranscription.vue'
+import CustomButton from '../components/CustomButton.vue';
+import * as echarts from 'echarts';
 
-const chatPanel = ref(null);
 
 /// Vuex / Router
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
 
+const goHome = () => {
+  router.push('/home');
+};
+
+onMounted(() => {
+  checkRouteParams();
+  ZoomVideoService.client.on('chat-file-download-progress', handleFileDownloadProgress);
+});
 
 //* 会议相关状态 */
 const config = reactive({
@@ -251,140 +258,7 @@ const config = reactive({
 });
 const mode = ref(route.query.mode || 'join');
 const role = ref(mode.value === 'create' ? 1 : 0);
-const sessionJoined = ref(false);
-const autoJoin = ref(false);
 const buttonText = ref(mode.value === 'create' ? '创建会议' : '加入会议');
-const isJoining = ref(false);
-
-/* 视频/音频/屏幕共享控制 */
-const isVideoOn = ref(true);
-const isAudioOn = ref(true);
-const isSharing = ref(false); // 本地是否在共享
-
-/** 计算属性: 是否有人共享 */
-const someoneIsSharing = computed(() => {
-    return users.value.some(u => u.isSharing.timeline.length > 0 && u.isSharing.timeline[u.isSharing.timeline.length - 1].value);
-});
-
-// // 控制“服务质量”面板的显示/隐藏
- const showServiceQuality = ref(false);
-// //  用于记录“最新的”编码/解码数据，用于在文本区显示
- const statsData = reactive({
-  videoEncode: null,
-  videoDecode: null,
-  audioEncode: null,
-  audioDecode: null,
-  shareEncode: null,
-  shareDecode: null
-});
-
-//  用数组记录关键数值(用于折线图)
-//    用数组去记录关键数值(用于折线图)
-const uplinkData = ref([]);  // 网络上行
-const downlinkData = ref([]); // 网络下行
-
-const videoEncodeFpsData = ref([]); // 视频发送FPS
-const videoDecodeFpsData = ref([]); // 视频接收FPS
-
-const audioEncodeLossData = ref([]); // 音频发送avg_loss
-const audioDecodeLossData = ref([]); // 音频接收avg_loss
-
-let networkChart = null;  // ECharts实例
-
-
-const chatMessagesList = ref([]);
-// 用于私聊、文件传输
-const chatReceivers = ref([]);
-const selectedReceiverId = ref(0);
-const uploadProgressInfo = ref(null);
-let cancelSendFileFn = null;
-const aiChat = ref(null);
-const fileToAnalyze = ref(null); // 存储要分析的文件信息，用于传递给 AIFloatingChat 组件
-const fileMsgId = ref(null);
-
-/* 用户列表 */
-const users = ref([]);       //  改回数组
-const currentUserId = ref(null);
-const isHost = ref(false);
-
-const handleSendChat = async (text) => {
-    if (!text) return;
-     const timestamp = new Date();
-  try {
-       if (selectedReceiverId.value === 0) {
-           await ZoomVideoService.sendMessageToAll(text, timestamp);
-      } else {
-          await ZoomVideoService.sendMessageToUser(text, selectedReceiverId.value, timestamp);
-     }
-       // chatInput.value = '';  // 在 ChatPanel 组件内部清除
-    } catch (err) {
-      console.error('发送消息失败:', err);
-    showSnackBar('发送消息失败:' + err.message);
- }
-    };
-
-
-/* DOM引用 */
-// const speakerArea = ref(null); // 不再需要
-
-
-const goHome = () => {
-  router.push('/home');
-};
-
-// 打开 AI 助手 (并传递文件)
-const openAiAssistant = (msg) => {
-  fileToAnalyze.value = msg.file;
-  fileMsgId.value = msg.msgId; // 新增：保存 msgId
-  console.log("fileToAnalyze:", fileToAnalyze.value); // 打印
-  console.log("fileMsgId:", fileMsgId.value);      // 打印
-  nextTick(() => {
-    if (aiChat.value) {
-      aiChat.value.openChat();
-    }
-  });
-};
-// 处理文件下载事件
-function handleFileDownloadProgress(payload) {
-           const { fileName, progress, status, id, fileBlob } = payload;
-           // 找到对应的消息
-           const msgObj = chatMessagesList.value.find(m => m.msgId === id);
-
-             if (!msgObj) return;  //  没找到, 直接返回
-
-            // 更新进度
-          msgObj.fileDownloadProgress = progress;
-
-          switch (status) {
-          case 1: // InProgress
-           msgObj.fileDownloadStatus = 'InProgress';
-             break;
-         case 2: // Success, *关键修改*
-         msgObj.fileDownloadStatus = 'Success';
-
-           //  如果是 blob 下载, 且是当前分析的文件,  处理
-           if (fileBlob && msgObj.msgId === fileMsgId.value) {
-              const objUrl = URL.createObjectURL(fileBlob);
-               const link = document.createElement('a');
-               link.href = objUrl;
-               link.download = fileName;
-               link.click();
-               URL.revokeObjectURL(objUrl);
-              aiChat.value.sendFileDataToAnalyze(fileBlob, "summary");
-          }
-         msgObj.cancelDownloadFn = null;
-     break; 
-
-   case 3:
-    msgObj.fileDownloadStatus = "Fail";
-      msgObj.cancelDownloadFn = null;
-      break;
-    case 4:
-    msgObj.fileDownloadStatus = "Cancel";
-            msgObj.cancelDownloadFn = null;
-            break;
-          }
-        }
 /** 切换模式 */
 const toggleMode = () => {
   mode.value = mode.value === 'create' ? 'join' : 'create';
@@ -392,14 +266,17 @@ const toggleMode = () => {
   role.value = mode.value === 'create' ? 1 : 0;
 };
 
-onMounted(() => {
-  checkRouteParams();
-  ZoomVideoService.client.on('chat-file-download-progress', handleFileDownloadProgress);
-});
+const isJoining = ref(false);
+const sessionJoined = ref(false);
+const autoJoin = ref(false);
 
+
+/* *********************
+会议加入和创建
+   ********************* */
 /** 如果 URL query 有 sessionName等参数就自动加入会议 */
 async function checkRouteParams() {
- const {
+  const {
     sessionName,
     userName,
     sessionPasscode,
@@ -457,7 +334,7 @@ const handleSession = async () => {
     let meetingId;
 
     // *修改*:  先设置 config.hostId (创建会议时)
-     if (mode.value === 'create' && user) {
+    if (mode.value === 'create' && user) {
          config.hostId = user.uid; //  创建会议, hostId 就是当前用户
     }
 
@@ -477,7 +354,7 @@ const handleSession = async () => {
           sessionPasscode: config.sessionPasscode,
           startTime: new Date(),
           // 其他字段...
-         }
+        }
       );
         config.meetingId = meetingId; // 把 meetingId 存入 config
     }
@@ -526,7 +403,536 @@ const handleSession = async () => {
 };
 
 
+/* *********************
+会议初始化
+   ********************* */
+const joinSession = async () => {
+    try {
+        const success = await ZoomVideoService.joinSession(config);
+        if (!success) {
+            isJoining.value = false;
+            return;
+        }
+        sessionJoined.value = true;
+        isJoining.value = false;
+        // 检查是否支持多路视频
+        if (!ZoomVideoService.stream.isSupportMultipleVideos()) {
+            console.warn('当前环境不支持多路视频，只能渲染本地+1路远端');
+        }
 
+        checkIfHost();   // *务必* 先调用 checkIfHost, 设置好 config.hostId
+
+        // 拿到当前用户, 并加入 users 列表
+        const currentUser = ZoomVideoService.client.getCurrentUserInfo();
+        if (currentUser && currentUser.userId) {
+            currentUserId.value = currentUser.userId;
+            // 把当前用户加入 users 数组 (无论主持人还是参与者)
+            users.value.push({
+                userId: currentUser.userId,
+                userName: currentUser.displayName,
+                role: isHost.value ? 'host' : 'participant',
+                joinTime: new Date(),
+                leaveTime: null,
+                hasVideo: {
+                    initial: isVideoOn.value,
+                    final: isVideoOn.value,
+                    timeline: [{ time: Date.now(), value: isVideoOn.value }],
+                },
+                isAudioOn: {
+                    initial: isAudioOn.value,
+                    final: isAudioOn.value,
+                    timeline: [{ time: Date.now(), value: isAudioOn.value }],
+                },
+                isSharing: {
+                    initial: false,
+                    final: false,
+                    timeline: [{ time: Date.now(), value: false }],
+                },
+                isUpdated: false,  // 用于标记是否已更新
+                hostId: config.hostId, // *重要*: 所有用户都记录 hostId, 方便后续查询
+                uploads: 0,
+                downloads: 0,
+                messagesSent: 0,
+            });
+
+            const user = store.getters.getUser; // 从 Vuex 获取用户信息
+
+          if (user) {
+              // 如果是主持人, 什么都不做 (已经在 handleSession 中创建了主会议文档)
+              if (isHost.value) {
+                  // 什么都不做!
+              } else {
+                  // 如果是参与者, 调用 addParticipantMeeting, 创建指向主持人文档的引用
+                  // *重要*: 在这里检查 config.hostId 是否为空
+                  if (!config.hostId) {
+                      const allUsers = ZoomVideoService.client.getAllUser();
+                        allUsers.forEach(u => {
+                            if(u.isHost){
+                                config.hostId = u.userId.toString(); // 将数值类型转换为字符串类型
+                            }
+                        })
+                      console.warn('config.hostId 为空! 尝试从 allUser 中获取');
+                      //  可以添加更详细的错误处理, 例如给用户提示, 或者直接退出会议
+                  }
+                  try {
+                      await FirestoreService.addParticipantMeeting(
+                        user.uid,            // 参与者自己的 ID
+                        config.hostId,     // 主持人 ID
+                        config.meetingId,   // 会议 ID (来自路由参数或 handleSession)
+                        new Date()          // 加入时间
+                      );
+                  } catch (err) {
+                      console.error('添加参与者会议记录失败:', err);
+                      showSnackBar('加入会议失败 (更新 Firestore 错误):' + err.message);
+                      // 可以考虑更完善的错误处理
+                  }
+              }
+          }
+        }
+        // 订阅 SDK 事件
+        subscribeEvents();
+
+        // 获取已加入会议的用户, 并加入 users 列表 (用于 UI 显示和统计)
+        const allUsers = ZoomVideoService.client.getAllUser();
+        const localId = currentUserId.value;
+
+      allUsers.forEach(u => {
+      if (u.userId !== localId) { // *不* 重复添加自己
+        users.value.push({
+          userId: u.userId,
+          userName: u.displayName,
+          role: u.isHost ? 'host' : 'participant',
+          joinTime: new Date(), // 注意: 这里简化了, 实际加入时间应该通过 user-added 事件获取更准确
+          leaveTime: null,
+          hasVideo: {
+            initial: u.bVideoOn,
+            final: u.bVideoOn,
+            timeline: [{ time: Date.now(), value: u.bVideoOn }]
+          },
+          isAudioOn: {
+            initial: true, // 假设默认开启音频
+            final: true,
+            timeline: [{ time: Date.now(), value: true }]
+          },
+          isSharing: {
+            initial: u.sharerOn,
+            final: u.sharerOn,
+            timeline: [{ time: Date.now(), value: u.sharerOn }]
+          },
+          isUpdated: false, //
+          hostId: config.hostId,  // *重要*:  所有用户 (包括已加入的) 都记录 hostId
+          uploads: 0,
+          downloads: 0,
+          messagesSent: 0,
+        });
+      }
+    });
+        // 等待 DOM 渲染完成
+        await nextTick();
+
+        // attach 远端用户的视频
+        for (const u of allUsers) {
+         if (u.userId !== localId) { //
+            if (u.bVideoOn) {
+                await ZoomVideoService.attachUserVideo(u.userId, VideoQuality.VIDEO_360P);
+          }
+          if (u.sharerOn) {
+              await ZoomVideoService.attachScreenShare(u.userId);
+          }
+        }
+    }
+        // 初始化可聊天用户列表
+        updateChatReceivers();
+        // 订阅服务质量事件
+        subscribeServiceQuality();
+
+    } catch (error) {
+        console.error('joinSession error:', error);
+        showSnackBar('加入会议失败:' + error.message);
+        isJoining.value = false;
+    }
+};
+
+function checkIfHost() {
+   //  在 checkIfHost 中设置 config.hostId
+    if (ZoomVideoService.client.isHost()) {
+        isHost.value = true;
+        config.hostId = currentUserId.value; // 主持人:  config.hostId 就是自己的 ID
+    } else {
+        isHost.value = false;
+        config.hostId = route.query.hostId; //参与者：从路由中获取hostId
+    }
+    config.isHost = ZoomVideoService.getIsHost();
+}
+
+
+/* *********************
+  视频/音频/共享屏幕方面的代码
+   ********************* */
+/* 视频/音频/屏幕共享控制 */
+const isVideoOn = ref(true);
+const isAudioOn = ref(true);
+const isSharing = ref(false); // 本地是否在共享
+
+/** 计算属性: 是否有人共享 */
+const someoneIsSharing = computed(() => {
+    return users.value.some(u => u.isSharing.timeline.length > 0 && u.isSharing.timeline[u.isSharing.timeline.length - 1].value);
+});
+
+/** 切换本地视频 */
+const toggleVideo = async () => {
+  isVideoOn.value = !isVideoOn.value;
+  await ZoomVideoService.toggleLocalVideo(isVideoOn.value);
+
+   const localUser = users.value.find(u => u.userId === currentUserId.value);
+    if (localUser) {
+      localUser.hasVideo.final = isVideoOn.value;
+      localUser.hasVideo.timeline.push({time: Date.now(), value: isVideoOn.value}); // 更新 timeline
+    }
+};
+
+/** 切换本地音频 */
+const toggleAudio = async () => {
+  isAudioOn.value = !isAudioOn.value;
+  await ZoomVideoService.toggleLocalAudio(isAudioOn.value);
+    const localUser = users.value.find(u => u.userId === currentUserId.value);
+    if(localUser){
+        localUser.isAudioOn.final = isAudioOn.value;
+        localUser.isAudioOn.timeline.push({time: Date.now(), value: isAudioOn.value});
+    }
+};
+
+/**
+ * 切换“本地屏幕共享”开关
+ * - 仅本地共享，远端共享由 SDK 事件管理
+ */
+const toggleScreenShare = async () => {
+  if (isSharing.value) {
+    // 已在共享 => 停止共享
+      await ZoomVideoService.stopLocalScreenShare();  // 先停止
+      isSharing.value = false;
+
+      const localUser = users.value.find(u => u.userId == currentUserId.value);
+      if(localUser){
+        localUser.isSharing.final = false;
+        localUser.isSharing.timeline.push({time: Date.now(), value: false});
+      }
+
+  } else {
+    // 开始本地共享
+    const result = await ZoomVideoService.startLocalScreenShare();
+    if (result) {
+      isSharing.value = true;
+
+        const localUser = users.value.find(u=> u.userId == currentUserId.value);
+        if(localUser){
+          localUser.isSharing.final = true;
+          localUser.isSharing.timeline.push({time: Date.now(), value: true});
+        }
+    }
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* *********************
+聊天和文件传输方面的代码
+   ********************* */
+const chatMessagesList = ref([]);
+const chatPanel = ref(null);
+// 用于私聊、文件传输
+const chatReceivers = ref([]);
+const selectedReceiverId = ref(0);
+const uploadProgressInfo = ref(null);
+let cancelSendFileFn = null;
+const aiChat = ref(null);
+const fileToAnalyze = ref(null); // 存储要分析的文件信息，用于传递给 AIFloatingChat 组件
+const fileMsgId = ref(null);
+
+/* 用户列表 */
+const users = ref([]);       //  改回数组
+const currentUserId = ref(null);
+const isHost = ref(false);
+// 发送信息
+const handleSendChat = async (text) => {
+    if (!text) return;
+    const timestamp = new Date();
+  try {
+      if (selectedReceiverId.value === 0) {
+          await ZoomVideoService.sendMessageToAll(text, timestamp);
+      } else {
+          await ZoomVideoService.sendMessageToUser(text, selectedReceiverId.value, timestamp);
+    }
+       // chatInput.value = '';  // 在 ChatPanel 组件内部清除
+    } catch (err) {
+      console.error('发送消息失败:', err);
+    showSnackBar('发送消息失败:' + err.message);
+}
+    };
+
+
+/** 群聊切换 */
+const toggleChat = () => {
+  isChatVisible.value = !isChatVisible.value;
+};
+//  发送聊天消息
+const sendChat = async () => {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  const timestamp = new Date(); // 新增：获取时间戳
+  try {
+    if (selectedReceiverId.value === 0) {
+      await ZoomVideoService.sendMessageToAll(text, timestamp); // 传递时间戳
+    } else {
+      await ZoomVideoService.sendMessageToUser(text, selectedReceiverId.value, timestamp);  // 传递时间戳
+    }
+    chatInput.value = '';
+  } catch (err) {
+    console.error('发送消息失败:', err);
+    showSnackBar('发送消息失败:' + err.message);
+  }
+};
+// 收到他人聊天消息
+function handleChatMessage(payload) {
+    console.log("Received chat message:", payload); // 打印整个 payload
+     const { message, sender, receiver, file, timestamp, id } = payload; //  timestamp, 增加 id
+
+    // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
+    if (ZoomVideoService.isMessageAlreadyAdded(id)) {
+        return;
+    }
+
+    // 2. 如果不存在, 添加到已处理列表
+    ZoomVideoService.addMessageId(id);
+
+    // 3. 构造消息对象, 添加到列表 (和之前一样)
+    let messageObj;
+    if (!file) {
+      messageObj = {
+        type: receiver.userId === "0" ? 'group' : 'private',
+        senderId: sender.userId,
+        senderName: sender.name,
+        receiverId: receiver.userId,
+        message,
+        file: null,
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+        msgId: id
+      };
+
+    } else {
+      messageObj = {
+        type: receiver.userId === '0' ? 'group' : 'private',
+        senderId: sender.userId,
+        senderName: sender.name,
+        receiverId: receiver.userId,
+        message: null,
+        file: {
+          name: file.name,
+          size: file.size,
+          fileUrl: file.fileUrl
+        },
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+        fileDownloadProgress: 0,
+        fileDownloadStatus: null,
+        msgId: id 
+      };
+  }
+  chatMessagesList.value.push(messageObj);
+  scrollToBottom();
+}
+//  自己发送消息的回调,只负责添加消息到列表
+function handleMessageSent(msg) {
+     // 1. 添加 msgId, 防止重复处理
+     ZoomVideoService.addMessageId(msg.id);    // 重要!
+
+    // 2. 直接复用 handleChatMessage
+    handleChatMessage(msg); // 复用
+}
+
+// 聊天历史
+function handleChatHistory(history) {
+    history.forEach(msg => {
+      if (!msg.file) {
+        chatMessagesList.value.push({
+          type: msg.receiver.userId === '0' ? 'group' : 'private',
+          senderId: msg.sender.userId,
+          senderName: msg.sender.name,
+          receiverId: msg.receiver.userId,
+          message: msg.message,
+          file: null,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date() // 使用传入的时间戳
+        });
+      } else {
+        chatMessagesList.value.push({
+          type: msg.receiver.userId === '0' ? 'group' : 'private',
+          senderId: msg.sender.userId,
+          senderName: msg.sender.name,
+          receiverId: msg.receiver.userId,
+          message: null,
+          file: {
+            name: msg.file.name,
+            size: msg.file.size,
+            fileUrl: msg.file.fileUrl
+          },
+           timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(), // 使用传入的时间戳
+          fileDownloadProgress: msg.file.download?.progress || 0,
+          fileDownloadStatus: msg.file.download?.status || null,
+          msgId: msg.id
+        });
+      }
+    });
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (chatMessages.value) {
+      chatMessages.value.scrollTop = chatMessages.value.scrollHeight;
+    }
+  });
+}
+
+/** --- 新增: 发送文件 --- */
+/** 1) 点击“发送文件”按钮 => 打开文件选择器 */
+/** 2) 选择文件后，调用 sendFile 方法 */
+async function onFileInputChange(e) {
+  const files = e.target.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    try {
+      let msgId;
+      if (selectedReceiverId.value === 0) {
+         msgId = await ZoomVideoService.sendFileToAll(file);  //  await, 获取 msgId
+      } else {
+         msgId = await ZoomVideoService.sendFileToUser(file, selectedReceiverId.value); //  await, 获取 msgId
+      }
+        //  发送文件消息,很关键
+        if(msgId){
+            const curUser = ZoomVideoService.client.getCurrentUserInfo();
+            handleMessageSent({
+                sender: { userId: curUser.userId, name: curUser.displayName },
+                receiver:{userId: selectedReceiverId.value.toString()},  // 新增
+                file: {
+                  name: file.name,
+                  size: file.size,
+                },
+                timestamp: Date.now(),
+                id:msgId,
+            });
+        }
+    }
+    catch(err){
+      console.error("发送文件失败",err);
+      showSnackBar('发送文件失败.'+err.message);
+    }
+  }
+  e.target.value = ''; // 清空
+}
+
+/** 更新可聊天用户列表(供私聊选择) */
+const updateChatReceivers = async () => {
+  const receivers = ZoomVideoService.getChatReceivers();
+    // 过滤掉 Everyone(ID:0)
+  chatReceivers.value = receivers.filter(receiver => !(receiver.userId === '0' && receiver.displayName ==='Everyone'));
+  console.log('[updateChatReceivers]', receivers);
+};
+
+
+
+
+
+// 打开 AI 助手 (并传递文件)
+const openAiAssistant = (msg) => {
+  fileToAnalyze.value = msg.file;
+  fileMsgId.value = msg.msgId; // 新增：保存 msgId
+  console.log("fileToAnalyze:", fileToAnalyze.value); // 打印
+  console.log("fileMsgId:", fileMsgId.value);      // 打印
+  nextTick(() => {
+    if (aiChat.value) {
+      aiChat.value.openChat();
+    }
+  });
+};
+// 处理文件下载事件
+function handleFileDownloadProgress(payload) {
+          const { fileName, progress, status, id, fileBlob } = payload;
+           // 找到对应的消息
+          const msgObj = chatMessagesList.value.find(m => m.msgId === id);
+
+             if (!msgObj) return;  //  没找到, 直接返回
+
+            // 更新进度
+          msgObj.fileDownloadProgress = progress;
+
+          switch (status) {
+          case 1: // InProgress
+          msgObj.fileDownloadStatus = 'InProgress';
+            break;
+         case 2: // Success, *关键修改*
+          msgObj.fileDownloadStatus = 'Success';
+
+           //  如果是 blob 下载, 且是当前分析的文件,  处理
+          if (fileBlob && msgObj.msgId === fileMsgId.value) {
+              const objUrl = URL.createObjectURL(fileBlob);
+              const link = document.createElement('a');
+              link.href = objUrl;
+              link.download = fileName;
+              link.click();
+              URL.revokeObjectURL(objUrl);
+              aiChat.value.sendFileDataToAnalyze(fileBlob, "summary");
+          }
+          msgObj.cancelDownloadFn = null;
+              break; 
+          case 3:
+          msgObj.fileDownloadStatus = "Fail";
+          msgObj.cancelDownloadFn = null;
+              break;
+          case 4:
+          msgObj.fileDownloadStatus = "Cancel";
+          msgObj.cancelDownloadFn = null;
+            break;
+          }
+        }
+
+
+/* *********************
+  服务质量方面的代码
+   ********************* */
+// 控制“服务质量”面板的显示/隐藏
+const showServiceQuality = ref(false);
+// 用于记录“最新的”编码/解码数据，用于在文本区显示
+const statsData = reactive({
+  videoEncode: null,
+  videoDecode: null,
+  audioEncode: null,
+  audioDecode: null,
+  shareEncode: null,
+  shareDecode: null
+});
+//用数组去记录关键数值(用于折线图)
+const uplinkData = ref([]);  // 网络上行
+const downlinkData = ref([]); // 网络下行
+
+const videoEncodeFpsData = ref([]); // 视频发送FPS
+const videoDecodeFpsData = ref([]); // 视频接收FPS
+
+const audioEncodeLossData = ref([]); // 音频发送avg_loss
+const audioDecodeLossData = ref([]); // 音频接收avg_loss
+
+let networkChart = null;  // ECharts实例
 
 // 点击服务质量按钮时，初始化图表并显示弹窗
 function toggleServiceQuality() {
@@ -549,6 +955,14 @@ function toggleServiceQuality() {
       }
       showServiceQuality.value = false;
     }
+}
+
+function forceCloseServiceQuality() {
+  if (networkChart) {
+    networkChart.dispose();
+    networkChart = null;
+  }
+  showServiceQuality.value = false;
 }
 
 // 初始化ECharts
@@ -674,9 +1088,9 @@ function subscribeServiceQuality() {
   stream.subscribeAudioStatisticData({ encode: true, decode: true });
   client.on('audio-statistic-data-change', (payload) => {
     // console.log('[audio-statistic-data-change]', payload);
-     const data = payload.data;
+    const data = payload.data;
     if (!data) return;
-     if (data.encoding) {
+    if (data.encoding) {
           // 音频编码, 只更新图表
       pushAudioEncodeLoss(data.avg_loss ?? 0);
       statsData.audioEncode = data;
@@ -702,173 +1116,10 @@ function subscribeServiceQuality() {
   });
 }
 
-const joinSession = async () => {
-    try {
-        const success = await ZoomVideoService.joinSession(config);
-        if (!success) {
-            isJoining.value = false;
-            return;
-        }
-        sessionJoined.value = true;
-        isJoining.value = false;
 
-
-
-        // 检查是否支持多路视频
-        if (!ZoomVideoService.stream.isSupportMultipleVideos()) {
-            console.warn('当前环境不支持多路视频，只能渲染本地+1路远端');
-        }
-
-        checkIfHost();   // *务必* 先调用 checkIfHost, 设置好 config.hostId
-
-        // 拿到当前用户, 并加入 users 列表
-        const currentUser = ZoomVideoService.client.getCurrentUserInfo();
-        if (currentUser && currentUser.userId) {
-            currentUserId.value = currentUser.userId;
-            // 把当前用户加入 users 数组 (无论主持人还是参与者)
-            users.value.push({
-                userId: currentUser.userId,
-                userName: currentUser.displayName,
-                role: isHost.value ? 'host' : 'participant',
-                joinTime: new Date(),
-                leaveTime: null,
-                hasVideo: {
-                    initial: isVideoOn.value,
-                    final: isVideoOn.value,
-                    timeline: [{ time: Date.now(), value: isVideoOn.value }],
-                },
-                isAudioOn: {
-                    initial: isAudioOn.value,
-                    final: isAudioOn.value,
-                    timeline: [{ time: Date.now(), value: isAudioOn.value }],
-                },
-                isSharing: {
-                    initial: false,
-                    final: false,
-                    timeline: [{ time: Date.now(), value: false }],
-                },
-                isUpdated: false,  // 用于标记是否已更新
-                hostId: config.hostId, // *重要*: 所有用户都记录 hostId, 方便后续查询
-                uploads: 0,
-                downloads: 0,
-                messagesSent: 0,
-            });
-
-            const user = store.getters.getUser; // 从 Vuex 获取用户信息
-
-          if (user) {
-              // 如果是主持人, 什么都不做 (已经在 handleSession 中创建了主会议文档)
-              if (isHost.value) {
-                  // 什么都不做!
-              } else {
-                  // 如果是参与者, 调用 addParticipantMeeting, 创建指向主持人文档的引用
-
-                  // *重要*: 在这里检查 config.hostId 是否为空
-                  if (!config.hostId) {
-                       const allUsers = ZoomVideoService.client.getAllUser();
-                         allUsers.forEach(u => {
-                            if(u.isHost){
-                                config.hostId = u.userId.toString(); // 将数值类型转换为字符串类型
-                            }
-                        })
-                      console.warn('config.hostId 为空! 尝试从 allUser 中获取');
-                      //  可以添加更详细的错误处理, 例如给用户提示, 或者直接退出会议
-                  }
-
-                  try {
-                      await FirestoreService.addParticipantMeeting(
-                        user.uid,            // 参与者自己的 ID
-                        config.hostId,     // 主持人 ID
-                        config.meetingId,   // 会议 ID (来自路由参数或 handleSession)
-                        new Date()          // 加入时间
-                      );
-                  } catch (err) {
-                      console.error('添加参与者会议记录失败:', err);
-                      showSnackBar('加入会议失败 (更新 Firestore 错误):' + err.message);
-                      // 可以考虑更完善的错误处理
-                  }
-              }
-          }
-        }
-
-
-        // 订阅 SDK 事件
-        subscribeEvents();
-
-        // 获取已加入会议的用户, 并加入 users 列表 (用于 UI 显示和统计)
-        const allUsers = ZoomVideoService.client.getAllUser();
-        const localId = currentUserId.value;
-
-
-          allUsers.forEach(u => {
-      if (u.userId !== localId) { // *不* 重复添加自己
-        users.value.push({
-          userId: u.userId,
-          userName: u.displayName,
-          role: u.isHost ? 'host' : 'participant',
-          joinTime: new Date(), // 注意: 这里简化了, 实际加入时间应该通过 user-added 事件获取更准确
-          leaveTime: null,
-          hasVideo: {
-            initial: u.bVideoOn,
-            final: u.bVideoOn,
-            timeline: [{ time: Date.now(), value: u.bVideoOn }]
-          },
-          isAudioOn: {
-            initial: true, // 假设默认开启音频
-            final: true,
-            timeline: [{ time: Date.now(), value: true }]
-          },
-          isSharing: {
-            initial: u.sharerOn,
-            final: u.sharerOn,
-            timeline: [{ time: Date.now(), value: u.sharerOn }]
-          },
-          isUpdated: false, //
-          hostId: config.hostId,  // *重要*:  所有用户 (包括已加入的) 都记录 hostId
-          uploads: 0,
-          downloads: 0,
-          messagesSent: 0,
-        });
-      }
-    });
-        // 等待 DOM 渲染完成
-        await nextTick();
-
-        // attach 远端用户的视频
-        for (const u of allUsers) {
-         if (u.userId !== localId) { //
-            if (u.bVideoOn) {
-                await ZoomVideoService.attachUserVideo(u.userId, VideoQuality.VIDEO_360P);
-           }
-           if (u.sharerOn) {
-              await ZoomVideoService.attachScreenShare(u.userId);
-          }
-        }
-    }
-
-        // 初始化可聊天用户列表
-        updateChatReceivers();
-        // 订阅服务质量事件
-        subscribeServiceQuality();
-
-    } catch (error) {
-        console.error('joinSession error:', error);
-        showSnackBar('加入会议失败:' + error.message);
-        isJoining.value = false;
-    }
-};
-function checkIfHost() {
-   //  在 checkIfHost 中设置 config.hostId
-    if (ZoomVideoService.client.isHost()) {
-        isHost.value = true;
-        config.hostId = currentUserId.value; // 主持人:  config.hostId 就是自己的 ID
-    } else {
-        isHost.value = false;
-        config.hostId = route.query.hostId; //参与者：从路由中获取hostId
-    }
-    config.isHost = ZoomVideoService.getIsHost();
-}
-
+/* *********************
+会议离开和结束
+   ********************* */
 const leaveSession = async () => { //普通用户离开会议
   try {
       // 离开会议, 更新 leaveTime
@@ -883,8 +1134,7 @@ const leaveSession = async () => { //普通用户离开会议
       localUser.isSharing.timeline.push({ time: Date.now(), value: isSharing.value }); // 更新 timeline
       localUser.isUpdated = true;//设置标志位
     }
-        // 普通用户离开，不再更新会议记录
-
+    // 普通用户离开，不再更新会议记录
     await ZoomVideoService.leaveSession(false);
     resetState();
     showSnackBar('已退出会议');
@@ -908,7 +1158,7 @@ const leaveSession = async () => { //普通用户离开会议
           u.leaveTime = now;
           //  对 u.hasVideo.timeline 进行空值检查
           if(u.hasVideo && u.hasVideo.timeline && u.hasVideo.timeline.length > 0){
-             u.hasVideo.final = u.hasVideo.timeline[u.hasVideo.timeline.length - 1].value;
+            u.hasVideo.final = u.hasVideo.timeline[u.hasVideo.timeline.length - 1].value;
           }
           else{
               u.hasVideo = {  //  进行初始化
@@ -917,7 +1167,7 @@ const leaveSession = async () => { //普通用户离开会议
                   timeline: []
                 }
           }
-           u.hasVideo.timeline.push({ time: now, value:  u.hasVideo.final});
+          u.hasVideo.timeline.push({ time: now, value:  u.hasVideo.final});
 
           // 对 u.isAudioOn.timeline 进行空值检查
           if(u.isAudioOn && u.isAudioOn.timeline && u.isAudioOn.timeline.length > 0){
@@ -933,17 +1183,17 @@ const leaveSession = async () => { //普通用户离开会议
           u.isAudioOn.timeline.push({time: now, value: u.isAudioOn.final});
 
           //  对 u.isSharing.timeline 进行空值检查
-           if(u.isSharing && u.isSharing.timeline && u.isSharing.timeline.length > 0){
+          if(u.isSharing && u.isSharing.timeline && u.isSharing.timeline.length > 0){
               u.isSharing.final = u.isSharing.timeline[u.isSharing.timeline.length - 1].value;
-           }
-           else{
+          }
+          else{
               u.isSharing = {
                 initial: false,
                 final: false,
                 timeline:[]
               }
-           }
-           u.isSharing.timeline.push({ time: now, value: u.isSharing.final });
+          }
+          u.isSharing.timeline.push({ time: now, value: u.isSharing.final });
         }
       });
       //在更新 Firestore 之前，过滤和检查数据,这部分过滤数据的代码可以考虑封装成一个函数
@@ -957,7 +1207,7 @@ const leaveSession = async () => { //普通用户离开会议
           }
         });
         return filteredUser;
-       });
+      });
 
       const filteredChatMessages = chatMessagesList.value
         .filter(
@@ -1014,237 +1264,10 @@ function resetState() {
   config.hostId = ''; // 清空
 }
 
-/** 切换本地视频 */
-const toggleVideo = async () => {
-  isVideoOn.value = !isVideoOn.value;
-  await ZoomVideoService.toggleLocalVideo(isVideoOn.value);
 
-   const localUser = users.value.find(u => u.userId === currentUserId.value);
-    if (localUser) {
-      localUser.hasVideo.final = isVideoOn.value;
-      localUser.hasVideo.timeline.push({time: Date.now(), value: isVideoOn.value}); // 更新 timeline
-    }
-};
-
-/** 切换本地音频 */
-const toggleAudio = async () => {
-  isAudioOn.value = !isAudioOn.value;
-  await ZoomVideoService.toggleLocalAudio(isAudioOn.value);
-    const localUser = users.value.find(u => u.userId === currentUserId.value);
-    if(localUser){
-        localUser.isAudioOn.final = isAudioOn.value;
-        localUser.isAudioOn.timeline.push({time: Date.now(), value: isAudioOn.value});
-    }
-};
-
-/**
- * 切换“本地屏幕共享”开关
- * - 仅本地共享，远端共享由 SDK 事件管理
- */
-const toggleScreenShare = async () => {
-  if (isSharing.value) {
-    // 已在共享 => 停止共享
-      await ZoomVideoService.stopLocalScreenShare();  // 先停止
-      isSharing.value = false;
-
-      const localUser = users.value.find(u => u.userId == currentUserId.value);
-      if(localUser){
-        localUser.isSharing.final = false;
-        localUser.isSharing.timeline.push({time: Date.now(), value: false});
-      }
-
-  } else {
-    // 开始本地共享
-     const result = await ZoomVideoService.startLocalScreenShare();
-    if (result) {
-      isSharing.value = true;
-
-        const localUser = users.value.find(u=> u.userId == currentUserId.value);
-        if(localUser){
-           localUser.isSharing.final = true;
-           localUser.isSharing.timeline.push({time: Date.now(), value: true});
-        }
-    }
-  }
-};
-
-/** 群聊切换 */
-const toggleChat = () => {
-  isChatVisible.value = !isChatVisible.value;
-};
-//  发送聊天消息
-const sendChat = async () => {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  const timestamp = new Date(); // 新增：获取时间戳
-  try {
-    if (selectedReceiverId.value === 0) {
-      await ZoomVideoService.sendMessageToAll(text, timestamp); // 传递时间戳
-    } else {
-      await ZoomVideoService.sendMessageToUser(text, selectedReceiverId.value, timestamp);  // 传递时间戳
-    }
-    chatInput.value = '';
-  } catch (err) {
-    console.error('发送消息失败:', err);
-    showSnackBar('发送消息失败:' + err.message);
-  }
-};
-// 收到他人聊天消息
-function handleChatMessage(payload) {
-    console.log("Received chat message:", payload); // 打印整个 payload
-     const { message, sender, receiver, file, timestamp, id } = payload; //  timestamp, 增加 id
-
-    // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
-    if (ZoomVideoService.isMessageAlreadyAdded(id)) {
-        return;
-    }
-
-    // 2. 如果不存在, 添加到已处理列表
-    ZoomVideoService.addMessageId(id);
-
-    // 3. 构造消息对象, 添加到列表 (和之前一样)
-    let messageObj;
-     if (!file) {
-      messageObj = {
-        type: receiver.userId === "0" ? 'group' : 'private',
-        senderId: sender.userId,
-        senderName: sender.name,
-        receiverId: receiver.userId,
-        message,
-        file: null,
-        timestamp: timestamp ? new Date(timestamp) : new Date(),
-        msgId: id
-      };
-
-    } else {
-      messageObj = {
-        type: receiver.userId === '0' ? 'group' : 'private',
-        senderId: sender.userId,
-        senderName: sender.name,
-        receiverId: receiver.userId,
-        message: null,
-        file: {
-          name: file.name,
-          size: file.size,
-          fileUrl: file.fileUrl
-        },
-        timestamp: timestamp ? new Date(timestamp) : new Date(),
-        fileDownloadProgress: 0,
-        fileDownloadStatus: null,
-        msgId: id 
-      };
-  }
-   chatMessagesList.value.push(messageObj);
-  scrollToBottom();
-}
-//  自己发送消息的回调,只负责添加消息到列表
-function handleMessageSent(msg) {
-     // 1. 添加 msgId, 防止重复处理
-     ZoomVideoService.addMessageId(msg.id);    // 重要!
-
-    // 2. 直接复用 handleChatMessage
-    handleChatMessage(msg); // 复用
-}
-
-// 聊天历史
-function handleChatHistory(history) {
-    history.forEach(msg => {
-      if (!msg.file) {
-        chatMessagesList.value.push({
-          type: msg.receiver.userId === '0' ? 'group' : 'private',
-          senderId: msg.sender.userId,
-          senderName: msg.sender.name,
-          receiverId: msg.receiver.userId,
-          message: msg.message,
-          file: null,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date() // 使用传入的时间戳
-        });
-      } else {
-        chatMessagesList.value.push({
-          type: msg.receiver.userId === '0' ? 'group' : 'private',
-          senderId: msg.sender.userId,
-          senderName: msg.sender.name,
-          receiverId: msg.receiver.userId,
-          message: null,
-          file: {
-            name: msg.file.name,
-            size: msg.file.size,
-            fileUrl: msg.file.fileUrl
-          },
-           timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(), // 使用传入的时间戳
-          fileDownloadProgress: msg.file.download?.progress || 0,
-          fileDownloadStatus: msg.file.download?.status || null,
-          msgId: msg.id
-        });
-      }
-    });
-     scrollToBottom();
-}
-
-
-
-function scrollToBottom() {
-  nextTick(() => {
-    if (chatMessages.value) {
-      chatMessages.value.scrollTop = chatMessages.value.scrollHeight;
-    }
-  });
-}
-
-/** --- 新增: 发送文件 --- */
-/** 1) 点击“发送文件”按钮 => 打开文件选择器 */
-
-
-
-
-/** 2) 选择文件后，调用 sendFile 方法 */
-async function onFileInputChange(e) {
-  const files = e.target.files;
-  if (files && files.length > 0) {
-    const file = files[0];
-    try {
-       let msgId;
-      if (selectedReceiverId.value === 0) {
-         msgId = await ZoomVideoService.sendFileToAll(file);  //  await, 获取 msgId
-      } else {
-         msgId = await ZoomVideoService.sendFileToUser(file, selectedReceiverId.value); //  await, 获取 msgId
-      }
-        //  发送文件消息,很关键
-        if(msgId){
-            const curUser = ZoomVideoService.client.getCurrentUserInfo();
-             handleMessageSent({
-                sender: { userId: curUser.userId, name: curUser.displayName },
-                receiver:{userId: selectedReceiverId.value.toString()},  // 新增
-                file: {
-                   name: file.name,
-                   size: file.size,
-                },
-                timestamp: Date.now(),
-                id:msgId,
-            });
-        }
-    }
-    catch(err){
-       console.error("发送文件失败",err);
-       showSnackBar('发送文件失败.'+err.message);
-    }
-  }
-  e.target.value = ''; // 清空
-}
-
-
-/** 更新可聊天用户列表(供私聊选择) */
-const updateChatReceivers = async () => {
-  const receivers = ZoomVideoService.getChatReceivers();
-    // 过滤掉 Everyone(ID:0)
-  chatReceivers.value = receivers.filter(receiver => !(receiver.userId === '0' && receiver.displayName ==='Everyone'));
-  console.log('[updateChatReceivers]', receivers);
-};
-
-
-
-
-
+/* *********************
+转录方面
+   ********************* */
 // 新增: 保存转录文本
 const saveTranscription = async(text) =>{
  if (config.meetingId && text.length > 0) {
@@ -1264,16 +1287,13 @@ const saveTranscription = async(text) =>{
 }
 
 
+// stopRecording(); 
+ZoomVideoService.client.off('chat-file-download-progress', handleFileDownloadProgress); 
 
-function forceCloseServiceQuality() {
-  if (networkChart) {
-    networkChart.dispose();
-    networkChart = null;
-  }
-  showServiceQuality.value = false;
-}
-/** SDK事件订阅 */
-/** SDK事件订阅 */
+
+/* *********************
+SDK事件订阅
+   ********************* */
 function subscribeEvents() {
   const client = ZoomVideoService.client;
 
@@ -1371,7 +1391,6 @@ function subscribeEvents() {
         await ZoomVideoService.attachScreenShare(user.userId);
       }
     }
-
     updateChatReceivers(); // 移到这里
   });
 
@@ -1612,8 +1631,6 @@ function subscribeEvents() {
   * 文件下载进度事件 (此事件监听器 *必须* 留在 videocall.vue, 因为它涉及到 AI 分析)
   */
  client.on('chat-file-download-progress', handleFileDownloadProgress); // 必须保留, 且放在 videocall.vue
-
-
 }
 
 
@@ -1622,8 +1639,8 @@ onBeforeUnmount(() => {
     ZoomVideoService.leaveSession(false);
     sessionJoined.value = false;
   }
-  // stopRecording(); 
-  ZoomVideoService.client.off('chat-file-download-progress', handleFileDownloadProgress); 
+
+
 });
 </script>
 
