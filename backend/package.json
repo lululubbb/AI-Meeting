@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "format": "prettier --write src/*.js",
-    "start": "concurrently \"node src/index.js\" \"node src/asr-server.js\"",
+    "start": "concurrently \"node src/index.js\"",
     "serve": "node src/index.js"
   },
   "author": "Zoom Video Communications, Inc.",
