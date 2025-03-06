@@ -378,6 +378,15 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
 
         // 使用 nextTick 确保 DOM 更新
         await nextTick();
+        const shareOptions = {
+          displaySurface: 'screen', // 共享整个屏幕
+          preferCurrentTab: true,   // 优先当前标签页
+          controls: {
+              monitorTypeSurfaces: 'include',
+              selfBrowserSurface: 'exclude',
+              surfaceSwitching: 'include'
+          }
+      };
 
         if (this.stream.isStartShareScreenWithVideoElement()) {
             const shareVideo = document.createElement('video');
@@ -385,18 +394,22 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
             shareVideo.autoplay = true;
             shareVideo.playsInline = true;
             shareVideo.classList.add('video-element', 'share-video');
+            shareVideo.style.width = '100%'; // 关键布局调整
+            shareVideo.style.height = 'auto';
 
             shareArea.innerHTML = ''; // 再次清空，确保安全
             shareArea.appendChild(shareVideo);
-            await this.stream.startShareScreen(shareVideo);
+            await this.stream.startShareScreen(shareVideo,shareOptions);
         } else {
             const shareCanvas = document.createElement('canvas');
             shareCanvas.id = 'local-share-canvas';
             shareCanvas.classList.add('video-element', 'share-video');
+            shareVideo.style.width = '100%'; // 关键布局调整
+            shareVideo.style.height = 'auto';
 
             shareArea.innerHTML = '';// 再次清空，确保安全
             shareArea.appendChild(shareCanvas);
-            await this.stream.startShareScreen(shareCanvas);
+            await this.stream.startShareScreen(shareCanvas,shareOptions);
         }
         return true;
     } catch (error) {
@@ -432,6 +445,8 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
       const shareCanvas = document.createElement('canvas');
       shareCanvas.id = `share-${userId}-canvas`;
       shareCanvas.classList.add('video-element', 'share-video');
+      shareCanvas.style.width = '100%'; // 关键布局调整
+      shareCanvas.style.height = 'auto';
       shareArea.appendChild(shareCanvas);
       await this.stream.startShareView(shareCanvas, userId);
     } catch (error) {
