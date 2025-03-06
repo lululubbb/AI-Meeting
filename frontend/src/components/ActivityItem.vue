@@ -11,6 +11,12 @@
         <p class="description">{{ description }}</p>
         <p class="date">{{ date }}</p>
       </div>
+      <div class="button-container">
+      <!-- 编辑按钮 -->
+      <button @click="editActivity" class="edit-button">···</button>
+      <!-- 删除按钮 -->
+      <img src="@/assets/delete.png" alt="Delete" class="delete-button" @click="deleteActivity">
+    </div>
     </div>
   </template>
   
@@ -34,15 +40,30 @@
         type: String,
         required: true,
       },
+      activityId: {
+      type: String,
+      required: true
+    }
     },
-  };
+    methods: {
+    editActivity() {
+      this.$emit('edit-activity', this.activityId);
+    },
+    deleteActivity() {
+      this.$emit('delete-activity', this.activityId);
+    }
+  }
+};
   </script>
   
   <style scoped>
   .activity-item {
     display: flex;
     align-items: center;
-    margin-bottom: 30.94px;
+    margin-bottom: 5px;
+    padding: 10px;   
+    gap:10px; 
+    margin-top: 0px;
   }
   
   .icon-container {
@@ -73,28 +94,51 @@
   }
   
   .icon {
-    font-size: 16px; /* 根据需要调整 */
+    font-size: 16px;
+    justify-content: center;
+    align-items: center;
   }
   
   .text-container {
-    margin-left: 14.22px;
+    margin-left: 15px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    flex: 1;
   }
   
   .description {
-    font-size: 18px;
+    font-size: 17px;
     color: var(--text-color);
     letter-spacing: 0.5px;
     margin: 0;
   }
-  
+
   .date {
-    font-size: 18px;
+    font-size: 16px;
     color: rgba(65, 71, 94, 0.5);
     margin: 8.84px 0 0 0;
   }
+
+  .button-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-button {
+  background-color: transparent;
+  border: none;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.delete-button {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
 
   @media screen and (max-width: 768px) {
   .activity-item {
@@ -107,7 +151,7 @@
   }
 
   .icon {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .text-container {

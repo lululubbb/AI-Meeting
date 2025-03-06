@@ -185,7 +185,7 @@ function formatDateForComparison(date) {
     meetingsChartInstance.on('click', function (params) {
       if (params.componentType === 'series') {
         const date = params.name;
-           router.push(`/history?date=${date}`); 
+          router.push(`/history?date=${date}`); 
       }
     });
 }
@@ -349,6 +349,7 @@ function formatDateForComparison(date) {
     padding: 15px;
     background-color: var(--background-color);  /* 全局背景 */
     height: 100%;
+    margin:5px;
   }
   
   .chart-container {
@@ -361,7 +362,7 @@ function formatDateForComparison(date) {
   
   .chart-container h3 {
     margin-bottom: 10px;
-    font-size: 16px;
+    font-size: 20px;
     color: var(--text-color); /* 全局文本颜色 */
     text-align: center;
     font-weight: 600;

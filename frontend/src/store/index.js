@@ -45,7 +45,7 @@ export default createStore({
     },
   },
   actions: {
-     initAuth({ commit, dispatch }) {
+    initAuth({ commit, dispatch }) {
       onAuthStateChanged(auth, async (user) => {
         if (user) {
           const userData = await FirestoreService.getUserInfo(user.uid);
@@ -106,7 +106,6 @@ export default createStore({
          ElMessage.warning('用户未登录，无法更新待办事项。');
         return;
       }
-
       try {
         const updatedTodoList = state.user.todolist.map(todo =>
           todo.id === updatedTodo.id ? updatedTodo : todo
@@ -124,7 +123,6 @@ export default createStore({
         ElMessage.warning('用户未登录，无法删除待办事项。');
         return;
       }
-
       try {
         const updatedTodoList = state.user.todolist.filter(todo => todo.id !== todoId);
         await FirestoreService.deleteTodoItem(state.user.uid, todoId);
@@ -167,12 +165,21 @@ export default createStore({
         // 确保 newActivity 包含所有必要字段, 且有一个唯一的 ID
         const activityToAdd = {
           ...newActivity,
-          id: Date.now().toString(), // 使用时间戳作为 ID
+          // id: Date.now().toString(), // 使用时间戳作为 ID
           userId: state.user.uid,  // 添加 userId 字段
         };
+         // 调用 FirestoreService 的 addActivity 方法
+         const result = await FirestoreService.addActivity(state.user.uid, activityToAdd);
 
-       await FirestoreService.addActivity(state.user.uid, activityToAdd);
-        //  更新 Vuex store (可选，如果使用实时监听则不需要)
+         // 获取 Firestore 自动生成的文档 ID
+         const activityId = result.id;
+
+         // 将文档 ID 作为 id 字段更新到文档中
+         const activityRef = doc(db, 'users', state.user.uid, 'activities', activityId);
+         await updateDoc(activityRef, { id: activityId });
+      // await FirestoreService.addActivity(state.user.uid, activityToAdd);
+ 
+      //  更新 Vuex store (可选，如果使用实时监听则不需要)
        dispatch('fetchActivities'); // 重新获取活动列表
 
         ElMessage.success('活动已添加');
@@ -181,8 +188,38 @@ export default createStore({
         ElMessage.error('添加活动失败：' + error.message);
       }
     },
-
+    async deleteActivity({ commit, state, dispatch }, activityId) {
+      if (!state.user ||!state.user.uid) {
+          ElMessage.warning('用户未登录，无法删除活动。');
+          return;
+      }
+      try {
+          const success = await FirestoreService.deleteActivity(state.user.uid, activityId);
+          if (success) {
+              await dispatch('fetchActivities'); // 刷新活动列表
+          }
+      } catch (error) {
+          console.error('删除活动失败:', error);
+          ElMessage.error('删除活动失败：' + error.message);
+      }
   },
+
+  async updateActivity({ commit, state, dispatch }, activity) {
+      if (!state.user ||!state.user.uid) {
+          ElMessage.warning('用户未登录，无法更新活动。');
+          return;
+      }
+      try {
+          const success = await FirestoreService.updateActivity(state.user.uid, activity);
+          if (success) {
+              await dispatch('fetchActivities'); // 刷新活动列表
+          }
+      } catch (error) {
+          console.error('更新活动失败:', error);
+          ElMessage.error('更新活动失败：' + error.message);
+      }
+  }
+},
     getters: {
     isLoggedIn: (state) => !!state.user,
     getUser: (state) => state.user,
@@ -190,6 +227,6 @@ export default createStore({
     getTodoList: (state) => state.user.todolist,
     theme: (state) => state.theme,
     language: (state) => state.language,
-     getActivities: (state) => state.activities, // 新增：获取活动列表
+    getActivities: (state) => state.activities, // 新增：获取活动列表
   },
 });

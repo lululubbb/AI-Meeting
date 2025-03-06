@@ -155,13 +155,13 @@ export default {
       }
 
        if(scheduledMeeting.value){ //  设置
-         const now = Date.now();
-         const startTimeMs = new Date(scheduledMeeting.value.startTime).getTime();
-         const delay = startTimeMs - now;
-         if(delay> 0){
+        const now = Date.now();
+        const startTimeMs = new Date(scheduledMeeting.value.startTime).getTime();
+        const delay = startTimeMs - now;
+        if(delay> 0){
             console.log("设置定时器")
             timer.value = setTimeout(()=>{
-                 console.log("定时器触发")
+                console.log("定时器触发")
                 showMeetingStartNotification(scheduledMeeting.value);
             }, delay)
          }
@@ -213,7 +213,11 @@ body {
   color: var(--text-color);
   box-shadow: var(--global-box-shadow);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
+  scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
 }
+
+
 
 a {
   color: inherit;

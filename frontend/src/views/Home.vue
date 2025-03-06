@@ -91,6 +91,7 @@ const navigateToHistoryMeeting = () => {
   /* background-color: #ffffff; */
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
+  
 }
 .main-layout {
   display: flex;
@@ -129,6 +130,8 @@ const navigateToHistoryMeeting = () => {
   padding: 0;
   justify-content: center;
   overflow: auto; 
+  scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
+  scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
 }
 
 /* 右侧部分 */
@@ -137,8 +140,10 @@ const navigateToHistoryMeeting = () => {
   display: flex;
   flex-direction: column;
   /* background-color: #ffffff; */
-  padding: 0;
+  padding:10px;
   overflow: auto; 
+  scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
+  scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
 }
 
 

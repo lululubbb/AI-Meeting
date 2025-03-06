@@ -134,8 +134,6 @@ class FirestoreService {
     }
 }
 
-
-
   async deleteMeetingHistory(userId, meetingId) {
    try {
      const meetingRef = doc(db, 'users', userId, 'meetings', meetingId);
@@ -303,6 +301,36 @@ class FirestoreService {
         throw error;
     }
 }
+ // 删除活动
+ async deleteActivity(userId, activityId) {
+  try {
+      const activityRef = doc(db, 'users', userId, 'activities', activityId);
+      await deleteDoc(activityRef);
+      console.log('活动已删除:', activityId);
+      ElMessage.success('活动已删除');
+      return true; // 返回删除成功标志
+  } catch (error) {
+      console.error('删除活动失败:', error);
+      ElMessage.error('删除活动失败: ' + error.message);
+      throw error;
+  }
+}
+
+// 更新活动
+async updateActivity(userId, activity) {
+  try {
+      const activityRef = doc(db, 'users', userId, 'activities', activity.id);
+      await updateDoc(activityRef, activity);
+      console.log('活动已更新:', activity.id);
+      ElMessage.success('活动已编辑');
+      return true; // 返回更新成功标志
+  } catch (error) {
+      console.error('更新活动失败:', error);
+      ElMessage.error('编辑活动失败：' + error.message);
+      throw error;
+  }
+}
+
 }
 
 export default new FirestoreService();

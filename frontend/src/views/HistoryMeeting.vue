@@ -225,7 +225,8 @@
                 <img src="@/assets/download.png" alt="下载" />
               </button>              
             </div>
-
+            <!-- 显示进度条 -->
+            <el-progress v-if="isLoadingAnalysis" :percentage="analysisProgress" status="active"></el-progress>
             <div v-if="participationAnalysisResults.length > 0">
             <div class="table-scrollable-wrapper">
             <table class="participants-table">
@@ -251,9 +252,6 @@
         </table>
       </div>
       </div> 
-      <div v-else>
-    <p>📥 加载中...</p>
-  </div>
     </div>
               <div v-else>
                 <p>暂无参会者数据</p>
@@ -292,7 +290,6 @@
         </div>
       </div>
     </div>
-
     
     <div v-if="showExplanation" class="explanation-modal">
     <div class="modal-content">
@@ -341,6 +338,9 @@ import * as XLSX from 'xlsx';
 import { nextTick } from 'vue'; 
 
 const isLoadingSummary = ref(false);
+//参会者分析加载
+const isLoadingAnalysis = ref(false);
+const analysisProgress = ref(0);
 const summary = ref('');
 // 初始化情感分析图片
 const sentimentImages = ref({
@@ -351,7 +351,7 @@ const sentimentImages = ref({
 });
 
 const currentPage = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(8);
 const loading = ref(false);
 
 const showExplanation = ref(false);
@@ -1147,12 +1147,27 @@ const analyzeParticipation = async () => {
   });
 
   try {
+    // 开始加载，显示进度条
+    isLoadingAnalysis.value = true;
+    analysisProgress.value = 0;
+
+    // 模拟进度条更新
+    const intervalId = setInterval(() => {
+      if (analysisProgress.value < 100) {
+        analysisProgress.value += 9;
+      }
+    }, 1000);
+
     // 发送 POST 请求到后端 API
     const response = await axios.post('http://localhost:5000/analyze-participation', {
       participants: participantsData,
       topicKeywords: summary.value,
       meetingId: selectedMeeting.value.meetingId
     });
+
+     // 清除进度条更新定时器
+     clearInterval(intervalId);
+    analysisProgress.value = 100;
 
     // 检查返回结果的会议 ID 是否与当前会议 ID 一致
     if (response.data.meetingId === currentMeetingId.value) {
@@ -1165,6 +1180,10 @@ const analyzeParticipation = async () => {
   } catch (error) {
     console.error('参与度分析请求失败:', error);
     showSnackBar('参与度分析请求失败，请稍后重试。');
+  } finally {
+    // 结束加载，隐藏进度条
+    isLoadingAnalysis.value = false;
+    analysisProgress.value = 0;
   }
 };
 // 监听 selectedMeeting 的变化，当会议切换时重置分析结果
@@ -1332,11 +1351,11 @@ body {
 }
 /* 容器样式 */
 .history-container {
-  padding: 30px 20px;
+  padding: 10px 10px;
   width: 95%;
   max-width: 900px;
-  max-height: 90vh;
-  margin: 20px auto;
+  max-height: 85vh;
+  margin: 10px auto;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   border-radius: 15px;
   /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
@@ -1359,12 +1378,15 @@ body {
   margin-bottom: 25px;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .input-wrapper {
   position: relative;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
+  display: flex; /* 确保子元素也能正确布局 */
+  justify-content: center; /* 水平居中 */
 }
 
 .search-input {
@@ -1528,13 +1550,14 @@ body {
   from { opacity: 0; transform: translate(-50%, -60%); }
   to { opacity: 1; transform: translate(-50%, -50%); }
 }
+
 #meetingDetails {
   padding: 10px;
   background-color: #ffffff;
   border-radius: 10px;
-
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
-
+  box-shadow: var(--global-box-shadow); 
+  overflow-y: auto; 
+  margin-top: 40px;
 }
 
 
@@ -1779,8 +1802,7 @@ button:disabled {
   .search-input {
     padding: 10px 40px 10px 15px;
     font-size: 14px;
-    padding-left: 50px;
-    width: 70%;
+    width: 100%; /* 确保在小屏幕上宽度占满父容器 */
   }
   .search-icon {
     width: 20px;
@@ -1913,7 +1935,7 @@ button:disabled {
     padding-left: 50px;
     border-width: 1px;
     border-radius: 20px;
-    width: 70%;
+    width: 100%; /* 确保在更小屏幕上宽度占满父容器 */
   }
   #meetingDetails p {
     font-size: 14px;

@@ -97,7 +97,7 @@ const store = useStore();
 }
 
 footer {
-  height: 30px;
+  height: 25px;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   display: flex;
   align-items: center;

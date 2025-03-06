@@ -216,23 +216,20 @@ box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 border-radius: 8px; 
 width:90%;
 }
-.header {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
 
-.header h2 {
-  margin-top: 50px;
+.todo-list h2 {
+  margin-top: 10px;
   margin-bottom: 1px;
-  margin-left: 30px;
+  margin-left: 0px;
+  font-size: 20px;
 }
 
-.header h3 {
+.todo-list h3 {
   margin-top: 10px;
   color: var(--text-color);
-  margin-left: 30px;
+  margin-left: 0px;
   margin-bottom: 10px;
+  font-size: 16px;
 }
 
 .todo-list {
@@ -277,7 +274,7 @@ width:90%;
   font-size: 17px;
   margin-right: 10px;
   white-space: nowrap;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .todo-list li .todo-text div.completed-text {
@@ -288,7 +285,7 @@ width:90%;
 .todo-list li .todo-text .date {
   font-size: 12px;
   color: var(--text-color);
-  font-size: 18px;
+  font-size: 16px;
   margin-top: 2px; 
 }
 .todo-list li .button-container {

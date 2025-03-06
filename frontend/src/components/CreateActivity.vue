@@ -31,8 +31,8 @@
         <label for="color">选择颜色</label>
         <select v-model="iconColor" id="color">
           <option value="#5dc983">绿色</option>
-          <option value="#7784ee">蓝色</option>
-          <option value="#fba63c">橙色</option>
+          <option value="#67b2fd">蓝色</option>
+          <option value="#ad9afa">紫色</option>
            <option value="#ffbebe">红色</option>
         </select>
       </div>
@@ -78,7 +78,7 @@ const submitActivity = () => {
   description.value = '';
   date.value = '';
   type.value = '修改';
-  iconColor.value = '#5dc983';
+  iconColor.value = '#ad9afa';
 };
 
 // 根据活动类型选择不同的图标
