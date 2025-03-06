@@ -227,7 +227,6 @@ import ZoomVideoService, { VideoQuality } from '../services/ZoomVideoService.js'
 import { showSnackBar } from '../utils/utils.js';
 import AIFloatingChat from '../components/AIFloatingChat.vue'; // 导入组件
 import ChatPanel from '../components/ChatContainer.vue';
-import RealtimeTranscription from '../components/RealTimeTranscription.vue'
 import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
 
