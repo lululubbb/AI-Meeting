@@ -2,6 +2,7 @@
   <div class="calendar-todolist">
     <!-- FullCalendar -->
     <FullCalendar 
+      ref="calendarRef"
       :options="calendarOptions" 
       :locale="zhCnLocale"
       @dateClick="handleDateClick" 
@@ -17,7 +18,7 @@
           <input type="checkbox" v-model="todo.isCompleted" class="checkbox" @change="updateTodo(todo)"/>
 
           <div class="todo-text">
-            <div :class="{'completed-text': todo.isCompleted}">{{ todo.text }}</div>
+            <div :class="{'completed-text': todo.isCompleted}">{{ todo.text || todo.title}}</div>
             <div class="date">{{ todo.date }}</div>
           </div>
           <div class="button-container">
@@ -70,7 +71,13 @@ const isDialogVisible = ref(false);
 
 const user = computed(() => store.state.user);
 const userTodoList = ref([]);
+/*
+// 监听 userTodoList 变化，并更新日历事件
+watch(userTodoList, () => {
+  refreshCalendarEvents();
+}, { deep: true });
 
+/*
 // 使用watch监听用户的变化
 watch(user, (newUser) => {
 if (newUser && newUser.todolist) {
@@ -79,7 +86,18 @@ if (newUser && newUser.todolist) {
 
 }
 }, { immediate: true });
-
+*/
+// Calendar.vue 修改watch部分
+watch(user, (newUser) => {
+  if (newUser && newUser.uid) {
+    // 不需要手动更新，因为监听会自动处理
+    // 保留调试日志
+    userTodoList.value = newUser.todolist;
+    console.log("User changed, current uid:", newUser.uid);
+  } else {
+    userTodoList.value = [];
+  }
+}, { immediate: true });
 
 
 // 计算属性：根据 selectedDate 过滤待办事项
@@ -89,6 +107,14 @@ const displayedTodos = computed(() => {
   }
   return userTodoList.value.filter(todo => todo.date === selectedDate.value);
 });
+
+// 新增：获取对应日期的待办事项文本
+const getDateTodosText = (dateStr) => {
+  return userTodoList.value
+    .filter(todo => todo.date === dateStr)
+    .map(todo => todo.text || todo.title)
+    .join('\n');
+};
 
 
 // Calendar options
@@ -111,9 +137,117 @@ const calendarOptions = computed(() => ({
     left: 'prev,next today',
     center: 'title',
     right: ''
-  }
-}));
+  },
+  timeZone: 'UTC',
+  events: userTodoList.value.map(todo => ({
+    title: [(todo.text || ''), (todo.title || '')].filter(Boolean).join('\n'),
+    //start: todo.date,
+    start: todo.date + 'T00:00:00', // 明确指定时间
+    allDay: true,
+    display: 'block', // 确保全天事件正确显示
+    display: 'background'
+  })),
 
+  dateClick: (info) => {
+    // 使用UTC日期
+    selectedDate.value = info.date.toISOString().split('T')[0];
+    openAddTodoDialog();
+  },
+  eventDataTransform: (eventData) => {
+    // 强制转换为UTC时间
+    return {
+      ...eventData,
+      start: new Date(eventData.start + 'T00:00:00Z'),
+      end: new Date(eventData.start + 'T23:59:59Z')
+    };
+  },
+  /*
+  dayCellContent: (args) => {
+    // 原始日期数字
+    const dayNumber = document.createElement('div');
+    dayNumber.innerHTML = args.dayNumberText;
+   
+    
+    // 自定义内容容器
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'flex-start';
+  container.style.padding = '2px';
+    
+    // 日期数字
+    container.appendChild(dayNumber);
+    
+    // 待办事项文本
+    const dateStr = args.date.toISOString().split('T')[0];
+    const todosText = getDateTodosText(dateStr);
+    
+    if (todosText) {
+      const todosDiv = document.createElement('div');
+      todosDiv.style.fontSize = '0.85em';
+    todosDiv.style.color = '#fff'; // 白色文字
+    todosDiv.style.backgroundColor = '#bbc1e5'; // 紫色背景
+    todosDiv.style.padding = '2px 4px';
+    todosDiv.style.borderRadius = '4px'; // 圆角边框
+    todosDiv.style.marginTop = '3px';
+    todosDiv.style.lineHeight = '1.2';
+    //todosDiv.style.maxHeight = '3em'; // 限制最大高度，避免溢出
+    //todosDiv.style.overflow = 'hidden';
+    todosDiv.style.textOverflow = 'ellipsis';
+    //todosDiv.style.whiteSpace = 'nowrap'; // 避免文字过长换行
+    todosDiv.style.whiteSpace = 'pre-line'; // 允许换行显示
+    todosDiv.style.wordBreak = 'break-word'; // 长文本自动换行
+    todosDiv.innerHTML = todosText;
+    
+    container.appendChild(todosDiv);
+    }
+    
+    return { domNodes: [container] };
+  },
+}));
+*/
+
+dayCellContent: (args) => {
+  const dateStr = args.date.toISOString().split('T')[0];
+  const todos = userTodoList.value.filter(todo => todo.date === dateStr);
+
+  // 创建主容器
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.gap = '2px'; // 项目间距
+
+  // 日期数字容器
+  const dateContainer = document.createElement('div');
+  dateContainer.style.display = 'flex';
+  dateContainer.style.justifyContent = 'flex-end'; // 日期右对齐
+
+  const dayNumber = document.createElement('div');
+  dayNumber.innerHTML = args.dayNumberText;
+  dayNumber.className = 'calendar-date-number'; // 添加class
+  
+  dateContainer.appendChild(dayNumber);
+  container.appendChild(dateContainer);
+
+  // 事件容器
+  const eventsContainer = document.createElement('div');
+  eventsContainer.style.display = 'flex';
+  eventsContainer.style.flexDirection = 'column';
+  eventsContainer.style.gap = '2px';
+
+  // 为每个事件创建独立框
+  todos.forEach(todo => {
+    const eventDiv = document.createElement('div');
+    eventDiv.className = 'purple-event-box'; // 添加样式类
+    eventDiv.textContent = todo.text || todo.title;
+    eventsContainer.appendChild(eventDiv);
+  });
+
+  container.appendChild(eventsContainer);
+  
+  return { domNodes: [container] };
+},
+}));
 // Methods
 const handleDateClick = (info) => {
   selectedDate.value = info.dateStr;
@@ -196,6 +330,20 @@ const updateTodo =async (todo) => {
 </script>
 
 <style scoped>
+/* 紫色事件框样式 */
+:deep(.purple-event-box) {
+  background: #b9c0e4;
+  color: white !important;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  line-height: 1.2;
+  word-break: break-word;
+  white-space: normal !important;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 0.85em !important; /* 调整数字改变大小 */
+}
 /* 样式保持不变 */
 .calendar-todolist {
   display: flex;
@@ -465,5 +613,34 @@ margin-left: 15px;
     padding: 8px;
     font-size: 14px;
   }
+  /* 添加/修改以下样式 */
+:deep(.fc-daygrid-day-top) {
+  flex-direction: row-reverse !important; /* 强制反向排列 */
+  justify-content: flex-start !important; /* 日期靠右 */
+  width: 100%;
+}
+
+:deep(.fc-daygrid-day-number) {
+  margin-left: auto !important; /* 推至最右侧 */
+  padding: 2px 4px !important;
+}
+
+/* 日期数字样式 */
+:deep(.calendar-date-number) {
+  background: #f0f0f0;
+  border-radius: 12px;
+  padding: 2px 6px !important;
+  font-weight: bold;
+  margin: 2px !important;
+}
+
+
+
+/* 调整日历网格高度 */
+:deep(.fc-daygrid-day-frame) {
+  min-height: 90px !important;
+  padding: 2px !important;
+}
+
 }
 </style>

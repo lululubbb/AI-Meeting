@@ -122,6 +122,54 @@ const userEmail = computed(() => {
 // 注入 emitMeetingScheduled
 const emitMeetingScheduled = inject('emitMeetingScheduled');
 
+const saveTodo = async (selectedDate, newTodoText) => {
+  console.log('当前 sessionName:', config.sessionName);
+  if (!user.value || !user.value.uid) {
+    ElMessage.warning('用户未登录，无法保存待办事项');
+    return;
+  }
+
+  if (!selectedDate) {
+    ElMessage.warning('请先选择一个日期！');
+    return;
+  }
+
+  if (!newTodoText.trim()) {
+    ElMessage.warning('请输入待办事项内容！');
+    return;
+  }
+
+  const newTodo = {
+    id: Date.now(),
+    text: config.sessionName, // 确保不是空字符串
+    data:new Date(selectedDate.value).toISOString().split('T')[0],
+    //date: selectedDate.value, // 确保有日期
+    isCompleted: false, 
+  };
+
+  console.log("准备添加待办事项:", newTodo); // 调试输出
+
+  try {
+    await store.dispatch('addTodo', newTodo);
+    ElMessage.success('待办事项已添加');
+    // 触发日历事件刷新
+    refreshCalendarEvents();
+  } catch (error) {
+    console.error("添加失败：", error);
+    ElMessage.error('添加失败：' + error.message);
+  }
+
+
+
+  closeDialog();
+};
+
+const handleDateClick = (info) => {
+  selectedDate.value = info.dateStr;
+  openAddTodoDialog();
+};
+
+
 const handleReservation = async () => {
   if (
     !config.sessionName ||
@@ -140,24 +188,51 @@ const handleReservation = async () => {
     }
     isJoining.value = true; // 显示加载动画
 
-    const [startTime, endTime] = config.meetingDateRange;
+    // 确保 startTime 和 endTime 是有效的 Date 对象
+    let [startTime, endTime] = config.meetingDateRange;
+    startTime = new Date(startTime);  // 强制转换为 Date 对象
+    endTime = new Date(endTime);      // 强制转换为 Date 对象
+
+    console.log('StartTime:', startTime.toString(), 'EndTime:', endTime.toString()); // 调试输出
+
+    // 检查是否是有效的日期
+    if (!(startTime instanceof Date) || !(endTime instanceof Date)) {
+      ElMessage.warning('会议时间格式不正确，请检查会议日期');
+      return;
+    }
+
     const meetingData = {
       sessionName: config.sessionName,
       hostName: config.userName,
       sessionPasscode: config.sessionPasscode,
-      startTime,
-      endTime,
-      createdAt: new Date(),
+      startTime: startTime.toISOString(),  // 使用 ISO 格式
+      endTime: endTime.toISOString(),      // 使用 ISO 格式
+      createdAt: new Date().toISOString(), // 使用 ISO 格式
       status: 'scheduled',
     };
+
+    console.log('Meeting Data:', meetingData); // 调试输出
+
+    // 将会议数据添加到 Firestore
     const meetingId = await FirestoreService.addToMeetingHistory(
       userId.value,
       config.sessionName,
       meetingData
     );
 
-    // 调用 inject 的方法
-    emitMeetingScheduled({
+    // 这里是将会议添加到待办事项
+    const todo = {
+      title: config.sessionName, // 会议名称作为待办事项标题
+      date: startTime.toISOString().split('T')[0], // 使用会议开始时间作为待办事项的日期
+      isCompleted: false, // 默认未完成
+    };
+
+    // 将待办事项添加到用户的 todolist 中
+    await FirestoreService.addTodoItem(userId.value, todo);
+    console.log('会议已添加为待办事项');
+
+     // 调用 inject 的方法
+     emitMeetingScheduled({
       ...meetingData,
       meetingId,
     });
@@ -168,7 +243,11 @@ const handleReservation = async () => {
   } finally {
     isJoining.value = false; // 隐藏加载动画
   }
+    
 };
+
+
+
 
 const goHome = () => {
   router.push('/home');
