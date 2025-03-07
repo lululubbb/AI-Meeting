@@ -119,20 +119,32 @@ export default {
                 startTime: new Date(),
                 hostId: user.uid,
               });
-
-                router.push({
-                  name: 'VideoCall',
-                  query: {
-                    mode: 'create',
-                    sessionName,
-                    userName: hostName,
-                    sessionPasscode,
-                    videoSDKJWT: jwt,
-                    role: 1,
-                    meetingId,
-                    hostId: user.uid,
-                  },
-                });
+    // 通过 Vuex 控制 VideoCall 组件的显示和最大化
+    store.commit('SET_MEETING_CONFIG', {
+      mode: 'create', // 确保是 create 模式
+      sessionName,
+      userName: hostName,
+      sessionPasscode,
+      videoSDKJWT: jwt,
+      role: 1,
+      meetingId,
+      hostId: user.uid
+    });
+     store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
+     store.commit('SET_VIDEOCALL_ACTIVE', true); // 显示 VideoCall 组件
+                // router.push({
+                //   name: 'VideoCall',
+                //   query: {
+                //     mode: 'create',
+                //     sessionName,
+                //     userName: hostName,
+                //     sessionPasscode,
+                //     videoSDKJWT: jwt,
+                //     role: 1,
+                //     meetingId,
+                //     hostId: user.uid,
+                //   },
+                // });
 
             showSnackBar(`已创建会议"${sessionName}"`);
             clearTimerAndMeeting();
