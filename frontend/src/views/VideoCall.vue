@@ -1,6 +1,11 @@
 <!-- videocall.vue -->
 <template>
-  <main>
+  <div
+    class="video-call-container"
+     :class="{ maximized: isMaximized, minimized: !isMaximized }"
+  >
+      <span class="close-button" @click="closeVideoCall">×</span>
+    <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
   <span class="closeBtn" @click="goHome">×</span>
@@ -216,6 +221,7 @@
     </div>
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
+    </div>
 </template>
 
 <script setup>
@@ -234,14 +240,24 @@ import * as echarts from 'echarts';
 /// Vuex / Router
 const store = useStore();
 const route = useRoute();
-const router = useRouter();
+const router = useRouter(); 
+const isMaximized = computed(() => store.state.isMaximized);
 
 const goHome = () => {
-  router.push('/home');
+  store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
+  store.commit('SET_VIDEOCALL_ACTIVE', true); // 显示
 };
 
 onMounted(() => {
-  checkRouteParams();
+  //checkRouteParams(); // 移除 checkRouteParams
+    // 获取会议配置信息
+   const savedConfig = store.getters.getMeetingConfig;
+  if (savedConfig) {
+    Object.assign(config, savedConfig); // 将保存的配置合并到 config
+     mode.value = config.mode;
+     role.value = mode.value === 'create' ? 1 : 0;
+    buttonText.value = mode.value === 'create' ? '创建会议' : '加入会议';
+  }
   ZoomVideoService.client.on('chat-file-download-progress', handleFileDownloadProgress);
 });
 
@@ -258,17 +274,20 @@ const config = reactive({
 const mode = ref(route.query.mode || 'join');
 const role = ref(mode.value === 'create' ? 1 : 0);
 const buttonText = ref(mode.value === 'create' ? '创建会议' : '加入会议');
+const isJoining = ref(false);
+const sessionJoined = ref(false);
+const autoJoin = ref(false);
 /** 切换模式 */
 const toggleMode = () => {
   mode.value = mode.value === 'create' ? 'join' : 'create';
   buttonText.value = mode.value === 'create' ? '创建会议' : '加入会议';
   role.value = mode.value === 'create' ? 1 : 0;
 };
+const closeVideoCall = () => {
+  store.commit('SET_VIDEOCALL_ACTIVE', false);
+  store.commit('SET_VIDEOCALL_MAXIMIZED', true); 
 
-const isJoining = ref(false);
-const sessionJoined = ref(false);
-const autoJoin = ref(false);
-
+};
 
 /* *********************
 会议加入和创建
@@ -1137,6 +1156,7 @@ const leaveSession = async () => { //普通用户离开会议
     await ZoomVideoService.leaveSession(false);
     resetState();
     showSnackBar('已退出会议');
+    store.commit('SET_VIDEOCALL_ACTIVE', false); 
     router.push('/home');
   } catch (error) {
     console.error('leaveSession error:', error);
@@ -1244,7 +1264,7 @@ const leaveSession = async () => { //普通用户离开会议
        ZoomVideoService.leaveSession(true); //  结束会议, 放到后面
       resetState();
       showSnackBar('会议已结束');
-      // 停止录音, 确保在 leaveSession 之前调用
+      store.commit('SET_VIDEOCALL_ACTIVE', false);
       router.push('/home');
     } catch (error) {
       console.error('endSession error:', error);
@@ -1766,6 +1786,7 @@ main {
   width: 90%;
   height: 90vh;
   background: #fff;
+  max-height: calc(100vh - 90px); 
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   position: relative;
@@ -2322,7 +2343,66 @@ canvas.video-element.share-video {
   position: absolute;
   bottom: 80px;    /* 根据原有布局调整 */
   right: 30px;
-  z-index: 9999;   /* 确保覆盖其他元素 */
+  z-index: 888;   /* 确保覆盖其他元素 */
   width: 300px;    /* 根据需要调整 */
 }
+
+.video-call-container {
+  position: absolute; /*  重要 */
+  width: 100%;
+  background-color: white;
+  border: 1px solid #ccc;
+  z-index: 1000;      /*  重要, 比其他页面高, 但比 Header, AIFloatingChat 低 */
+  overflow: hidden;          /* 确保内容不会溢出 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  min-width: 300px;
+  min-height: 200px;
+  transition: all 0.3s ease; /* 平滑过渡 */
+}
+
+/* 关闭按钮样式 */
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  z-index: 1001; /* 确保在最上层 */
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+/* 最小化时的样式 */
+.video-call-container.minimized {
+  top: 90px; 
+  left: 20px;  
+  bottom: auto; 
+  right: auto;  
+  width: 320px; /* 缩小后的宽度 */
+  height: 180px; /* 缩小后的高度 */
+  border-radius: 8px;  /* 圆角 */
+}
+/* 当 isMaximized 为 true 时的样式 */
+.video-call-container.maximized {
+    top: 0;  /* 或者你希望的值 */
+    left: 0;
+    width: 100%;
+    height: 100%; ; /* 根据你的页头高度调整 */
+    border-radius: 0; /* 取消圆角 */
+}
+/* 响应式设计 (根据需要添加更多断点) */
+@media (max-width: 768px) {
+  .video-call-container {
+    width: 95vw;
+    height: 70vh;
+    top: 10vh; /* 调整位置 */
+    right: 2.5vw;
+  }
+}
+
+
 </style>

@@ -41,12 +41,12 @@ const routes = [
     component: ReserveMeeting,
     meta: { requiresAuth: true }
   },
-  {
-    path: '/video-call',
-    name: 'VideoCall',
-    component: VideoCall,
-    meta: { requiresAuth: true }
-  },
+  // {
+  //   path: '/video-call',
+  //   name: 'VideoCall',
+  //   component: VideoCall,
+  //   meta: { requiresAuth: true }
+  // },
   { path: '/meetings',
     name: 'Meetings', 
     component: Meetings,

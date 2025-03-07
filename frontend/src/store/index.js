@@ -21,6 +21,10 @@ export default createStore({
     activities: [], // 新增：活动列表
     theme: 'light',
     language: 'zh-CN',
+    isVideoCallActive: false, // 新增的状态
+    meetingConfig: { //新增
+    },
+    isMaximized: true,
   },
   mutations: {
     SET_USER(state, user) {
@@ -43,6 +47,16 @@ export default createStore({
     SET_ACTIVITIES(state, activities) { // 新增：设置活动列表
       state.activities = activities;
     },
+    SET_VIDEOCALL_ACTIVE(state, isActive) {
+      state.isVideoCallActive = isActive;
+    },
+     //存储会议信息
+     SET_MEETING_CONFIG(state, config){
+       state.meetingConfig = config;
+    },
+    SET_VIDEOCALL_MAXIMIZED(state, isMaximized) { // 新增
+      state.isMaximized = isMaximized;
+  }
   },
   actions: {
     initAuth({ commit, dispatch }) {
@@ -228,5 +242,6 @@ export default createStore({
     theme: (state) => state.theme,
     language: (state) => state.language,
     getActivities: (state) => state.activities, // 新增：获取活动列表
+    getMeetingConfig: (state) => state.meetingConfig,
   },
 });
