@@ -19,6 +19,9 @@ app.use(router)
 app.use(store)
 // 使用 Element Plus 并设置中文语言
 app.use(ElementPlus, { locale: zhCn });
+// 在createApp之后立即执行
+const savedTheme = localStorage.getItem('theme') || 'light'
+document.body.className = savedTheme
 
 
 // 将 ZoomVideoService 挂载到全局，以便在组件中访问（如果需要）

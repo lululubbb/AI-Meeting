@@ -118,82 +118,151 @@
             </button>
           </div>
 
-          <!-- 服务质量窗口 (弹窗)，仅当 showServiceQuality=true 时显示 -->
-          <div v-if="showServiceQuality" class="service-quality-overlay">
-            <div class="service-quality-header">
-              <span>服务质量</span>
-              <button @click="toggleServiceQuality" class="close-quality">×</button>
-            </div>
-            <div class="service-quality-content">
-              <!-- 只保留 ECharts 容器，不显示文字 -->
-              <div id="networkChart" class="chart-container"></div>
+    <!-- 服务质量窗口 (弹窗)，仅当 showServiceQuality=true 时显示 -->
+  <div v-if="showServiceQuality" class="service-quality-overlay">
+    <div class="service-quality-header">
+      <span>{{ t('serviceQuality.title') }}</span>
+      <button @click="toggleServiceQuality" class="close-quality">×</button>
+    </div>
+    <div class="service-quality-content">
+      <!-- 只保留 ECharts 容器，不显示文字 -->
+      <div id="networkChart" class="chart-container"></div>
 
-              <!-- == 新增文字显示区: 显示实时统计信息 == -->
-              <div class="stats-text">
-                <h3>实时统计信息</h3>
+      <!-- == 新增文字显示区: 显示实时统计信息 == -->
+      <div class="stats-text">
+        <h3>{{ t('serviceQuality.realTimeStats') }}</h3>
 
-                <h4>Video Encode</h4>
-                <table class="stats-table" v-if="statsData.videoEncode">
-                  <tbody>
-                    <tr><td>FPS:</td><td>{{ statsData.videoEncode.fps ?? '--' }}</td></tr>
-                    <tr><td>Bitrate:</td><td>{{ statsData.videoEncode.bitrate ?? '--' }}</td></tr>
-                    <tr><td>avg_loss:</td><td>{{ statsData.videoEncode.avg_loss ?? '--' }}</td></tr>
-                    <tr><td>rtt:</td><td>{{ statsData.videoEncode.rtt ?? '--' }}</td></tr>
-                  </tbody>
-                </table>
+        <h4>{{ t('serviceQuality.videoEncode') }}</h4>
+        <table class="stats-table" v-if="statsData.videoEncode">
+          <tbody>
+            <tr>
+              <td>{{ t('serviceQuality.fps') }}:</td>
+              <td>{{ statsData.videoEncode.fps ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.bitrate') }}:</td>
+              <td>{{ statsData.videoEncode.bitrate ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.avgLoss') }}:</td>
+              <td>{{ statsData.videoEncode.avg_loss ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.rtt') }}:</td>
+              <td>{{ statsData.videoEncode.rtt ?? '--' }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-                <h4>Video Decode</h4>
-                <table class="stats-table" v-if="statsData.videoDecode">
-                  <tbody>
-                    <tr><td>FPS:</td><td>{{ statsData.videoDecode.fps ?? '--' }}</td></tr>
-                    <tr><td>Bitrate:</td><td>{{ statsData.videoDecode.bitrate ?? '--' }}</td></tr>
-                    <tr><td>avg_loss:</td><td>{{ statsData.videoDecode.avg_loss ?? '--' }}</td></tr>
-                    <tr><td>rtt:</td><td>{{ statsData.videoDecode.rtt ?? '--' }}</td></tr>
-                  </tbody>
-                </table>
+        <h4>{{ t('serviceQuality.videoDecode') }}</h4>
+        <table class="stats-table" v-if="statsData.videoDecode">
+          <tbody>
+            <tr>
+              <td>{{ t('serviceQuality.fps') }}:</td>
+              <td>{{ statsData.videoDecode.fps ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.bitrate') }}:</td>
+              <td>{{ statsData.videoDecode.bitrate ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.avgLoss') }}:</td>
+              <td>{{ statsData.videoDecode.avg_loss ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.rtt') }}:</td>
+              <td>{{ statsData.videoDecode.rtt ?? '--' }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-                <h4>Audio Encode</h4>
-                <table class="stats-table" v-if="statsData.audioEncode">
-                  <tbody>
-                    <tr><td>Bitrate:</td><td>{{ statsData.audioEncode.bitrate ?? '--' }}</td></tr>
-                    <tr><td>avg_loss:</td><td>{{ statsData.audioEncode.avg_loss ?? '--' }}</td></tr>
-                    <tr><td>rtt:</td><td>{{ statsData.audioEncode.rtt ?? '--' }}</td></tr>
-                    <tr><td>sample_rate:</td><td>{{ statsData.audioEncode.sample_rate ?? '--' }}</td></tr>
-                  </tbody>
-                </table>
+        <h4>{{ t('serviceQuality.audioEncode') }}</h4>
+        <table class="stats-table" v-if="statsData.audioEncode">
+          <tbody>
+            <tr>
+              <td>{{ t('serviceQuality.bitrate') }}:</td>
+              <td>{{ statsData.audioEncode.bitrate ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.avgLoss') }}:</td>
+              <td>{{ statsData.audioEncode.avg_loss ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.rtt') }}:</td>
+              <td>{{ statsData.audioEncode.rtt ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.sampleRate') }}:</td>
+              <td>{{ statsData.audioEncode.sample_rate ?? '--' }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-                <h4>Audio Decode</h4>
-                <table class="stats-table" v-if="statsData.audioDecode">
-                  <tbody>
-                    <tr><td>Bitrate:</td><td>{{ statsData.audioDecode.bitrate ?? '--' }}</td></tr>
-                    <tr><td>avg_loss:</td><td>{{ statsData.audioDecode.avg_loss ?? '--' }}</td></tr>
-                    <tr><td>rtt:</td><td>{{ statsData.audioDecode.rtt ?? '--' }}</td></tr>
-                    <tr><td>sample_rate:</td><td>{{ statsData.audioDecode.sample_rate ?? '--' }}</td></tr>
-                  </tbody>
-                </table>
+        <h4>{{ t('serviceQuality.audioDecode') }}</h4>
+        <table class="stats-table" v-if="statsData.audioDecode">
+          <tbody>
+            <tr>
+              <td>{{ t('serviceQuality.bitrate') }}:</td>
+              <td>{{ statsData.audioDecode.bitrate ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.avgLoss') }}:</td>
+              <td>{{ statsData.audioDecode.avg_loss ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.rtt') }}:</td>
+              <td>{{ statsData.audioDecode.rtt ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.sampleRate') }}:</td>
+              <td>{{ statsData.audioDecode.sample_rate ?? '--' }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-                <h4>Share Encode</h4>
-                <table class="stats-table" v-if="statsData.shareEncode">
-                  <tbody>
-                    <tr><td>FPS:</td><td>{{ statsData.shareEncode.fps ?? '--' }}</td></tr>
-                    <tr><td>Bitrate:</td><td>{{ statsData.shareEncode.bitrate ?? '--' }}</td></tr>
-                    <tr><td>avg_loss:</td><td>{{ statsData.shareEncode.avg_loss ?? '--' }}</td></tr>
-                    <tr><td>width x height:</td>
-                      <td>{{ statsData.shareEncode.width }} x {{ statsData.shareEncode.height }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+        <h4>{{ t('serviceQuality.shareEncode') }}</h4>
+        <table class="stats-table" v-if="statsData.shareEncode">
+          <tbody>
+            <tr>
+              <td>{{ t('serviceQuality.fps') }}:</td>
+              <td>{{ statsData.shareEncode.fps ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.bitrate') }}:</td>
+              <td>{{ statsData.shareEncode.bitrate ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.avgLoss') }}:</td>
+              <td>{{ statsData.shareEncode.avg_loss ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.widthHeight') }}:</td>
+              <td>{{ statsData.shareEncode.width }} x {{ statsData.shareEncode.height }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-                <h4>Share Decode</h4>
-                <table class="stats-table" v-if="statsData.shareDecode">
-                  <tbody>
-                    <tr><td>FPS:</td><td>{{ statsData.shareDecode.fps ?? '--' }}</td></tr>
-                    <tr><td>Bitrate:</td><td>{{ statsData.shareDecode.bitrate ?? '--' }}</td></tr>
-                    <tr><td>avg_loss:</td><td>{{ statsData.shareDecode.avg_loss ?? '--' }}</td></tr>
-                    <tr><td>width x height:</td>
-                      <td>{{ statsData.shareDecode.width }} x {{ statsData.shareDecode.height }}</td></tr>
-                  </tbody>
-                </table>
+        <h4>{{ t('serviceQuality.shareDecode') }}</h4>
+        <table class="stats-table" v-if="statsData.shareDecode">
+          <tbody>
+            <tr>
+              <td>{{ t('serviceQuality.fps') }}:</td>
+              <td>{{ statsData.shareDecode.fps ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.bitrate') }}:</td>
+              <td>{{ statsData.shareDecode.bitrate ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.avgLoss') }}:</td>
+              <td>{{ statsData.shareDecode.avg_loss ?? '--' }}</td>
+            </tr>
+            <tr>
+              <td>{{ t('serviceQuality.widthHeight') }}:</td>
+              <td>{{ statsData.shareDecode.width }} x {{ statsData.shareDecode.height }}</td>
+            </tr>
+          </tbody>
+        </table>
               </div>
             </div>
           </div>
@@ -235,7 +304,9 @@ import AIFloatingChat from '../components/AIFloatingChat.vue'; // 导入组件
 import ChatPanel from '../components/ChatContainer.vue';
 import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 
 /// Vuex / Router
 const store = useStore();
@@ -1953,7 +2024,7 @@ canvas.video-element.share-video {
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 6px;
-    z-index: 999;
+    z-index: 99;
      } */      /* 样式修改 */
 
 .chat-container {
@@ -2135,34 +2206,46 @@ canvas.video-element.share-video {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 600px;
-  max-height: 600px;
+  width: 800px;
+  max-height: 70vh;
   background: #fafafa;
   border: 1px solid #ddd;
-  border-radius: 6px;
-  z-index: 9999;
+  border-radius: 16px;
+  z-index: 99;
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
+.service-quality-overlay:hover {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
 .service-quality-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1a73e8;
-  color: #fff;
-  padding: 10px;
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
+  background: linear-gradient(135deg, #e2e4e9, #bec3c9);  
+  color: #000000;
+  padding: 20px;
+  border-radius: 16px 16px 0 0;
+  letter-spacing: 0.8px;
+  font-size: 19px;
+  font-weight: bold;
 }
 
 .close-quality {
   background: none;
   border: none;
-  color: #fff;
-  font-size: 16px;
+  color: #000000;
+  font-size: 28px;
   cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 4px;
+}
+
+.close-quality:hover {
+  transform: rotate(90deg);
 }
 
 .service-quality-content {
@@ -2175,7 +2258,12 @@ canvas.video-element.share-video {
   width: 100%;
   height: 300px;
   margin-top: 10px;
+  padding-top: 20px;
   border: 1px solid #ccc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border-radius: 12px;
+  grid-column: span 2;
 }
 
 /* == 新增: 文字表格样式，可自行调整美观 == */
@@ -2194,9 +2282,26 @@ canvas.video-element.share-video {
   margin-bottom: 10px;
 }
 
+.stats-table th {
+  background: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  color: #161d25;
+  font-weight: 500;
+  font-size: 14px;
+  border-bottom: 1.5px solid #c6c6c6;
+}
+
 .stats-table td {
+  padding: 12px;
+  border-bottom: 1.5px solid #c6c6c6;
+  color: #151c23;
+  font-size: 15px;
   border: 1px solid #ddd;
-  padding: 6px 8px;
+}
+
+.stats-table tr:hover {
+  background: #f3f4f8;
 }
 
 .button-container {
@@ -2211,32 +2316,24 @@ canvas.video-element.share-video {
   max-width: 200px; /* 限制按钮最大宽度 */
   text-align: center;
 }
-
-/* 字幕的样式 */
+/* 
+字幕的样式
 .subtitle {
   position: absolute;
   bottom: 60px;
-  /* 调整位置 */
   left: 0;
-  /*新增 */
   right: 0;
-  /*新增*/
-  /* left: 50%; */
-  /* transform: translateX(-50%); */
   background-color: rgba(0, 0, 0, 0.6);
   color: #fff;
   padding: 5px 10px;
   border-radius: 5px;
-  /* max-width: 80%; *//*移除*/
   text-align: center;
   font-size: 16px;
-  /*根据需求修改*/
   white-space: pre-wrap;
   word-wrap: break-word;
-  z-index: 1000;
-  /* 确保在最上层 */
-}
+  z-index: 10;
 
+*/
 /* 新增：聊天部分样式 */
 .chat-controls {
   display: flex;
@@ -2317,16 +2414,16 @@ canvas.video-element.share-video {
 }
 
 @keyframes blink {
-  0%,
-  100% {
+  0% {
     opacity: 1;
   }
-
   50% {
     opacity: 0.2;
   }
+  100% {
+    opacity: 1;
+  }
 }
-
 /* 上传进度样式 */
 .upload-progress {
   padding: 10px;
@@ -2343,7 +2440,7 @@ canvas.video-element.share-video {
   position: absolute;
   bottom: 80px;    /* 根据原有布局调整 */
   right: 30px;
-  z-index: 888;   /* 确保覆盖其他元素 */
+  z-index: 88;   /* 确保覆盖其他元素 */
   width: 300px;    /* 根据需要调整 */
 }
 
@@ -2352,7 +2449,7 @@ canvas.video-element.share-video {
   width: 100%;
   background-color: white;
   border: 1px solid #ccc;
-  z-index: 1000;      /*  重要, 比其他页面高, 但比 Header, AIFloatingChat 低 */
+  z-index: 100;      /*  重要, 比其他页面高, 但比 Header, AIFloatingChat 低 */
   overflow: hidden;          /* 确保内容不会溢出 */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   border-radius: 8px;
@@ -2395,14 +2492,158 @@ canvas.video-element.share-video {
     border-radius: 0; /* 取消圆角 */
 }
 /* 响应式设计 (根据需要添加更多断点) */
+/* 响应式样式 */
 @media (max-width: 768px) {
-  .video-call-container {
-    width: 95vw;
-    height: 70vh;
-    top: 10vh; /* 调整位置 */
-    right: 2.5vw;
+  main {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  #action-flow {
+    max-width: 100%;
+    margin-top: 20px;
+  }
+
+  .video-and-transcription {
+    flex-direction: column;
+    margin-top: 20px;
+  }
+
+  #sessionContainer {
+    width: 100%;
+    height: 400px;
+  }
+  .controls {
+        flex-wrap: wrap; /* 使按钮在空间不足时换行 */
+        justify-content: center; /* 按钮左对齐 */
+        padding: 5px; /* 减少内边距 */
+        gap: 20px; /* 减少按钮间距 */
+    }
+  .controls button {
+        padding: 10px 12px; /* 调整按钮内边距 */
+        font-size: 12px; /* 减小字体大小 */
+        width: 40px; /* 根据需求调整宽度 */
+        height: 40px; /* 根据需求调整高度 */
+    }
+  .controls button img {
+    width: 16px; /* 减小图标宽度 */
+    height: 16px; /* 减小图标高度 */
+    vertical-align: middle; /* 使图标在按钮中垂直居中 */
+    }
+
+  .subtitle {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    max-width: 80%;
+    text-align: center;
+    font-size: 20px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  #transcriptionContainer {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 10px;
+    height: 300px;
+  }
+
+  /* 响应式布局调整 */
+  .meeting-content {
+    flex-direction: column;
+  }
+
+  .chat-container {
+    max-width: none;
+    /* 移除最大宽度限制 */
+    border-left: none;
+    /*移除边框*/
+  }
+
+  .chat-controls {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+
+  .chat-controls label {
+    margin-bottom: 5px;
+  }
+
+  .receiver-select {
+    margin-bottom: 5px;
+    width: 100%;
+  }
+
+  .send-file-bitton {
+    width: 100%;
+    margin-top: 5px;
+  }
+
+  .download-button {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 5px;
+  }
+
+  .recording-indicator {
+    margin-top: 5px;
+  }
+  .service-quality-overlay {
+    width: 90%;
+  }
+  
+  .service-quality-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-container {
+    grid-column: span 1;
+    height: 200px;
   }
 }
 
+@media (max-width: 480px) {
+  .input-group input,
+  .input-group select {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  #transcriptionContainer {
+    height: 250px;
+  }
+  .chat-controls {
+    padding: 6px;
+  }
+
+  .chat-controls label {
+    font-size: 14px;
+  }
+
+  .receiver-select {
+    padding: 4px 6px;
+  }
+
+  .send-file-bitton {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+
+  .download-button {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+
+  .recording-indicator .dot {
+    width: 5px;
+    height: 5px;
+  }
+}
 
 </style>

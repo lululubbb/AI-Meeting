@@ -35,7 +35,6 @@ import FirestoreService from './services/FirestoreService.js';
 import { useStore } from 'vuex';
 import axios from 'axios';
 import VideoCall from './views/VideoCall.vue'; // 作为全局组件导入
-
 export default {
   name: 'App',
   components: {
