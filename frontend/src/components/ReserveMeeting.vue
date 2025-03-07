@@ -68,11 +68,16 @@ import { useStore } from 'vuex';
 
 //复制预约会议信息
 const generateInvitationContent = () => {
-  const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${config.meetingDateRange}\n会议密码:${config.sessionPasscode}\n请打开“慧议”系统加入会议吧！`;
+  const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${config.meetingDateRange}\n会议密码:${config.sessionPasscode}\n复制该文本打开“慧议”系统点击“加入会议”按钮可直接入会！`;
   return meetingInfo;
   };
 
   const copyInvitationToClipboard = async () => {
+  // 检查用户输入是否完整
+  if (!config.userName || !config.sessionName || !config.sessionPasscode) {
+    ElMessage.warning('请填写完整的会议信息后再复制');
+    return;
+  }
   const invitationContent = generateInvitationContent();
   try {
     await navigator.clipboard.writeText(invitationContent);
