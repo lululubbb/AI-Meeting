@@ -23,27 +23,27 @@
   <!-- 创建/加入会议表单 -->
   <div v-if="mode === 'create'" class="input-group">
     <label for="sessionName">会议名称:</label>
-    <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" />
+    <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'create'" class="input-group">
     <label for="userName">用户名:</label>
-    <input id="userName" v-model="config.userName" placeholder="请输入用户名" />
+    <input id="userName" v-model="config.userName" placeholder="请输入用户名" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'create'" class="input-group">
     <label for="sessionPasscode">会议密码 (可选):</label>
-    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" />
+    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="sessionName">会议名称:</label>
-    <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" />
+    <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="userName">用户名:</label>
-    <input id="userName" v-model="config.userName" placeholder="请输入用户名" />
+    <input id="userName" v-model="config.userName" placeholder="请输入用户名" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="sessionPasscode">会议密码 (可选):</label>
-    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" />
+    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" @paste="handlePaste"/>
   </div>
 
   <!-- 角色选择 (仅在创建会议时显示) -->
@@ -234,7 +234,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, onBeforeUnmount, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
@@ -244,7 +244,7 @@ import AIFloatingChat from '../components/AIFloatingChat.vue'; // 导入组件
 import ChatPanel from '../components/ChatContainer.vue';
 import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
-import { ElMessageBox } from 'element-plus';
+import { ElMessage,ElMessageBox} from 'element-plus';
 
 /// Vuex / Router
 const store = useStore();
@@ -258,6 +258,9 @@ const goHome = () => {
 };
 
 onMounted(() => {
+  checkRouteParams();
+  checkClipboard(); // 打开页面时检查剪贴板
+  window.addEventListener("paste", handlePaste);
   checkAndJoinFromConfig();
   //checkRouteParams(); // 移除 checkRouteParams
     // 获取会议配置信息
@@ -270,6 +273,112 @@ onMounted(() => {
   }
   ZoomVideoService.client.on('chat-file-download-progress', handleFileDownloadProgress);
 });
+
+onUnmounted(() => {
+  window.removeEventListener("paste", handlePaste);
+});
+
+// 获取当前用户的邮箱
+const getUserEmail = () => {
+  const user = store.getters.getUser;
+  console.log('当前用户ID:', user.uid);
+  return user.email || 'unknown@domain.com'
+};
+
+// // 获取当前用户的邮箱
+// getUserEmail() {
+//       const user = this.$store.getters.getUser;
+//       console.log('当前用户邮箱:', user.email); // 调试信息
+//       return user.email || 'unknown@domain.com';
+//     },
+
+//复制预约会议信息
+const generateInvitationContent = () => {
+  const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${new Date().toLocaleString()}\n会议密码:${config.sessionPasscode}\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！`;
+  return meetingInfo;
+};
+
+const copyInvitationToClipboard = async () => {
+  // 检查用户输入是否完整
+  if (!config.userName || !config.sessionName || !config.sessionPasscode) {
+    ElMessage.warning('请填写完整的会议信息后再复制');
+    return;
+  }
+  const invitationContent = generateInvitationContent();
+  console.log("复制的内容:", invitationContent); // 调试日志
+  try {
+    await navigator.clipboard.writeText(invitationContent);
+    ElMessage.success('会议邀请已复制到剪贴板');
+  } catch (err) {
+    ElMessage.error('复制失败，请手动复制');
+  }
+};
+
+const parseInvitationContent = (text) => {
+  console.log("开始解析",text)
+  const userNameMatch = text.match(/用户(\S+)\s+向您发来一个会议邀请/);
+  const sessionNameMatch = text.match(/会议名称:\s*(.+)/);
+  const sessionPasscodeMatch = text.match(/会议密码:\s*(\d+)/);
+
+  const result={
+    userName: userNameMatch ? userNameMatch[1].trim() : '',
+    sessionName: sessionNameMatch ? sessionNameMatch[1].trim() : '',
+    sessionPasscode: sessionPasscodeMatch ? sessionPasscodeMatch[1].trim() : '',
+  };
+
+  console.log("解析结果",result);
+  return result;
+};
+
+const handlePaste = async (event) => {
+  let pastedText = (event.clipboardData || window.clipboardData).getData("text");
+
+  console.log("剪贴板内容:", pastedText); // 先打印剪贴板内容
+
+  if (!pastedText) {
+    ElMessage.warning("未检测到粘贴内容，请检查剪贴板");
+    return;
+  }
+
+  // 解析粘贴的会议信息
+  const parsedData = parseInvitationContent(pastedText);
+
+  console.log("解析后的数据:", parsedData); // 调试信息
+
+  // 更新响应式对象
+  if (parsedData.sessionName) config.sessionName = parsedData.sessionName;
+  config.userName = getUserEmail();
+  if (parsedData.sessionPasscode) config.sessionPasscode = parsedData.sessionPasscode;
+
+  // 让 Vue 立即检测到变化
+  await nextTick();
+
+  ElMessage.success("会议信息已自动填充");
+};
+
+ const checkClipboard = async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      console.log("剪贴板内容:", text);
+      const parsedData = parseInvitationContent(text);
+      
+      // 如果解析成功，自动填充
+      if (parsedData.sessionName || parsedData.userName || parsedData.sessionPasscode) {
+        config.sessionName = parsedData.sessionName;
+        // config.userName = parsedData.userName;
+        config.userName=getUserEmail();
+        config.sessionPasscode = parsedData.sessionPasscode;
+
+        await nextTick(); 
+        ElMessage.success("检测到会议信息，已自动填充");
+      }
+    }
+  } catch (err) {
+    console.error("无法访问剪贴板:", err);
+  }
+};
+
 
 //* 会议相关状态 */
 const config = reactive({
@@ -1709,6 +1818,7 @@ onBeforeUnmount(() => {
 
 
 });
+
 </script>
 
 <style scoped>

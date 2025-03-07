@@ -53,6 +53,17 @@ class FirestoreService {
     });
   }
 
+  // FirestoreService.js 新增方法 - 监听用户的待办事项
+listenToTodos(userId, callback) {
+  const userDocRef = doc(db, 'users', userId);
+  return onSnapshot(userDocRef, (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      const todolist = docSnapshot.data().todolist || [];
+      callback(todolist);
+    }
+  });
+}
+
   // 添加会议历史记录，返回 meetingId (仅主持人创建会议时调用)
   async addToMeetingHistory(userId, sessionName, meetingData) {
     try {
@@ -214,28 +225,41 @@ class FirestoreService {
                 });
           }
 
+            }
+            return meetings;
+        } catch (error) {
+           console.error('获取所有会议历史记录失败:', error);
+           ElMessage.error('获取所有会议历史记录失败：' + error.message); // 使用 ElMessage
+           throw error;
         }
-        return meetings;
-    } catch (error) {
-       console.error('获取所有会议历史记录失败:', error);
-       ElMessage.error('获取所有会议历史记录失败：' + error.message); // 使用 ElMessage
-       throw error;
     }
-}
-     // 新增：添加待办事项
+  // 新增：添加待办事项
   async addTodoItem(userId, todo) {
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
+    try {
+      console.log("即将添加待办事项:", todo); // 调试日志
+      if (!todo.title || !todo.date) {
+        throw new Error("待办事项缺少 title 或 date");
+      }
 
-    if (userDoc.exists()) {
-      const currentTodoList = userDoc.data().todolist || [];
-      const updatedTodoList = [...currentTodoList, todo];
-      await updateDoc(userDocRef, { todolist: updatedTodoList });
-    } else {
-      // 处理用户文档不存在的情况（可选）
-      console.warn(`User document not found for ID: ${userId}`);
-      // 可以选择创建用户文档，或者抛出错误
-      throw new Error("User document not found");
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        // 获取当前待办事项列表
+        const currentTodoList = userDoc.data().todolist || [];
+        const updatedTodoList = [...currentTodoList, todo];
+
+        // 更新 Firestore
+        await updateDoc(userDocRef, { todolist: updatedTodoList });
+        console.log("待办事项更新成功！");
+      } else {
+        // 用户文档不存在，创建新文档
+        console.warn(`用户 ${userId} 文档不存在，创建新文档`);
+        await setDoc(userDocRef, { todolist: [todo] });
+        console.log("新用户文档创建成功！");
+      }
+    } catch (error) {
+      console.error("添加待办事项失败:", error);
     }
   }
 
