@@ -560,89 +560,90 @@ async askAiQuestion(question) {
       },
     // 处理AI指令
     async handleAIDirectives(commandData) {
-      console.log('处理AI指令:', commandData); // 调试信息
+  console.log('处理AI指令:', commandData);
 
-      const meetingName = commandData.meetingName.trim();
-      const meetingPassword = commandData.password
-        ? commandData.password.trim()
-        : '';
+  const meetingName = commandData.meetingName.trim();
+  const meetingPassword = commandData.password
+    ? commandData.password.trim()
+    : '';
 
-      console.log(`解析出的会议名称: ${meetingName}, 密码: ${meetingPassword}`); // 调试信息
+  console.log(`解析出的会议名称: ${meetingName}, 密码: ${meetingPassword}`);
 
-      // 获取当前用户的邮箱和用户名
-      const userEmail = this.getUserEmail();
-      const userName = this.getUserName();
+  // 获取当前用户的邮箱和用户名
+  const userEmail = this.getUserEmail();
+  const userName = this.getUserName();
 
-      try {
-      // 1. *先* 创建 Firestore 会议文档
-      const user = this.$store.getters.getUser;
-      if (!user) {
-        showSnackBar('用户未登录');
-        return;
-      }
 
-      const meetingId = await FirestoreService.addToMeetingHistory(
-        user.uid,
-        meetingName,
-        {
-          status: 'ongoing',
-          hostId: user.uid, // 创建者即主持人
-          hostName: userName, // 使用邮箱或用户名
-          sessionPasscode: meetingPassword,
-          startTime: new Date(),
-        }
-      );
+  try {
+    // 1. *先* 创建 Firestore 会议文档
+    const user = this.$store.getters.getUser; // 使用在 <script setup> 中定义的 store
+    if (!user) {
+      showSnackBar('用户未登录');
+      return;
+    }
 
-      // 2. 调用后端API获取JWT
-      console.log('请求后端API获取JWT...');
-      const jwtResponse = await axios.post('/api/zoom-jwt', {
-        sessionName: meetingName,
-        role: 1, // 主持人角色
-        userIdentity: userEmail, // 使用用户邮箱作为身份标识
+    const meetingId = await FirestoreService.addToMeetingHistory(
+      user.uid,
+      meetingName,
+      {
+        status: 'ongoing',
+        hostId: user.uid, // 创建者即主持人
+        hostName: userName, // 使用邮箱或用户名
         sessionPasscode: meetingPassword,
+        startTime: new Date(),
+      }
+    );
+
+    // 2. 调用后端API获取JWT
+    console.log('请求后端API获取JWT...');
+    const jwtResponse = await axios.post('/api/zoom-jwt', {
+      sessionName: meetingName,
+      role: 1, // 主持人角色
+      userIdentity: userEmail, // 使用用户邮箱作为身份标识
+      sessionPasscode: meetingPassword,
+    });
+
+    console.log('后端JWT响应:', jwtResponse.data);
+
+    const jwt = jwtResponse.data.signature;
+    if (jwt) {
+      // *修改部分*:  直接 commit 到 Vuex
+      this.$store.commit('SET_MEETING_CONFIG', {  // 直接使用 store
+        mode: 'create',
+        sessionName: meetingName,
+        userName: userName,
+        sessionPasscode: meetingPassword,
+        videoSDKJWT: jwt,
+        role: 1,
+        meetingId,
+        hostId: user.uid,
       });
 
-      console.log('后端JWT响应:', jwtResponse.data);
-
-      const jwt = jwtResponse.data.signature;
-      if (jwt) {
-        // 3. 导航到 VideoCall 页面，并传递 meetingId
-        await this.$router.push({
-          name: 'VideoCall',
-          query: {
-            mode: 'create',
-            sessionName: meetingName,
-            userName: userName,
-            sessionPasscode: meetingPassword,
-            videoSDKJWT: jwt,
-            role: 1,
-            meetingId: meetingId, // *重要* 传递 meetingId
-            hostId: user.uid,      // *重要* 传递 hostId
-          },
-        });
-
-        showSnackBar(`已创建会议 "${meetingName}" 并加入`);
-        this.isChatOpen = false;
-      } else {
-        showSnackBar('获取 JWT 失败');
-      }
-    } catch (error) {
-        console.error(
-          '获取 JWT 失败:',
-          error.response ? error.response.data : error.message
-        );
-        showSnackBar(
-          '获取 JWT 失败: ' +
-            (error.response?.data?.error?.message || error.message)
-        );
-        this.messages.push({
-          from: 'ai',
-          text: '抱歉，创建会议失败。',
-          renderedText: this.escapeHTML('抱歉，创建会议失败。'),
-        });
-        this.scrollToBottom();
-      }
-    },
+      this.$store.commit('SET_VIDEOCALL_MAXIMIZED', true);
+      this.$store.commit('SET_VIDEOCALL_ACTIVE', true);
+      showSnackBar(`已创建会议 "${meetingName}" 并加入`);
+      this.drawer = false; // 关闭抽屉
+      this.isChatOpen = false; // 关闭聊天
+    } else {
+      showSnackBar('获取 JWT 失败');
+    }
+  } catch (error) {
+    console.error(
+      '获取 JWT 失败:',
+      error.response ? error.response.data : error.message
+    );
+    showSnackBar(
+      '获取 JWT 失败: ' +
+        (error.response?.data?.error?.message || error.message)
+    );
+    this.messages.push({
+      from: 'ai',
+      text: '抱歉，创建会议失败。',
+      renderedText: this.escapeHTML('抱歉，创建会议失败。'),
+    });
+    this.scrollToBottom();
+  }
+},
     // 获取当前用户的邮箱
     getUserEmail() {
       const user = this.$store.getters.getUser;

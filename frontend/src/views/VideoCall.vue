@@ -1731,16 +1731,19 @@ main {
    padding: 0;/* 移除 padding */
    border: none;
    border-radius: 50%;/* 圆形按钮 */
-    width: 36px;/* 调整大小 */
-    height: 36px;
+    width: 45px;/* 调整大小 */
+    height: 45px;
    display: flex;  /* 使用 flex 布局 */
   align-items: center; /*  垂直居中 */
   justify-content: center; /*  水平居中 */
    cursor: pointer;
-   font-size: 30px; /* 移除 */
+   font-size: 40px; /* 移除 */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
    z-index: 1002;
 transition: background-color 0.3s;  /* 添加过渡效果 */
+}
+.return-icon-button:hover .icon {
+  opacity: 1; /* 鼠标悬停时完全不透明 */
 }
 /* .video-call-container.minimized .return-icon-button {
   bottom: 20px;  
@@ -1748,8 +1751,10 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
 } */
 
 .return-icon-button .icon {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
+  opacity: 0.7; /* 设置透明度为 80% */
+  transition: opacity 0.3s; /* 可选：添加平滑过渡 */
 }
 .closeBtn {
   position: absolute;
@@ -1757,7 +1762,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   right: 20px;
   background: none;
   border: none;
-  font-size: 28px;
+  font-size: 20px;
   cursor: pointer;
   color: #666;
 }
