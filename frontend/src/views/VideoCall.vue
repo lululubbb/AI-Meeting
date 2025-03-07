@@ -226,8 +226,11 @@
     </div>
   </main>
   <div class="transcription-float">
-      <RealtimeTranscription />
+        <RealtimeTranscription />  <!--  在这里真正使用 RealtimeTranscription 组件 -->
     </div>
+
+
+
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
     </div>
@@ -245,6 +248,7 @@ import ChatPanel from '../components/ChatContainer.vue';
 import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
 import { ElMessage,ElMessageBox} from 'element-plus';
+import RealtimeTranscription from '../components/RealtimeTranscription.vue'; // 导入新组件
 
 /// Vuex / Router
 const store = useStore();
@@ -1444,23 +1448,6 @@ function resetState() {
 /* *********************
 转录方面
    ********************* */
-// 新增: 保存转录文本
-const saveTranscription = async(text) =>{
- if (config.meetingId && text.length > 0) {
-      const user = store.getters.getUser;
-      if (user) {
-        try {
-         // await FirestoreService.saveTranscriptions(user.uid, config.meetingId, fullTranscription.value);
-           await FirestoreService.appendTranscription(user.uid, config.meetingId, text);  // 使用 append
-          console.log('转录文本已保存到 Firestore');
-          // showSnackBar('转录文本已保存');  // 不需要
-        } catch (error) {
-          console.error('保存转录文本失败:', error);
-          showSnackBar('保存转录文本失败: ' + error.message);
-        }
-      }
-    }
-}
 
 
 // stopRecording(); 
