@@ -56,26 +56,29 @@ export default createStore({
     },
     SET_VIDEOCALL_MAXIMIZED(state, isMaximized) { // 新增
       state.isMaximized = isMaximized;
-  }
+  },
+    SET_MEETINGS(state, meetings) {
+      state.meetings = meetings;
+    },
   },
   actions: {
-    initAuth({ commit, dispatch }) {
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          const userData = await FirestoreService.getUserInfo(user.uid);
-            // 获取用户活动
-          const userActivities = await FirestoreService.getUserActivities(user.uid);
-          commit('SET_USER', { ...userData, uid: user.uid, email: user.email });
-          await dispatch('listenToMeetings');
-            // 设置活动到 Vuex
-          commit('SET_ACTIVITIES', userActivities);
-        } else {
-          commit('SET_USER', null);
-          commit('SET_MEETINGS', []);
-          commit('SET_ACTIVITIES', []); // 未登录时清空活动
-        }
-      });
-    },
+     // 修改initAuth action
+  async initAuth({ commit, dispatch }) {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userData = await FirestoreService.getUserInfo(user.uid);
+        const userActivities = await FirestoreService.getUserActivities(user.uid);
+        commit('SET_USER', { ...userData, uid: user.uid, email: user.email });
+        await dispatch('listenToMeetings');
+        await dispatch('listenToTodos'); // 新增监听
+        commit('SET_ACTIVITIES', userActivities);
+      } else {
+        commit('SET_USER', null);
+        commit('SET_MEETINGS', []);
+        commit('SET_ACTIVITIES', []); 
+      }
+    });
+  },
     listenToMeetings({ commit, state }) {
       if (state.user) {
         FirestoreService.listenToMeetings(state.user.uid, (meetings) => {
@@ -83,6 +86,15 @@ export default createStore({
         });
       }
     },
+    // 新增监听待办事项的action
+  listenToTodos({ commit, state }) {
+    if (state.user) {
+      return FirestoreService.listenToTodos(state.user.uid, (todolist) => {
+        commit('SET_TODOLIST', todolist);
+      });
+    }
+  },
+
     updateUserStatus({ commit }, status) {
       commit('SET_USER_STATUS', status);
       FirestoreService.updateUserStatus(status);
@@ -90,6 +102,27 @@ export default createStore({
     updateUserWorkLocation({ commit }, workLocation) {
       commit('SET_USER_WORKLOCATION', workLocation);
       FirestoreService.updateUserWorkLocation(workLocation);
+    },
+    async addMeeting({ commit, dispatch, state }, meetingData) {
+      if (!state.user || !state.user.uid) {
+        ElMessage.warning('用户未登录，无法添加会议。');
+        return;
+      }
+  
+      try {
+        const newMeeting = {
+          ...meetingData,
+          id: Date.now().toString(),
+          userId: state.user.uid,
+        };
+  
+        await FirestoreService.addMeeting(state.user.uid, newMeeting);
+        dispatch('listenToMeetings'); // 重新获取会议列表
+        ElMessage.success('会议已添加');
+      } catch (error) {
+        console.error('添加会议失败:', error);
+        ElMessage.error('添加会议失败：' + error.message);
+      }
     },
     async signOutUser({ commit }) {
       const AuthService = await import('../services/AuthService.js');
@@ -244,6 +277,11 @@ export default createStore({
     theme: (state) => state.theme,
     language: (state) => state.language,
     getActivities: (state) => state.activities, // 新增：获取活动列表
+     getMeetingsForDate: (state) => (date) => {
+      return state.meetings.filter(meeting => 
+        new Date(meeting.startTime).toDateString() === new Date(date).toDateString()
+      );
+    },
     getMeetingConfig: (state) => state.meetingConfig,
   },
 });

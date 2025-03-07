@@ -8,18 +8,9 @@
         <transition name="fade" mode="out-in">
           <router-view />
         </transition>
-        <!-- 移动到这里，和 router-view 同级 -->
         <VideoCall v-if="isVideoCallActive" />
       </div>
     </div>
-       <!--  "返回会议" 按钮 -->
-        <div
-          v-if="isVideoCallActive && route.name !== 'Home'"
-          class="return-to-meeting"
-           @click="returnToMeeting"
-         >
-       返回会议
-      </div>
   </div>
 </template>
 
