@@ -434,7 +434,7 @@ watch(
     right: 20px; /* 微调位置 */
     top: 97%;
     transform: translateY(-50%);
-    background: #1A73E8;/*发送按钮背景色*/
+    background: #398af5;/*发送按钮背景色*/
     color: white;
     border: none;
     padding: 7px 14px; /* 微调内边距 */
@@ -442,6 +442,10 @@ watch(
     font-weight: 500;
     box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3); /* 阴影 */
   }
+  .chat-input button:hover {
+    background: #1A73E8;/*发送按钮背景色*/
+  }
+
 /* 文件操作按钮 */
 .file-actions {
     display: flex;
@@ -455,7 +459,8 @@ watch(
     display: flex;        /* 使用flex布局 */
     align-items: center;  /* 垂直居中 */
     justify-content: center; /* 水平居中 */
-    background-color: rgba(0,0,0,0.03);
+    background-color: rgba(0, 0, 0, 0.08);
+    border: none;
 }
 
 .action-button img {

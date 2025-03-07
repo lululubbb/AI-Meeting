@@ -37,16 +37,20 @@
       </ul>
     </div>
 
-    <!-- 对话框 -->
-    <div v-if="isDialogVisible" class="todo-dialog">
-      <div class="dialog-content">
-        <h3>{{ isEditing ? '编辑' : '新建' }}待办事项</h3>
-        <input v-model="newTodoText" placeholder="输入待办事项"  @keyup.enter="saveTodo"/>
-        <button @click="saveTodo">{{ isEditing ? '保存' : '添加' }}</button>
-        <button @click="closeDialog">取消</button>
-      </div>
+            <!-- 编辑对话框 -->
+        <div v-if="isDialogVisible" class="todo-dialog">
+        <div class="dialog-content">
+          <h3>{{ isEditing ? '编辑' : '新建' }}待办事项</h3>
+          <input v-model="newTodoText" placeholder="输入待办事项"  @keyup.enter="saveTodo"/>
+    <div class="dialog-actions"> <!-- 新增操作按钮容器 -->
+      <button @click="saveTodo">{{ isEditing ? '保存' : '添加' }}</button>
+      <button @click="closeDialog">取消</button>
     </div>
+        </div>
+      </div>
   </div>
+
+
 </template>
 
 <script setup>
@@ -482,9 +486,35 @@ width: 350px;
 z-index: 9999; /* 保证内容区域也在顶层 */
 }
 
+.dialog-content h3 {
+  margin-bottom: 10px;
+  text-align: center;
+}
 
+.dialog-actions {
+  display: flex;
+  gap: 50px; /* 按钮间距 */
+  justify-content:center; /* 按钮右对齐 */
+}
+
+.dialog-actions button {
+  padding: 10px 25px;
+  border-radius: 6px;
+  transition: all 0.3s;
+  flex: 1; /* 等宽按钮 */
+  max-width: 120px; /* 限制最大宽度 */
+  background-color: #b9ddfe;
+  border: solid 1px #95cbfe;
+  color: #000000;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #84befd;
+  transform: translateY(-5px); 
+}
 input {
-  width: 100%;
+  width: 95%;
   margin-bottom: 10px;
   padding: 5px;
 }
@@ -501,16 +531,6 @@ cursor: pointer;
 font-size: 16px;
 }
 
-button:first-child {
-margin-right: 10px; 
-}
-
-
-button:last-child {
-background-color: #6e8bea; 
-color: white;
-margin-left: 15px;
-}
 
 @media (max-width: 768px) {
   .calendar-todolist {
@@ -559,9 +579,15 @@ margin-left: 15px;
     justify-content: center;
   }
 
-  button {
-    width: 45%;
-    font-size: 14px;
+  .dialog-actions {
+    gap: 15px;
+    flex-direction: column; /* 移动端改为垂直排列 */
+  }
+
+  .dialog-actions button {
+    max-width: 100%;
+    width: 100%;
+    padding: 12px;
   }
 }
 
@@ -605,6 +631,10 @@ margin-left: 15px;
     width: 95%;
   }
 
+  .dialog-actions button {
+    font-size: 14px;
+  }
+  
   input {
     font-size: 14px;
   }

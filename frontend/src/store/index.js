@@ -184,6 +184,8 @@ export default createStore({
     },
     changeTheme({ commit }, theme) {
       commit('SET_THEME', theme);
+      localStorage.setItem('theme', theme)
+      document.body.className = theme
     },
     changeLanguage({ commit }, language) {
       commit('SET_LANGUAGE', language);

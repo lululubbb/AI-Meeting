@@ -2,17 +2,35 @@
 <template>
   <div class="user-card">
     <div class="card-header">
-      <img :src="user.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'" alt="User Avatar" class="user-avatar" />
+      <div class="avatar-container">
+    <div class="avatar-wrapper">
+      <img 
+        :src="editableUser.avatarUrl || defaultAvatar" 
+        alt="User Avatar" 
+        class="user-avatar" 
+        :class="{ editable: isEditing }"
+        @click="handleAvatarClick"
+      />
+
+    </div>
+    <input 
+      type="file" 
+      ref="avatarInput" 
+      accept="image/*" 
+      @change="handleAvatarChange"
+      style="display: none"
+    />
+  </div>
       <button v-if="!isEditing" @click="editProfile" class="edit-btn">编辑</button>
     </div>
     
     <div v-if="isEditing">
       <p class="user-name">
-        <el-input v-model="editableUser.name" size="small" />
+        <el-input v-model="editableUser.name"/>
       </p>
       <p class="user-email">{{ user.email }}</p> <!-- Email is read-only -->
       
-      <p>状态信息：
+      <p class="info">状态信息：
         <el-select v-model="editableUser.status" placeholder="选择状态">
           <el-option label="在线" value="在线"></el-option>
           <el-option label="离线" value="离线"></el-option>
@@ -21,8 +39,8 @@
         </el-select>
       </p>
 
-      <p>工作位置：
-        <el-input v-model="editableUser.workLocation" size="small" />
+      <p class="info">工作位置：
+        <el-input v-model="editableUser.workLocation" />
       </p>
       
       <el-button type="primary" size="small" @click="saveChanges">保存</el-button>
@@ -47,12 +65,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref,onMounted  } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import AuthService from '../services/AuthService'; // 导入 AuthService
 import { defineEmits } from 'vue';
+import defaultAvatar from '@/assets/柴犬.png'; // 默认头像
+import axios from 'axios';
 // 获取 Vuex store 和 Router 实例
 const store = useStore();
 const router = useRouter();
@@ -67,16 +87,85 @@ const isEditing = ref(false);
 
 // 创建可编辑的用户副本
 const editableUser = ref({
+  uid: user.value.uid || '',
   name: user.value.name || '',
   status: user.value.status || '在线',
   workLocation: user.value.workLocation || '中国',
   mood: user.value.mood || '开心', 
+  avatarUrl:user.value.avatarUrl || ''
 });
 
 // 编辑按钮点击事件
 const editProfile = () => {
   isEditing.value = true;
+  console.log('isEditing:', isEditing.value); // 调试信息
 };
+
+// 头像上传相关引用
+const avatarInput = ref(null);
+const isUploading = ref(false);
+
+// 修改后的script部分
+const handleAvatarClick = () => {
+  console.log('点击事件触发，当前编辑模式:', isEditing.value)
+  console.log('avatarInput 引用:', avatarInput.value)
+  
+  if (isEditing.value && avatarInput.value) {
+    console.log('准备触发文件选择')
+    avatarInput.value.click()
+  } else {
+    console.warn('无法触发文件选择，原因:', 
+      !isEditing.value ? '未在编辑模式' : '没有找到文件输入元素')
+  }
+}
+// 在handleAvatarChange方法中添加数据库保存逻辑
+const handleAvatarChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  isUploading.value = true; // 显示上传中的加载状态
+
+  console.log('用户 ID:', user.value.uid);
+
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    if (user.value.uid) {
+      formData.append('userId', user.value.uid);
+    } else {
+      console.error('用户 ID 未定义');
+      return;
+    }
+
+    // 打印 formData 内容进行调试
+    for (let pair of formData.entries()) {
+      console.log('form',pair[0] + ': ' + pair[1]);
+    }
+
+    // 调用后端上传头像的 API
+    // 在handleAvatarChange方法中修改请求URL
+  // 使用模板字符串确保参数正确拼接
+  const response = await axios.post(
+      `http://localhost:4000/api/upload-avatar?userId=${encodeURIComponent(user.value.uid)}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+
+    // 更新可编辑用户信息的头像 URL
+    editableUser.value.avatarUrl = response.data.avatarUrl;
+    ElMessage.success('头像更新成功');
+  } catch (error) {
+    console.error('头像上传失败:', error);
+    ElMessage.error('头像上传失败');
+  } finally {
+    isUploading.value = false; // 隐藏上传中的加载状态
+  }
+};
+
 
 // 保存修改——仅仅修改vuex中数据
 // const saveChanges = () => {
@@ -93,11 +182,15 @@ const saveChanges = async () => {
   try {
     // 创建一个新的对象，只包含需要更新的字段
     const userDataToUpdate = {
+      ...editableUser.value, 
+      uid: editableUser.value.uid,
       name: editableUser.value.name,
       status: editableUser.value.status,
       workLocation: editableUser.value.workLocation,
       mood: editableUser.value.mood,
+      avatarUrl: editableUser.value.avatarUrl // 包含头像 URL
     };
+
     // 调用 UserService 来更新用户信息到 Firebase Firestore
     await AuthService.updateUserStatus(userDataToUpdate);
 
@@ -142,6 +235,11 @@ const closeCard = () => {
   // 触发父组件的事件来关闭卡片
   emit('close');
 };
+
+onMounted(() => {
+  // 通过 $refs 获取输入框引用
+  console.log('avatarInput 引用:', avatarInput.value);
+});
 </script>
 
 <style scoped>
@@ -157,6 +255,7 @@ const closeCard = () => {
   box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   border-radius: 10px;
   font-size: 18px;
+  z-index: 999;
 }
 
 .card-header {
@@ -165,12 +264,71 @@ const closeCard = () => {
   align-items: center;
 }
 
+.avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.uploading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploading-overlay .el-icon {
+  color: #fff;
+  font-size: 24px;
+  animation: rotating 2s linear infinite;
+}
+
 .user-avatar {
   width: 50px;
   height: 50px;
   border-radius: 50%;
+  transition: opacity 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0; /* 让 input 元素透明 */
+  z-index: 0; /* 确保 input 元素在下层 */
+}
+.user-avatar.editable {
+  cursor: pointer;
+  opacity: 0.9;
 }
 
+.user-avatar:not(.editable) {
+  cursor: default;
+  opacity:1;
+}
+
+.user-avatar:hover.editable {
+  opacity: 0.8;
+}
+div p{
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+.info{
+  font-size: 15px;
+}
 .user-name {
   font-weight: bold;
   font-size: 22px;
@@ -196,7 +354,8 @@ const closeCard = () => {
 
 .el-input {
   width: 100%;
-  font-size: 16px;
+  font-size: 14px;
+  margin-top: 5px;
 }
 
 .el-select {
@@ -212,6 +371,12 @@ const closeCard = () => {
 .el-button + .el-button {
   margin-left: 10px;
 }
+
+@keyframes rotating {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* 手机端样式（屏幕宽度小于 768px） */
 @media (max-width: 768px) {
   .user-card {
@@ -226,7 +391,9 @@ const closeCard = () => {
     width: 40px;
     height: 40px;
   }
-
+  .uploading-overlay .el-icon {
+    font-size: 18px;
+  }
   .user-name {
     font-size: 20px;
   }

@@ -27,13 +27,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-
-
-
-// 中间件
+const parentDir = path.join(__dirname, '..'); 
+// 在Express初始化后立即添加
 app.use(cors({
-  origin: 'http://localhost:5173', // 根据需要调整
-}));
+  origin: 'http://localhost:5173', // 前端开发地址
+  credentials: true
+}))
+// 中间件
+
 app.use(express.json({ limit: '100mb' })); // 增加请求体大小限制 (例如 50MB)
 app.use(express.urlencoded({ limit: '100mb', extended: true })); // 也要增加 urlencoded 的限制
 
@@ -42,10 +43,11 @@ app.use((req, res, next) => {
   // 设置Cross-Origin-Opener-Policy和Cross-Origin-Embedder-Policy头
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  //console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  //console.log('Query:', req.query);
+  //console.log('Headers:', req.headers);
   next();
 });
-// 设置静态文件服务（用于下载文件）
-app.use('/files', express.static(path.join(__dirname, 'files')));
 
 // 文件存储配置
 const storage = multer.diskStorage({
@@ -62,6 +64,83 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
+// 静态资源中间件（关键修改）
+app.use('/avatar', express.static(path.join(parentDir, 'avatar')));
+// 新增：头像存储配置
+// const avatarStorage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     // 从查询参数获取用户ID
+//     const userId = req.query.userId;
+//     //console.log('收到的查询参数:', req.query); // 调试日志
+
+//     if (!userId) {
+//       //console.error('错误：未收到用户ID');
+//       return cb(new Error('USER_ID_REQUIRED'), null);
+//     }
+
+//     const avatarPath = path.join(__dirname, '..', 'avatar', userId);
+//     //console.log('头像存储路径:', avatarPath); // 调试日志
+
+//     // 创建目录（如果不存在）
+//     if (!fs.existsSync(avatarPath)) {
+//       fs.mkdirSync(avatarPath, { recursive: true });
+//     }
+//     cb(null, avatarPath);
+//   },
+//   filename: function (req, file, cb) {
+//     const ext = path.extname(file.originalname);
+//     const filename = `${Date.now()}${ext}`;
+//     cb(null, filename);
+//   }
+// });
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const userId = req.query.userId; // 从查询参数获取
+    if (!userId) return cb(new Error('USER_ID_REQUIRED'), null);
+    
+    const uploadPath = path.join(parentDir, 'avatar', userId);
+    fs.mkdirSync(uploadPath, { recursive: true }); // 自动创建目录
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}${ext}`);
+  }
+});
+const avatarUpload = multer({ storage: avatarStorage });
+
+// 头像上传路由
+// app.post('/api/upload-avatar', (req, res, next) => {
+//   //console.log('请求到达，查询参数:', req.query); // 调试中间件
+//   next();
+// }, avatarUpload.single('avatar'), (req, res) => {
+//   if (req.file) {
+//     res.json({
+//       avatarUrl: `/avatar/${req.query.userId}/${req.file.filename}`
+//     });
+//   } else {
+//     res.status(400).json({ error: 'FILE_UPLOAD_FAILED' });
+//   }
+// });
+app.post('/api/upload-avatar', avatarUpload.single('avatar'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'UPLOAD_FAILED' });
+  
+  // 返回完整访问路径
+  const avatarUrl = `http://localhost:4000/avatar/${req.query.userId}/${req.file.filename}`;
+  res.json({ avatarUrl });
+});
+
+// 统一错误处理
+app.use((err, req, res, next) => {
+  if (err.message === 'USER_ID_REQUIRED') {
+    return res.status(400).json({ error: '用户ID未提供' });
+  }
+  res.status(500).json({ error: '服务器内部错误' });
+});
+
+// 设置静态文件服务（用于下载文件）
+app.use('/files', express.static(path.join(__dirname, 'files')));
 
 // Zoom Video SDK JWT生成路由
 const zoomValidator = {
@@ -160,7 +239,7 @@ app.post('/api/chat/completions', async (req, res) => {
       res.json(response.data);
     }
   } catch (error) {
-    console.error('Error calling AI API:', error.response ? error.response.data : error.message);
+    //console.error('Error calling AI API:', error.response ? error.response.data : error.message);
     res.status(error.response ? error.response.status : 500).json({
       error: error.response ? error.response.data : 'Internal Server Error'
     });
@@ -242,7 +321,7 @@ app.post('/api/analyze-file', async (req, res) => {
                            }
                         }
                   } catch (error) {
-                   console.error('解析JSON失败:', error);
+                   //console.error('解析JSON失败:', error);
                  }
                }
             }
@@ -310,7 +389,7 @@ app.post('/api/analyze-file', async (req, res) => {
                       }
                    }
                } catch (error) {
-                   console.error('解析JSON失败:', error);
+                   //console.error('解析JSON失败:', error);
                }
              }
          }
@@ -327,7 +406,7 @@ app.post('/api/analyze-file', async (req, res) => {
    }
  }
   catch (error) {
-           console.error('文件分析出错:', error);
+           //console.error('文件分析出错:', error);
            let errorMessage = "文件分析失败"; // 默认错误消息
          if (error.response) {
             // 来自服务器的错误响应 (有状态码)
@@ -352,7 +431,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    console.log('接收到文件:', req.file);
+    //console.log('接收到文件:', req.file);
 
     const filePath = req.file.path;
     const fileExt = path.extname(req.file.originalname).toLowerCase();
@@ -386,7 +465,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Unsupported file type' });
     }
 
-    console.log('提取的文本长度:', extractedText.length);
+    //console.log('提取的文本长度:', extractedText.length);
 
     if (extractedText.length === 0) {
       return res.status(400).json({ error: 'No text found in the document' });
@@ -412,27 +491,31 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     });
 
     const summary = aiResponse.data.choices[0].message.content.trim();
-    console.log('生成的摘要:', summary);
+    //console.log('生成的摘要:', summary);
 
     // 可选：删除上传的文件以节省存储空间
     fs.unlink(filePath, (err) => {
       if (err) {
-        console.error('删除文件出错:', err);
+        //console.error('删除文件出错:', err);
       } else {
-        console.log('已删除上传的文件:', filePath);
+        //console.log('已删除上传的文件:', filePath);
       }
     });
 
     return res.json({ summary });
   } catch (error) {
-    console.error('处理上传文件出错:', error.response ? error.response.data : error.message);
+    //console.error('处理上传文件出错:', error.response ? error.response.data : error.message);
     res.status(error.response ? error.response.status : 500).json({
       error: error.response ? error.response.data : 'Internal Server Error'
     });
   }
 });
 
+
+
+
+
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://0.0.0.0:${PORT}`);
+  //console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });

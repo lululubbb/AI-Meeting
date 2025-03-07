@@ -108,6 +108,8 @@ const logout = async () => {
   left: 0;
   width: 100%;
   background-color: #dfe3e8; /* 与按钮底部边框颜色一致 */
+  background: linear-gradient(135deg, #dce0e5, #eceff3);  
+
   padding: 1.25rem 2.25rem 0.1875rem 2.25rem; /* 20px 36px 3px 36px */
   box-sizing: border-box;
   z-index: 1000;
