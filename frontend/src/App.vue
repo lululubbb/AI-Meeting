@@ -3,16 +3,19 @@
     <AIFloatingChat v-if="!isLoginOrIntroductionPage" />
     <Header v-if="!isLoginOrIntroductionPage" />
     <div :class="['content', { 'no-header': isLoginOrIntroductionPage }]">
-      <transition name="fade" mode="out-in">
-        <!-- 移除 @meeting-scheduled -->
-        <router-view  />
-      </transition>
+      <!-- 新增：用一个 div 包裹 -->
+      <div style="position: relative;">
+        <transition name="fade" mode="out-in">
+          <router-view />
+        </transition>
+        <VideoCall v-if="isVideoCallActive" />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { computed, ref, provide, onMounted, watchEffect } from 'vue';
+import { computed, ref, provide, onMounted, watchEffect,watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
 import Header from './components/Header.vue';
@@ -22,6 +25,7 @@ import { showSnackBar } from './utils/utils';
 import FirestoreService from './services/FirestoreService.js';
 import { useStore } from 'vuex';
 import axios from 'axios';
+import VideoCall from './views/VideoCall.vue'; // 作为全局组件导入
 
 export default {
   name: 'App',
@@ -29,6 +33,7 @@ export default {
     AIFloatingChat,
     Header,
     IntroductionPage,
+    VideoCall, 
   },
   setup() {
     const route = useRoute();
@@ -36,7 +41,8 @@ export default {
     const aiFloatingChat = ref(null);
     const isLoginOrIntroductionPage = computed(() => route.name === 'Login' || route.name === 'Introduction');
     const store = useStore();
-
+    const isVideoCallActive = computed(() => store.state.isVideoCallActive);
+    const isMaximized = computed(() => store.state.isMaximized); //获取最大化状态
     // 全局的显示会议开始通知的方法
      const showMeetingStartNotification = (meetingData) => {
 
@@ -104,20 +110,32 @@ export default {
                 startTime: new Date(),
                 hostId: user.uid,
               });
-
-                router.push({
-                  name: 'VideoCall',
-                  query: {
-                    mode: 'create',
-                    sessionName,
-                    userName: hostName,
-                    sessionPasscode,
-                    videoSDKJWT: jwt,
-                    role: 1,
-                    meetingId,
-                    hostId: user.uid,
-                  },
-                });
+    // 通过 Vuex 控制 VideoCall 组件的显示和最大化
+    store.commit('SET_MEETING_CONFIG', {
+      mode: 'create', // 确保是 create 模式
+      sessionName,
+      userName: hostName,
+      sessionPasscode,
+      videoSDKJWT: jwt,
+      role: 1,
+      meetingId,
+      hostId: user.uid
+    });
+     store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
+     store.commit('SET_VIDEOCALL_ACTIVE', true); // 显示 VideoCall 组件
+                // router.push({
+                //   name: 'VideoCall',
+                //   query: {
+                //     mode: 'create',
+                //     sessionName,
+                //     userName: hostName,
+                //     sessionPasscode,
+                //     videoSDKJWT: jwt,
+                //     role: 1,
+                //     meetingId,
+                //     hostId: user.uid,
+                //   },
+                // });
 
             showSnackBar(`已创建会议"${sessionName}"`);
             clearTimerAndMeeting();
@@ -171,7 +189,17 @@ export default {
        }
     });
 
-
+    const returnToMeeting = () => {
+   store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
+   store.commit('SET_VIDEOCALL_ACTIVE', true); // 显示
+   router.push('/home')
+};
+  // 监听路由变化
+  watch(() => route.name, (newRouteName) => {
+    if (newRouteName !== 'Home' && newRouteName!=="VideoCall") {
+        store.commit('SET_VIDEOCALL_MAXIMIZED', false); // 切换到其他页面, 设置为小窗
+        }
+  });
     onMounted(() => {
       const user = store.getters.getUser;
       if (user) {
@@ -189,7 +217,10 @@ export default {
     return {
       isLoginOrIntroductionPage,
       aiFloatingChat,
-    //   handleMeetingScheduled, //  移除
+      isVideoCallActive,
+      route,         
+      returnToMeeting, 
+
     };
   },
 };
@@ -245,5 +276,19 @@ a {
 .fade-leave-to {
   opacity: 0;
 }
+.return-to-meeting {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+  background-color: #007bff;
+  color: white;
+    padding: 10px 15px;
+     border-radius: 5px;
+    cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
 
+.return-to-meeting:hover {
+  background-color: #0056b3; /* 悬停时颜色加深 */
+}
 </style>

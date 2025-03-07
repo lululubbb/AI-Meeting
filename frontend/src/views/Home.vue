@@ -53,19 +53,26 @@ const router = useRouter();
 const store = useStore();
 
 // 导航到创建会议
-const navigateToCreateMeeting = () => {
-  router.push({ 
-    name: 'VideoCall', 
-    query: { mode: 'create' }
-  });
+const navigateToCreateMeeting = async() => {
+  const meetingConfig = {
+    mode: 'create', 
+  };
+      //  通过 Vuex 启动会议和设置会议配置信息
+      store.commit('SET_MEETING_CONFIG', meetingConfig);
+      store.commit('SET_VIDEOCALL_MAXIMIZED', true);
+      store.commit('SET_VIDEOCALL_ACTIVE', true);
+
 };
 
 // 导航到加入会议
 const navigateToJoinMeeting = () => {
-  router.push({ 
-    name: 'VideoCall', 
-    query: { mode: 'join' }
-  });
+   const meetingConfig = {
+    mode: 'join',
+  };
+    //  通过 Vuex 启动会议和设置会议配置信息
+   store.commit('SET_MEETING_CONFIG', meetingConfig);
+   store.commit('SET_VIDEOCALL_MAXIMIZED', true);
+  store.commit('SET_VIDEOCALL_ACTIVE', true);
 };
 //导航到安排会议
 const navigateToScheduleMeeting = () => {
