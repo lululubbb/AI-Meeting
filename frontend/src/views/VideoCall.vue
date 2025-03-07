@@ -4,7 +4,16 @@
     class="video-call-container"
      :class="{ maximized: isMaximized, minimized: !isMaximized }"
   >
-      <span class="close-button" @click="closeVideoCall">×</span>
+  <el-tooltip v-if="!isMaximized" content="返回会议" placement="top">
+        <button class="return-icon-button" @click="returnToMeeting">
+            <svg t="1741349201621" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                p-id="3610">
+                <path
+                    d="M432.16 251.72l5.11 0.32c20.08 2.51 35.61 19.64 35.61 40.4 0 20.44-15.07 37.37-34.7 40.28l-6.02 0.44-41.44-0.06 130.11 130.15 3.64 4.17c12.15 15.96 10.93 38.84-3.64 53.41-14.31 14.31-36.63 15.74-52.54 4.29l-5.05-4.29L333.1 390.72l0.06 41.44-0.32 5.11c-2.51 20.08-19.64 35.61-40.4 35.61-20.44 0-37.37-15.07-40.28-34.7l-0.44-6.02V292.44l0.32-5.11 0.02-0.19c0.12-0.86 0.25-1.67 0.41-2.49 0.25-1.34 0.58-2.67 0.98-3.97 0.15-0.49 0.31-0.98 0.47-1.46 0.39-1.13 0.82-2.23 1.29-3.3 1.15-2.53 2.34-4.61 3.69-6.57l1.6-2.22 3.15-3.48 0.89-0.87c0.29-0.28 0.57-0.53 0.86-0.78l1.11-0.95 0.99-0.79c0.42-0.33 0.81-0.62 1.2-0.9 1.6-1.12 2.85-1.9 4.15-2.62 0.47-0.26 0.92-0.5 1.37-0.72l2.2-1.01 1.99-0.79c0.69-0.25 1.34-0.47 2-0.67 0.02-0.01 0.07-0.02 0.11-0.04 0.87-0.27 1.72-0.49 2.57-0.69a41.44 41.44 0 0 1 9.36-1.08h139.71z m398.4-58.28H193.44v637.13h357.63l0.06-238.72c0-22.49 18.23-40.72 40.72-40.72l238.72-0.06-0.01-357.63z m0.8-81.44c44.54 0 80.64 36.1 80.64 80.64v638.72c0 41.75-31.73 76.09-72.39 80.22l-8.24 0.42H192.64C148.1 912 112 875.9 112 831.36V192.64c0-44.54 36.1-80.64 80.64-80.64h638.72z"
+                    p-id="3611" fill="#515151"></path>
+            </svg>
+        </button>
+    </el-tooltip>
     <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
@@ -235,7 +244,7 @@ import AIFloatingChat from '../components/AIFloatingChat.vue'; // 导入组件
 import ChatPanel from '../components/ChatContainer.vue';
 import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
-
+import { ElMessageBox } from 'element-plus';
 
 /// Vuex / Router
 const store = useStore();
@@ -249,6 +258,7 @@ const goHome = () => {
 };
 
 onMounted(() => {
+  checkAndJoinFromConfig();
   //checkRouteParams(); // 移除 checkRouteParams
     // 获取会议配置信息
    const savedConfig = store.getters.getMeetingConfig;
@@ -284,11 +294,49 @@ const toggleMode = () => {
   role.value = mode.value === 'create' ? 1 : 0;
 };
 const closeVideoCall = () => {
-  store.commit('SET_VIDEOCALL_ACTIVE', false);
-  store.commit('SET_VIDEOCALL_MAXIMIZED', true); 
-
+  ElMessageBox.confirm(
+    '确定要关闭视频通话吗？', // 提示文字
+    '确认', // 标题
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning', // 图标类型
+       // 自定义样式 (可选)
+      customClass: 'close-videocall-confirm', // 添加自定义类名
+      center: true,       // 居中显示
+      closeOnClickModal: false, // 点击遮罩层不关闭
+      closeOnPressEscape: false, // 按 ESC 键不关闭
+      confirmButtonClass: 'confirm-button',  // 自定义确认按钮 class
+      cancelButtonClass: 'cancel-button',    // 自定义取消按钮 class
+    }
+  )
+    .then(() => {
+      // 用户点击了“确定”
+      store.commit('SET_VIDEOCALL_ACTIVE', false);
+      store.commit('SET_VIDEOCALL_MAXIMIZED', true);
+    })
+    .catch(() => {
+      // 用户点击了“取消”或关闭了对话框, 什么也不做
+    });
 };
 
+const returnToMeeting = () => {
+    store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
+    store.commit('SET_VIDEOCALL_ACTIVE', true);      // 显示 (这行可能不需要, 因为已经在最大化状态了)
+};
+// 预定会议使用的函数
+async function checkAndJoinFromConfig() {
+    const savedConfig = store.getters.getMeetingConfig;
+    if (savedConfig && savedConfig.sessionName && savedConfig.userName && savedConfig.videoSDKJWT) {
+        Object.assign(config, savedConfig);
+        mode.value = config.mode;
+        role.value = mode.value === 'create' ? 1 : 0;
+        buttonText.value = mode.value === 'create' ? '创建会议' : '加入会议';
+        autoJoin.value = true;
+        await nextTick();
+        await joinSession();
+    }
+}
 /* *********************
 会议加入和创建
    ********************* */
@@ -1674,7 +1722,35 @@ main {
   position: relative;
   margin: 0;
 }
+.return-icon-button {
+   position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+   color: white;
+   padding: 0;/* 移除 padding */
+   border: none;
+   border-radius: 50%;/* 圆形按钮 */
+    width: 36px;/* 调整大小 */
+    height: 36px;
+   display: flex;  /* 使用 flex 布局 */
+  align-items: center; /*  垂直居中 */
+  justify-content: center; /*  水平居中 */
+   cursor: pointer;
+   font-size: 30px; /* 移除 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+   z-index: 1002;
+transition: background-color 0.3s;  /* 添加过渡效果 */
+}
+/* .video-call-container.minimized .return-icon-button {
+  bottom: 20px;  
+  left: 20px;
+} */
 
+.return-icon-button .icon {
+  width: 24px;
+  height: 24px;
+}
 .closeBtn {
   position: absolute;
   top: 10px;
@@ -2372,8 +2448,54 @@ canvas.video-element.share-video {
   z-index: 1001; /* 确保在最上层 */
 }
 
-.close-button:hover {
-  color: #333;
+/*  自定义的 MessageBox 样式 (可选, 根据需要调整) */
+.close-videocall-confirm {
+    border-radius: 8px; /* 圆角 */
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);  /* 阴影 */
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.close-videocall-confirm .el-message-box__header {
+  background-color: #f0f4f8; /* 头部背景色 */
+  padding: 15px 15px 10px;
+}
+
+.close-videocall-confirm .el-message-box__title {
+    font-weight: 500;      /* 标题加粗 */
+    color: #303133;       /* 标题颜色 */
+}
+
+.close-videocall-confirm .el-message-box__content{
+    padding: 10px 15px;
+    color: #606266;  /* 文本颜色 */
+    font-size: 14px;
+}
+
+/* 确认按钮 */
+.close-videocall-confirm .confirm-button {
+  background-color: #409eff;  /* 主题色 */
+  border-color: #409eff;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 4px;
+}
+
+.close-videocall-confirm .confirm-button:hover {
+    background-color: #66b1ff; /* 悬停颜色 */
+    border-color: #66b1ff;
+}
+
+/* 取消按钮 */
+.close-videocall-confirm .cancel-button {
+    background-color: #fff;
+    border-color: #dcdfe6;
+    color: #606266;
+    padding: 10px 20px;
+}
+
+.close-videocall-confirm .cancel-button:hover{
+  background-color: #f5f7fa; /* 悬停颜色 */
+  border-color: #c6cbd1;
 }
 
 /* 最小化时的样式 */
