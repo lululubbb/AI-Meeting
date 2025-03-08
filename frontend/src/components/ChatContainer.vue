@@ -24,8 +24,7 @@
       <div v-for="(msg,index) in chatMessagesList" :key="index" :class="['message-bubble', { 'is-me': msg.isMe, 'file-message': msg.file }]">
         <div class="message-meta">
           <div class="user-avatar">
-            <img src="../assets/柴犬.png" alt="分析" />
-          </div>
+            <img :src="msg.avatarUrl || '../assets/柴犬.png'" alt="用户头像" />          </div>
           <div class="message-info">
             <span class="username">{{ msg.senderName }}</span>
             <span class="timestamp">{{ formatTime(msg.timestamp) }}</span>

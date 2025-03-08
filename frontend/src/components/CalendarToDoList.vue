@@ -283,7 +283,7 @@ const closeDialog = () => {
               ElMessage.success('待办事项已更新');
           }
           catch(error){
-               ElMessage.error('更新失败:'+error.message);
+              ElMessage.error('更新失败:'+error.message);
           }
       } else {
           const newTodo = {
@@ -370,7 +370,7 @@ width:90%;
 }
 
 .todo-list h2 {
-  margin-top: 10px;
+  margin-top: 0px;
   margin-bottom: 1px;
   margin-left: 0px;
   font-size: 20px;
@@ -382,6 +382,7 @@ width:90%;
   margin-left: 0px;
   margin-bottom: 10px;
   font-size: 16px;
+  font-weight: 520;
 }
 
 .todo-list {
@@ -390,6 +391,10 @@ width:90%;
   max-width: 100%;
   padding: 20px;
   border-radius: 10px;
+  max-height: 380px;  /* 新增最大高度限制 */
+  scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
+  scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); 
+  overflow-y: auto;  
 }
 
 .todo-list li {
@@ -419,6 +424,7 @@ width:90%;
   flex-grow: 1;
   white-space: nowrap;
   flex-shrink: 0;
+  font-size: 18px;
 }
 
 .todo-list li .todo-text div {
@@ -426,7 +432,6 @@ width:90%;
   font-size: 17px;
   margin-right: 10px;
   white-space: nowrap;
-  font-size: 18px;
 }
 
 .todo-list li .todo-text div.completed-text {
@@ -440,28 +445,26 @@ width:90%;
   font-size: 16px;
   margin-top: 2px; 
 }
-.todo-list li .button-container {
-display: flex;
-flex-direction: row; 
-align-items: center; 
-margin-left: auto; 
-justify-content: center;
+
+
+.button-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.todo-list li .edit-button {
-  background: none;
+.edit-button {
+  background-color: transparent;
   border: none;
+  font-size: 20px;
+  font-weight: bold;
   cursor: pointer;
-  color: var(--text-color);
-  font-size: 26px;
-  font-weight: bolder;
-  padding: 0 10px;
 }
 
-.todo-list li .delete-button {
-  cursor: pointer;
+.delete-button {
   width: 20px;
   height: 20px;
+  cursor: pointer;
 }
 
 .todo-dialog {
@@ -634,7 +637,7 @@ font-size: 16px;
   .dialog-actions button {
     font-size: 14px;
   }
-  
+
   input {
     font-size: 14px;
   }
