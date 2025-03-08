@@ -3,6 +3,7 @@ import ZoomVideo from '@zoom/videosdk';
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js';
 import { nextTick } from 'vue'; // 导入 nextTick
+import store from '../store'
 
 export const VideoQuality = {
   VIDEO_180P: 1,
@@ -21,7 +22,8 @@ async function initializeZoomSDK(client) {
   }
   ZoomVideo.preloadDependentAssets(DEPENDENT_ASSETS_PATH);
   await client.init('zh-CN', DEPENDENT_ASSETS_PATH, {
-    enforceMultipleVideos: true
+    enforceMultipleVideos: true,
+    enableAvatar: true // 添加此配置以启用头像功能
   });
 }
 
@@ -67,8 +69,15 @@ class ZoomVideoService {
         config.sessionName,
         config.videoSDKJWT,
         config.userName,
-        config.sessionPasscode
+        config.sessionPasscode,
+        {
+          avatar: store.state.user.avatarUrl
+        }
       );
+      // 获取当前用户信息，包含avatarUrl
+      const currentUser = this.client.getCurrentUserInfo();
+      console.log('Current user info:', JSON.stringify(currentUser, null, 2));
+      console.log('Zoom Current user avatar:', currentUser.avatar);
       this.stream = this.client.getMediaStream();
       this.sessionJoined = true;
       await this.startLocalAudio();
@@ -119,7 +128,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
        const curUser = this.client.getCurrentUserInfo();
         this.onMessageSent({
               ...result,
-              sender: { userId: curUser.userId, name: curUser.displayName }, // 同时发送 userId
+              sender: { userId: curUser.userId, name: curUser.displayName, avatar:curUser.avatar|| store.state.user.avatarUrl }, // 同时发送 userId
               message: text,
               receiver: { userId },
               timestamp: timestamp.getTime() // 传递时间戳的数值
@@ -213,6 +222,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
     if (!this.chatClient) return [];
     try {
       const history = await this.chatClient.getHistory();
+      console.log('[DEBUG] Raw History:', history); // 打印原始数据
       // 转换 history 数组
       return history.map(msg => ({
         ...msg,
@@ -220,7 +230,8 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
         timestamp: msg.timestamp ?  msg.timestamp: Date.now(),   // 添加时间戳
         sender: {
           userId: msg.sender.userId, // 同时发送 userId
-          name: msg.sender.name
+          name: msg.sender.displayName,
+          avatar: msg.sender.avatar,
         }
       }));
     } catch (err) {
@@ -241,7 +252,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
           const curUser = this.client.getCurrentUserInfo();
           this.onMessageSent({
             ...result,  // 直接使用SDK返回的消息对象
-            sender: { userId: curUser.userId, name: curUser.displayName },
+            sender: { userId: curUser.userId, name: curUser.displayName, avatar:curUser.avatar|| store.state.user.avatarUrl},
             receiver: { userId: '0' }, //  '0' 表示群发
             message, //  message
             timestamp: timestamp.getTime()

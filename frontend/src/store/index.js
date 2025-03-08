@@ -4,6 +4,7 @@ import FirestoreService from '../services/FirestoreService.js';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/FirebaseService.js';
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
+import defaultAvatar from '../assets/柴犬.png';
 
 export default createStore({
   state: {
@@ -12,8 +13,8 @@ export default createStore({
       email: null,
       name: null,
       status: '在线',
-      workLocation: 'Unknown',
-      avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
+      workLocation: '未知',
+      avatarUrl: defaultAvatar,
       mood: '开心',
       todolist: [],
     },

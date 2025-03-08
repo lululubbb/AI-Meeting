@@ -317,6 +317,7 @@ import ChatPanel from '../components/ChatContainer.vue';
 import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
 import { useI18n } from 'vue-i18n';
+import defaultAvatar from '../assets/柴犬.png';
 
 const { t } = useI18n();
 
@@ -959,14 +960,27 @@ const sendChat = async () => {
 };
 // 收到他人聊天消息
 function handleChatMessage(payload) {
-    console.log("Received chat message:", payload); // 打印整个 payload
-     const { message, sender, receiver, file, timestamp, id } = payload; //  timestamp, 增加 id
-
+    const { message, sender, receiver, file, timestamp, id} = payload; //  timestamp, 增加 id
+     // 3. 使用默认头像
+  const getAvatar = () => {
+  // 优先使用消息中的avatar
+  if (sender.avatar) return sender.avatar;
+  // 从store中查找用户信息
+  const userInStore = store.state.users?.find(u => u.userId === sender.userId);
+  return userInStore?.avatarUrl || defaultAvatar;
+};
+  console.log("Received chat message:", payload); // 打印整个 payload
+    console.log('Message ID:', id);
+    console.log('Sender AvatarUrl:', sender.avatar);
+    console.log('[DEBUG] 收到消息:', {
+    senderId: payload.sender.userId,
+    senderAvatar: getAvatar(),
+    currentUserId: store.state.user.uid // 当前用户 ID
+  });
     // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
     if (ZoomVideoService.isMessageAlreadyAdded(id)) {
         return;
     }
-
     // 2. 如果不存在, 添加到已处理列表
     ZoomVideoService.addMessageId(id);
 
@@ -981,7 +995,8 @@ function handleChatMessage(payload) {
         message,
         file: null,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
-        msgId: id
+        msgId: id,
+        avatar: getAvatar(),
       };
 
     } else {
@@ -991,6 +1006,7 @@ function handleChatMessage(payload) {
         senderName: sender.name,
         receiverId: receiver.userId,
         message: null,
+        avatar: getAvatar(),
         file: {
           name: file.name,
           size: file.size,
@@ -1005,6 +1021,7 @@ function handleChatMessage(payload) {
   chatMessagesList.value.push(messageObj);
   scrollToBottom();
 }
+
 //  自己发送消息的回调,只负责添加消息到列表
 function handleMessageSent(msg) {
      // 1. 添加 msgId, 防止重复处理
@@ -1024,6 +1041,7 @@ function handleChatHistory(history) {
           senderName: msg.sender.name,
           receiverId: msg.receiver.userId,
           message: msg.message,
+          avatar: msg.sender.avatar || defaultAvatar,
           file: null,
           timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date() // 使用传入的时间戳
         });
@@ -1033,6 +1051,7 @@ function handleChatHistory(history) {
           senderId: msg.sender.userId,
           senderName: msg.sender.name,
           receiverId: msg.receiver.userId,
+          avatar: msg.sender.avatar || defaultAvatar, 
           message: null,
           file: {
             name: msg.file.name,
@@ -1048,7 +1067,7 @@ function handleChatHistory(history) {
     });
     scrollToBottom();
 }
-
+const chatMessages = ref(null);
 function scrollToBottom() {
   nextTick(() => {
     if (chatMessages.value) {
@@ -1075,7 +1094,7 @@ async function onFileInputChange(e) {
         if(msgId){
             const curUser = ZoomVideoService.client.getCurrentUserInfo();
             handleMessageSent({
-                sender: { userId: curUser.userId, name: curUser.displayName },
+                sender: { userId: curUser.userId, name: curUser.displayName, avatar:curUser.avatar|| store.state.user.avatarUrl },
                 receiver:{userId: selectedReceiverId.value.toString()},  // 新增
                 file: {
                   name: file.name,
@@ -1546,6 +1565,7 @@ function subscribeEvents() {
           role: user.isHost ? 'host' : 'participant',
           joinTime: new Date(),
           leaveTime: null,
+          avatar: user.avatar,
           hasVideo: {
             initial: user.bVideoOn,
             final: user.bVideoOn,

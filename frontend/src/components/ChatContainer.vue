@@ -24,7 +24,7 @@
       <div v-for="(msg,index) in chatMessagesList" :key="index" :class="['message-bubble', { 'is-me': msg.isMe, 'file-message': msg.file }]">
         <div class="message-meta">
           <div class="user-avatar">
-            <img :src="msg.avatarUrl || '../assets/柴犬.png'" alt="用户头像" />          </div>
+            <img :src="msg.avatar || defaultAvatar" alt="用户头像"  @error="onAvatarError(msg)" />          </div>
           <div class="message-info">
             <span class="username">{{ msg.senderName }}</span>
             <span class="timestamp">{{ formatTime(msg.timestamp) }}</span>
@@ -90,7 +90,7 @@ import {
   showSnackBar
 } from '../utils/utils.js'; // 假设的路径
 import ZoomVideoService from '../services/ZoomVideoService.js';
-
+import defaultAvatar from '../assets/柴犬.png';
 // 定义 props
 const props = defineProps({
   chatMessagesList: {
@@ -110,6 +110,10 @@ const props = defineProps({
     default: null,
   },
 });
+
+const onAvatarError = (msg) => {
+  msg.avatar = defaultAvatar; // 回退到默认头像
+};
 
 const internalSelectedReceiverId = ref(props.selectedReceiverId);
 
@@ -416,7 +420,7 @@ watch(
   .chat-input input {
     width: 70%;
     padding: 10px 15px; /* 调整内边距 */
-    border: none;      /* 去掉边框 */
+    border: none !important;
     border-radius: 22px;  /* 更大的圆角 */
     font-size: 15px;
     background: #f7f7f7;  /* 输入框背景 */
@@ -426,6 +430,7 @@ watch(
 
   .chat-input input:focus {
     box-shadow: 0 0 0 2px rgba(42, 122, 226, 0.2); /* 聚焦时阴影 */
+    outline: none; 
   }
 
   .chat-input button {
@@ -438,7 +443,6 @@ watch(
     border: none;
     padding: 7px 14px; /* 微调内边距 */
     border-radius: 18px; /* 圆角 */
-    font-weight: 500;
     box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3); /* 阴影 */
   }
   .chat-input button:hover {

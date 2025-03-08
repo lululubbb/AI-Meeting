@@ -15,6 +15,7 @@ import FirestoreService from './FirestoreService.js'
 import ZoomVideoService from './ZoomVideoService.js' // 引入 ZoomVideoService.js
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from './FirebaseService.js'
+import defaultAvatar from '../assets/柴犬.png';
 
 class AuthService {
   // 使用邮箱和密码登录
@@ -33,7 +34,7 @@ class AuthService {
         await setDoc(userDocRef, {
           email: user.email,
           name: user.displayName  || 'User',
-          avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
+          avatarUrl: defaultAvatar,
           status: '在线',
           workLocation: '中国',
           mood: '开心',
@@ -84,7 +85,7 @@ class AuthService {
       await setDoc(userDocRef, {
         email: user.email,
         name: name || user.displayName || 'User', // 优先使用传入的 name，否则使用 displayName，最后使用默认值 'User'
-      avatarUrl: avatarUrl || user.photoURL || 'https://randomuser.me/api/portraits/men/32.jpg', // 优先使用传入的 avatarUrl，否则使用 photoURL，最后使用默认头像
+      avatarUrl: avatarUrl || user.photoURL || defaultAvatar, // 优先使用传入的 avatarUrl，否则使用 photoURL，最后使用默认头像
       status: status || '在线', // 优先使用传入的 status，否则使用默认值 '在线'
       workLocation: workLocation || '中国', // 优先使用传入的 workLocation，否则使用默认值 '中国'
       mood: mood || '开心', // 优先使用传入的 mood，否则使用默认值 '开心'
