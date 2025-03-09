@@ -9,12 +9,30 @@
   <el-drawer v-model="drawer" title="AI 助手" :with-header="true" >
       <!-- 聊天内容 -->
       <div class="chat-container">
+          <!-- 新增欢迎界面 -->
+          <div v-if="showWelcome" class="welcome-message">
+            <h3>欢迎使用 AI 助手🎉</h3>
+            <p>我是您的智能助理，随时为您解答问题！</p>
+          </div>
         <div v-if="fileToAnalyze && aiSummary" class="ai-summary">
           <h4>文档摘要：</h4>
             <p>{{ aiSummary }}</p>
           </div>
         <!-- 消息列表 -->
         <div class="chat-messages" ref="chatMessages">
+          <!-- 新增快捷问题区域 -->
+          <div v-if="showQuickQuestions" class="quick-questions">
+            <h4>常见问题：</h4>
+            <div class="question-buttons">
+              <button 
+                v-for="(question, index) in quickQuestions" 
+                :key="index"
+                @click="fillInput(question)"
+              >
+                {{ question }}
+              </button>
+            </div>
+          </div>
           <!-- 使用统一的 .message-row 包裹单条消息，根据 msg.from 动态添加 ai-row / user-row 控制布局 -->
           <div
             v-for="(msg, index) in messages"
@@ -88,7 +106,7 @@ import DOMPurify from 'dompurify';
 import FirestoreService from '../services/FirestoreService.js';
 import ZoomVideoService from '../services/ZoomVideoService.js';
 import { ElMessage } from 'element-plus';
-
+import ANSWER_TEMPLATES from './answerTemplates.js';
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -107,7 +125,6 @@ async function blobToBase64(blob) {
     reader.readAsDataURL(blob); // 使用 readAsDataURL 读取 Blob
   });
 }
-
 export default {
   name: 'AIFloatingChat',
   props:{
@@ -123,6 +140,7 @@ export default {
   watch: {
     fileToAnalyze(newFile) {
         if (newFile) {
+          this.showWelcome = false;
             this.drawer = true;
             //  首次加载文件, 只需要获取摘要
             if (!this.fileAnalyzed) { // 新增标志
@@ -134,6 +152,15 @@ export default {
 },
 data() {
     return {
+         // 新增数据项
+      showWelcome: true,
+      quickQuestions: [
+        '如何创建会议？',
+        '如何获得会议摘要等信息？',
+        '如何邀请参与者？',
+        '该会议系统有哪些功能？'
+      ],
+        answerTemplates: ANSWER_TEMPLATES,
         drawer: false,
         isChatOpen: false,
         messages: [],          // 普通聊天
@@ -148,9 +175,14 @@ data() {
         fileBase64: '',
     };
 },
+computed: {
+    showQuickQuestions() {
+      return this.showWelcome && !this.fileToAnalyze;
+    }
+  },
   mounted() {
   },
-   beforeUnmount() {
+  beforeUnmount() {
   },
   methods: {
     // 切换AI聊天窗口显示
@@ -196,18 +228,66 @@ data() {
   }
 },
 
-    // 发送消息到AI 
-    async sendMessage() {
+fillInput(question) {
+      this.userInput = question;
+      this.$nextTick(() => {
+        const input = this.$el.querySelector('.chat-input input');
+        input.focus();
+      });
+    },
+
+  // 新增预设回答处理方法
+  async handlePredefinedQuestion(question) {
+    // 添加用户问题
+    this.messages.push({
+      from: 'user',
+      text: question,
+      renderedText: this.escapeHTML(question)
+    });
+
+    // 添加AI消息占位
+    this.messages.push({ from: 'ai', text: '', renderedText: '' });
+    const aiMessageIndex = this.messages.length - 1;
+
+    const answer = this.answerTemplates[question];
+    let currentText = '';
+    for (const char of answer) {
+      currentText += char;
+      this.messages[aiMessageIndex].text = currentText;
+      this.messages[aiMessageIndex].renderedText = this.renderMarkdown(currentText);
+      this.scrollToBottom();
+      await this.sleep(20); // 控制流式速度
+    }
+
+    this.userInput = '';
+    this.scrollToBottom();
+  },
+  // 已有sleep方法保留，用于延迟
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+// 发送消息到AI 
+async sendMessage() {
+      if (this.showWelcome) {
+        this.showWelcome = false;
+      }
       const message = this.userInput.trim();
       if (message === '') return;
 
       this.userInput = '';
+      this.showWelcome = false;
+    
+      // 新增预设问题处理
+      if (this.quickQuestions.includes(message)) {
+        this.handlePredefinedQuestion(message);
+        return;
+      }
 
       if (this.fileToAnalyze) {
         await this.askAiQuestion(message); // 直接调用, 不再经过普通消息逻辑
         return;
       }
-
   this.messages.push({
     from: 'user',
     text: message,
@@ -226,18 +306,45 @@ data() {
       messages: [
         {
           role: 'system',
-          content: `你是知识渊博的助理。当用户请求创建会议时，请返回如下格式的信息（仅JSON）并确保指令与其他回复分开发送：
-          {
-            "action": "create_meeting",
-            "meetingName": "会议名称",
-            "password": "密码"
-          }
-          如果不是创建会议的请求，请正常回复。`,
-        },
-        {
-          role: 'user',
-          content: message,
-        },
+  content: `您是一个专业的智能会议助理。请严格遵循以下规则处理用户请求：
+  1. 当用户表达创建会议意图时（例如："创建会议"、"新建一个会"、"请帮我建立XXX会议"等类似表述），立即触发会议创建流程
+  2. 会议名称提取规则：
+  - 若用户明确说明名称（如"创建『项目讨论会』"），直接使用说明的名称
+  - 若名称包含在自然语句中（如"帮我和产品组开个需求评审会"），提取"需求评审会"作为名称
+  - 若未明确说明，使用"智能会议-[日期]"格式（例如：智能会议-20240315）
+  3. 密码处理规则：
+  - 仅当用户明确说明"密码"或"口令"时才需要提取（如"会议密码为123456"）
+  - 未提及密码时，password字段留空字符串  
+  4. 响应要求：
+  - 必须返回严格JSON格式，仅包含以下字段：
+    {
+      "action": "create_meeting",
+      "meetingName": "提取/生成的会议名称",
+      "password": "密码或空字符串"
+    }
+  - 不要添加任何额外说明或文本
+  示例：
+  用户说："下午三点帮我和技术部开个进度同步会，密码用888888"
+  应返回：
+  {
+    "action": "create_meeting",
+    "meetingName": "进度同步会",
+    "password": "888888"
+  }  
+  5. 非会议创建请求时：
+  - 使用自然语言友好回复
+  - 不要使用JSON格式  
+  请严格遵循以下规则回答用户问题：
+# 通用规则
+1. 当用户问题完全匹配上述问题时，必须使用对应模板
+2. 回答时保留模板中的符号体系（编号/箭头/图标）
+3. 非预设问题时正常进行AI对话
+4. 功能类问题最后必须引导查看帮助中心`
+},
+    {
+      role: 'user',
+      content: message,
+    },
       ],
       stream: true,
     };
@@ -554,14 +661,18 @@ async askAiQuestion(question) {
       }
     },
     scrollToBottom() {
-         nextTick(() => {
-            if (this.$refs.chatMessages) {
-              this.$refs.chatMessages.scrollTop = this.$refs.chatMessages.scrollHeight;
-           }
-        });
-      },
-    // 处理AI指令
-    async handleAIDirectives(commandData) {
+  nextTick(() => {
+    const container = this.$refs.chatMessages;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  });
+},
+  // 处理AI指令
+  async handleAIDirectives(commandData) {
   console.log('处理AI指令:', commandData);
 
   const meetingName = commandData.meetingName.trim();
@@ -680,6 +791,63 @@ async askAiQuestion(question) {
 </script>
 
 <style scoped>
+.welcome-message {
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 20px;
+  background:transparent;
+  border-radius: 8px;
+}
+
+.welcome-message h3 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.welcome-message p {
+  color: #7f8c8d;
+  font-size: 0.95em;
+}
+
+/* 快捷问题样式 */
+.quick-questions {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #fdfdfd;
+  border-radius: 10px;
+}
+
+.quick-questions h4 {
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 0.9em;
+  margin-bottom: 10px;
+}
+
+.question-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.question-buttons button {
+  padding: 8px 12px;
+  background: #f7f7f7;
+  border: 1px solid #ececec;
+  border-radius: 20px;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.question-buttons button:hover {
+  background: #eaebec;
+  transform: translateY(-1px);
+}
 
 /* 新增: AI 摘要样式 */
 .ai-summary {

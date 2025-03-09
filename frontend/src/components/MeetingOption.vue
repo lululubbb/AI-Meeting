@@ -23,7 +23,7 @@
       <div class="icon-wrapper">
         <img src="@/assets/historymeeting.png" alt="History Meeting" />
       </div>
-      <span>历史会议</span>
+      <span>所有会议</span>
     </div>
   </div>
 </template>

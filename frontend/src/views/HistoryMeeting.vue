@@ -1,7 +1,7 @@
 <!-- historymeeting.vue -->
 <template>
   <div class="history-container">
-    <h2>📜 会议历史记录</h2>
+    <h2>📜 会议记录</h2>
     <!-- 关闭按钮 -->
         <div  v-if="route.name === 'HistoryMeeting'" class="close-btn-wrapper">
           <button @click="goHome" class="close-btn" aria-label="关闭">
