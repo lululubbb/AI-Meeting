@@ -42,7 +42,6 @@
     </ul>
 
     <div v-if="loading" class="loading-indicator">📥 加载中...</div>
-    <div v-if="allFilteredMeetings.length === 0" class="no-more-data">🎉 没有会议记录啦~</div>
     <!-- 页码导航 -->
     <div v-if="allFilteredMeetings.length > pageSize" class="pagination">
       <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
@@ -1477,11 +1476,7 @@ body {
   margin: 20px 0;
 }
 
-.no-more-data {
-  text-align: center;
-  color: #666;
-  margin: 20px 0;
-}
+
  .meeting-list li.finished {
   background-color: #f6ffed; /* 浅绿色背景 */
   border-color: #b7eb8f;
