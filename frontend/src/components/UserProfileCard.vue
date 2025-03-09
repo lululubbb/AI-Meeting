@@ -200,7 +200,7 @@ const saveChanges = async () => {
     isEditing.value = false; // 退出编辑模式
   } catch (error) {
     ElMessage.error('保存失败');
-    console.error('保存失败:', error);
+    console.error('保存失败');
   }
 };
 // 取消编辑

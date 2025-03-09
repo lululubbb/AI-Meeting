@@ -45,6 +45,7 @@ export default createStore({
     SET_TODOLIST(state, todolist) {
       state.user.todolist = todolist;
     },
+    
     SET_ACTIVITIES(state, activities) { // 新增：设置活动列表
       state.activities = activities;
     },
@@ -106,7 +107,7 @@ export default createStore({
     },
     async addMeeting({ commit, dispatch, state }, meetingData) {
       if (!state.user || !state.user.uid) {
-        ElMessage.warning('用户未登录，无法添加会议。');
+        console.warning('用户未登录，无法添加会议。');
         return;
       }
   
@@ -119,10 +120,10 @@ export default createStore({
   
         await FirestoreService.addMeeting(state.user.uid, newMeeting);
         dispatch('listenToMeetings'); // 重新获取会议列表
-        ElMessage.success('会议已添加');
+        console.log('会议已添加');
       } catch (error) {
         console.error('添加会议失败:', error);
-        ElMessage.error('添加会议失败：' + error.message);
+        console.error('添加会议失败');
       }
     },
     async signOutUser({ commit }) {
@@ -135,23 +136,23 @@ export default createStore({
     },
     async addTodo({ commit, state }, newTodo) {
       if (!state.user || !state.user.uid) {
-        ElMessage.warning('用户未登录，无法添加待办事项。');
+        console.warning('用户未登录，无法添加待办事项。');
         return;
       }
       try {
         const updatedTodoList = [...(state.user.todolist || []), newTodo];
         await FirestoreService.addTodoItem(state.user.uid, newTodo);
         commit('SET_USER', { ...state.user, todolist: updatedTodoList });
-         ElMessage.success('待办事项已添加')
+        console.log('待办事项已添加')
       } catch (error) {
         console.error('添加待办事项失败:', error);
-        ElMessage.error('添加待办事项失败：' + error.message);
+        console.error('添加待办事项失败');
 
       }
     },
    async updateTodoItem({ commit, state }, updatedTodo) {
       if (!state.user || !state.user.uid) {
-         ElMessage.warning('用户未登录，无法更新待办事项。');
+        console.warning('用户未登录，无法更新待办事项。');
         return;
       }
       try {
@@ -160,26 +161,26 @@ export default createStore({
         );
         await FirestoreService.updateTodoItem(state.user.uid, updatedTodo);
         commit('SET_USER', { ...state.user, todolist: updatedTodoList });
-        ElMessage.success('待办事项已更新');
+        console.log('待办事项已更新');
       } catch (error) {
         console.error('更新待办事项失败:', error);
-        ElMessage.error('更新待办事项失败：' + error.message);
+        console.error('更新待办事项失败');
       }
     },
     async deleteTodoItem({ commit, state }, todoId) {
       if (!state.user || !state.user.uid) {
-        ElMessage.warning('用户未登录，无法删除待办事项。');
+        console.warning('用户未登录，无法删除待办事项');
         return;
       }
       try {
         const updatedTodoList = state.user.todolist.filter(todo => todo.id !== todoId);
         await FirestoreService.deleteTodoItem(state.user.uid, todoId);
         commit('SET_USER', { ...state.user, todolist: updatedTodoList });
-        ElMessage.success('待办事项已删除');
+        console.log('待办事项已删除');
 
       } catch (error) {
         console.error('删除待办事项失败:', error);
-        ElMessage.error('删除待办事项失败：' + error.message);
+        console.error('删除待办事项失败');
 
       }
     },
@@ -200,7 +201,7 @@ export default createStore({
           commit('SET_ACTIVITIES', activities);
         } catch (error) {
           console.error('获取活动失败:', error);
-          ElMessage.error('获取活动失败：' + error.message);
+          ElMessage.error('获取活动失败');
         }
       }
     },
@@ -235,7 +236,7 @@ export default createStore({
         ElMessage.success('活动已添加');
       } catch (error) {
         console.error('添加活动失败:', error);
-        ElMessage.error('添加活动失败：' + error.message);
+        ElMessage.error('添加活动失败');
       }
     },
     async deleteActivity({ commit, state, dispatch }, activityId) {
@@ -250,7 +251,7 @@ export default createStore({
           }
       } catch (error) {
           console.error('删除活动失败:', error);
-          ElMessage.error('删除活动失败：' + error.message);
+          ElMessage.error('删除活动失败');
       }
   },
 
@@ -266,7 +267,7 @@ export default createStore({
           }
       } catch (error) {
           console.error('更新活动失败:', error);
-          ElMessage.error('更新活动失败：' + error.message);
+          ElMessage.error('更新活动失败');
       }
   }
 },

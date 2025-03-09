@@ -630,7 +630,7 @@ const handleSession = async () => {
           );
     }
     if (!jwt) {
-      showSnackBar('无法获取有效 JWT');
+      console.error('无法获取有效 JWT');
       isJoining.value = false;
       return;
     }
@@ -641,7 +641,7 @@ const handleSession = async () => {
     await joinSession(); //  join 流程
   } catch (error) {
     console.error('handleSession error:', error);
-    showSnackBar('加入/创建会议失败: ' + error.message);
+    showSnackBar('加入/创建会议失败');
     isJoining.value = false;
 
     // 如果是创建会议，并且 Firestore 文档创建失败了，把刚刚创建的文档删除。
@@ -736,7 +736,7 @@ const joinSession = async () => {
                       );
                   } catch (err) {
                       console.error('添加参与者会议记录失败:', err);
-                      showSnackBar('加入会议失败 (更新 Firestore 错误):' + err.message);
+                      showSnackBar('添加参与者会议记录失败');
                       // 可以考虑更完善的错误处理
                   }
               }
@@ -801,7 +801,7 @@ const joinSession = async () => {
 
     } catch (error) {
         console.error('joinSession error:', error);
-        showSnackBar('加入会议失败:' + error.message);
+        showSnackBar('加入会议失败');
         isJoining.value = false;
     }
 };
@@ -932,7 +932,7 @@ const handleSendChat = async (text) => {
        // chatInput.value = '';  // 在 ChatPanel 组件内部清除
     } catch (err) {
       console.error('发送消息失败:', err);
-    showSnackBar('发送消息失败:' + err.message);
+    showSnackBar('发送消息失败');
 }
     };
 
@@ -955,7 +955,7 @@ const sendChat = async () => {
     chatInput.value = '';
   } catch (err) {
     console.error('发送消息失败:', err);
-    showSnackBar('发送消息失败:' + err.message);
+    showSnackBar('发送消息失败');
   }
 };
 // 收到他人聊天消息
@@ -1107,7 +1107,7 @@ async function onFileInputChange(e) {
     }
     catch(err){
       console.error("发送文件失败",err);
-      showSnackBar('发送文件失败.'+err.message);
+      showSnackBar('发送文件失败');
     }
   }
   e.target.value = ''; // 清空
@@ -1408,12 +1408,12 @@ const leaveSession = async () => { //普通用户离开会议
     // 普通用户离开，不再更新会议记录
     await ZoomVideoService.leaveSession(false);
     resetState();
-    showSnackBar('已退出会议');
+    ElMessage.success('已退出会议');
     store.commit('SET_VIDEOCALL_ACTIVE', false); 
     router.push('/home');
   } catch (error) {
     console.error('leaveSession error:', error);
-    showSnackBar('退出会议失败:' + error.message);
+    showSnackBar('退出会议失败');
   }
 };
 
@@ -1516,12 +1516,12 @@ const leaveSession = async () => { //普通用户离开会议
 
        ZoomVideoService.leaveSession(true); //  结束会议, 放到后面
       resetState();
-      showSnackBar('会议已结束');
+      ElMessage.success('会议已结束');
       store.commit('SET_VIDEOCALL_ACTIVE', false);
       router.push('/home');
     } catch (error) {
       console.error('endSession error:', error);
-      showSnackBar('结束会议失败:' + error.message);
+      showSnackBar('结束会议失败');
     }
   };
 
@@ -1768,14 +1768,14 @@ function subscribeEvents() {
     const { state, reason } = payload;
     console.log('[connection-change]', state, reason)
     if (state === 'Closed') {
-      showSnackBar(`会议连接已关闭:${reason}`);
+      ElMessage.info(`会议连接已关闭:${reason}`);
       leaveSession();
     } else if (state === "Reconnecting") {
-      showSnackBar("正在重新连接...")
+      ElMessage.info("正在重新连接...")
     } else if (state === "Connected") {
-      showSnackBar("已重新连接")
+      ElMessage.info("已重新连接")
     } else if (state === 'Fail') {
-      showSnackBar("连接失败")
+      ElMessage.info("连接失败")
       leaveSession();
     }
   });
@@ -1785,7 +1785,7 @@ function subscribeEvents() {
   });
 
   client.on('session-closed', async () => { // 改为 async 函数
-    showSnackBar('会议已结束');
+    ElMessage.info('会议已结束');
     //  stopRecording();  //  *不要*在这里停止录音
     // 直接更新状态为 finished
     const user = store.getters.getUser;
@@ -1804,7 +1804,7 @@ function subscribeEvents() {
 
       }
       catch (err) {
-        console.error("更新会议状态失败(session-closed):", err);
+        console.error("更新会议状态失败");
       }
       finally {
         router.push('/home');  // 一定
@@ -1817,11 +1817,11 @@ function subscribeEvents() {
   });
 
   client.on('session-expired', () => {
-    showSnackBar("会议会话已过期")
+    ElMessage.info("会议会话已过期")
     leaveSession();
   });
   client.on("session-kicked-out", (payload) => {
-    showSnackBar(`已被踢出会议:${payload.reason}`);
+    ElMessage.info(`已被踢出会议`);
     leaveSession();
   });
 

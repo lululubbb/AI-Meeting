@@ -20,7 +20,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';
 import Header from './components/Header.vue';
 import IntroductionPage from '@/views/IntroductionPage.vue';
-import { ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { showSnackBar } from './utils/utils';
 import FirestoreService from './services/FirestoreService.js';
 import { useStore } from 'vuex';
@@ -62,7 +62,7 @@ export default {
           })
           .catch(() => {
             console.log("用户取消");
-            showSnackBar("已取消");
+            ElMessage.info("您已取消预约的会议");
             if (meetingData.meetingId && store.getters.getUser.uid) {
               FirestoreService.updateMeetingHistory(
                 store.getters.getUser.uid,
@@ -81,11 +81,11 @@ export default {
             try {
               const user = store.getters.getUser;
               if (!user) {
-                showSnackBar('未登录');
+                showSnackBar('您未登录');
                 return;
               }
                if (!meetingData) {
-                showSnackBar('没有要创建的会议');
+                ElMessage.info('没有要创建的会议');
                 return;
               }
 
@@ -100,7 +100,7 @@ export default {
               });
               const jwt = jwtResp.data.signature;
               if (!jwt) {
-                showSnackBar('获取JWT失败');
+                console.log('获取JWT失败');
                 return;
               }
 
@@ -136,12 +136,12 @@ export default {
                 //   },
                 // });
 
-            showSnackBar(`已创建会议"${sessionName}"`);
+            ElMessage.success(`已创建会议"${sessionName}"`);
             clearTimerAndMeeting();
 
           } catch(error){
               console.error('自动创建失败', error);
-              showSnackBar('自动创建失败:' + error.message);
+              showSnackBar('自动创建失败');
             }
       };
 

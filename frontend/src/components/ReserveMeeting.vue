@@ -60,7 +60,6 @@
 <script setup>
 import { ref, reactive, computed, inject } from 'vue';
 import CustomButton from '../components/CustomButton.vue';
-import { showSnackBar } from '../utils/utils.js';
 import { ElMessage, ElDatePicker } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
@@ -156,7 +155,7 @@ const saveTodo = async (selectedDate, newTodoText) => {
     refreshCalendarEvents();
   } catch (error) {
     console.error("添加失败：", error);
-    ElMessage.error('添加失败：' + error.message);
+    ElMessage.error('添加失败');
   }
 
 
@@ -222,14 +221,14 @@ const handleReservation = async () => {
 
     // 这里是将会议添加到待办事项
     const todo = {
-      title: config.sessionName, // 会议名称作为待办事项标题
+      text: `预约会议 ${config.sessionName}`, // 会议名称作为待办事项标题
       date: startTime.toISOString().split('T')[0], // 使用会议开始时间作为待办事项的日期
       isCompleted: false, // 默认未完成
     };
 
     // 将待办事项添加到用户的 todolist 中
     await FirestoreService.addTodoItem(userId.value, todo);
-    console.log('会议已添加为待办事项');
+    ElMessage.success('已将会议添加至待办事项');
 
      // 调用 inject 的方法
      emitMeetingScheduled({
@@ -239,7 +238,7 @@ const handleReservation = async () => {
 
     ElMessage.success('预约成功!');
   } catch (error) {
-    ElMessage.error('预约失败:' + error.message);
+    ElMessage.error('预约失败');
   } finally {
     isJoining.value = false; // 隐藏加载动画
   }

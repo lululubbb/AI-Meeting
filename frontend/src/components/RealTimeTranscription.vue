@@ -151,7 +151,7 @@ async function startRecording() {
 
   } catch (error) {
     console.error('Error starting recording:', error);
-     ElMessage.error('无法获取麦克风权限或启动录音:' + error.message);
+     ElMessage.warning('无法获取麦克风权限或启动录音:' + error.message);
       if(websocket.value){
          websocket.value.close(1000, "停止转录");
          websocket.value = null;
@@ -200,7 +200,7 @@ const handleWebsocketMessage = (message) => {
         transcription.value = message.substring(7) + "\n";
     }else if (message.startsWith("[ERROR]")) {
       console.error("Transcription error:", message.substring(7));
-        showError("转录出错：" + message.substring(7));
+        showError("转录出错");
     }
       else {
            transcription.value += message + "\n"; // 直接追加

@@ -54,13 +54,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import zhCnLocale from '@fullcalendar/core/locales/zh-cn';
 import { useStore } from 'vuex';
-//   import { showSnackBar } from '../utils/utils.js'; // 不需要导入 showSnackBar，直接使用 ElMessage
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 
 
@@ -72,9 +71,9 @@ const newTodoText = ref('');
 const isEditing = ref(false);
 const editingTodo = ref(null);
 const isDialogVisible = ref(false);
-
+const calendarRef = ref(null); 
 const user = computed(() => store.state.user);
-const userTodoList = ref([]);
+const userTodoList = computed(() => store.getters.getTodoList);
 /*
 // 监听 userTodoList 变化，并更新日历事件
 watch(userTodoList, () => {
@@ -103,13 +102,22 @@ watch(user, (newUser) => {
   }
 }, { immediate: true });
 
-
 // 计算属性：根据 selectedDate 过滤待办事项
 const displayedTodos = computed(() => {
+  let todos = [];
   if (!selectedDate.value) {
-    return userTodoList.value; // 如果未选择日期，则显示所有待办事项
+    todos = [...userTodoList.value];
+  } else {
+    todos = userTodoList.value.filter(todo => todo.date === selectedDate.value);
   }
-  return userTodoList.value.filter(todo => todo.date === selectedDate.value);
+  return todos.sort((a, b) => {
+    // 先按完成状态排序，未完成的在前
+    if (a.isCompleted !== b.isCompleted) {
+      return a.isCompleted ? 1 : -1;
+    }
+    // 按日期排序，日期早的在前
+    return new Date(a.date) - new Date(b.date);
+  });
 });
 
 // 新增：获取对应日期的待办事项文本
@@ -149,9 +157,11 @@ const calendarOptions = computed(() => ({
     start: todo.date + 'T00:00:00', // 明确指定时间
     allDay: true,
     display: 'block', // 确保全天事件正确显示
-    display: 'background'
+    display: 'background',
+    
   })),
 
+  
   dateClick: (info) => {
     // 使用UTC日期
     selectedDate.value = info.date.toISOString().split('T')[0];
@@ -244,6 +254,14 @@ dayCellContent: (args) => {
     const eventDiv = document.createElement('div');
     eventDiv.className = 'purple-event-box'; // 添加样式类
     eventDiv.textContent = todo.text || todo.title;
+
+     // 根据 isCompleted 添加样式类
+    if (todo.isCompleted) {
+      eventDiv.style.textDecoration = 'line-through'; // 添加删除线
+    } else {
+      eventDiv.style.textDecoration = 'none'; // 移除删除线
+    }
+
     eventsContainer.appendChild(eventDiv);
   });
 
@@ -276,14 +294,13 @@ const closeDialog = () => {
           ElMessage.warning('用户未登录，无法保存待办事项'); // 使用 ElMessage
           return;
       }
-
       if (isEditing.value) {
           try{
               await store.dispatch('updateTodoItem', { ...editingTodo.value, text: newTodoText.value });
               ElMessage.success('待办事项已更新');
           }
           catch(error){
-              ElMessage.error('更新失败:'+error.message);
+              ElMessage.error('更新失败');
           }
       } else {
           const newTodo = {
@@ -296,11 +313,16 @@ const closeDialog = () => {
           await store.dispatch('addTodo', newTodo);
           ElMessage.success('待办事项已添加'); // 使用 ElMessage
       }catch(error){
-          ElMessage.error('添加失败：'+error.message);
+          ElMessage.error('添加失败');
       }
 
       }
       closeDialog();
+      selectedDate.value = '' // 清空日期筛选
+  await nextTick() // 等待DOM更新
+  if (calendarRef.value) {
+    calendarRef.value.getApi().refetchEvents()
+  }
   };
 
   const editTodo = (todo) => {
@@ -316,24 +338,34 @@ const deleteTodo = async (todo) => {
         ElMessage.success('待办事项已删除');
   }
   catch(error){
-       ElMessage.error("删除失败："+error.message);
+       ElMessage.error("删除失败");
   }
 };
 
 const updateTodo =async (todo) => {
   try{
-     await store.dispatch('updateTodoItem', todo);
-  }catch(error){
-       ElMessage.error('更新失败：'+error.message);
-       todo.isCompleted = !todo.isCompleted; // 恢复状态
+    await store.dispatch('updateTodoItem', todo);
 
-  }
- 
+  }catch(error){
+      ElMessage.error('更新失败');
+      todo.isCompleted = !todo.isCompleted; // 恢复状态
+       // 强制重新渲染列表
+    await nextTick();
+ }
 };
 
 </script>
 
 <style scoped>
+/* 日历事件删除线样式 */
+:deep(.fc-event-title) {
+  text-decoration: none !important; /* 重置默认样式 */
+}
+
+:deep(.completed-event) {
+  text-decoration: line-through !important;
+  opacity: 0.6 !important;
+}
 /* 紫色事件框样式 */
 :deep(.purple-event-box) {
   background: #b9c0e4;
@@ -347,6 +379,7 @@ const updateTodo =async (todo) => {
   cursor: pointer;
   transition: opacity 0.2s;
   font-size: 0.85em !important; /* 调整数字改变大小 */
+  transition: text-decoration 0.3s; /* 平滑过渡效果 */
 }
 /* 样式保持不变 */
 .calendar-todolist {

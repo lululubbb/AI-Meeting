@@ -87,6 +87,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import FirestoreService from '../services/FirestoreService.js';
 import ZoomVideoService from '../services/ZoomVideoService.js';
+import { ElMessage } from 'element-plus';
 
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -190,7 +191,7 @@ data() {
 
   } catch (error) {
     console.error('获取摘要失败:', error);
-    showSnackBar('获取摘要失败: ' + error.message);
+    showSnackBar('获取摘要失败');
     this.isLoading = false;
   }
 },
@@ -388,7 +389,7 @@ async askAiQuestion(question) {
      }
    } catch (err) {
      console.error("AI 问答出错", err);
-     showSnackBar("AI 问答出错:" + err.message);
+     showSnackBar("AI 问答出错");
      //  这里不再需要 push 一个错误消息了, 因为已经在 sendFileDataToAnalyze 中处理了
    } finally {
      this.isLoading = false;  //  这里不再调用 scrollToBottom, 因为在流式输出过程中会多次调用
@@ -487,6 +488,7 @@ async askAiQuestion(question) {
       const user = this.$store.getters.getUser;
       if (!user) {
         console.error('用户未登录');
+        ElMessage.warning('用户未登录');
         return;
       }
 
@@ -621,7 +623,7 @@ async askAiQuestion(question) {
 
       this.$store.commit('SET_VIDEOCALL_MAXIMIZED', true);
       this.$store.commit('SET_VIDEOCALL_ACTIVE', true);
-      showSnackBar(`已创建会议 "${meetingName}" 并加入`);
+      ElMessage.success(`已创建会议 "${meetingName}" 并加入`);
       this.drawer = false; // 关闭抽屉
       this.isChatOpen = false; // 关闭聊天
     } else {

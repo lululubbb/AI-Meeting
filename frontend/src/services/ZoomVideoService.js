@@ -56,8 +56,7 @@ class ZoomVideoService {
       }
       throw new Error('未获取到有效的 signature');
     } catch (error) {
-      showSnackBar('获取 JWT 失败: ' + (error.response?.data?.errors?.join(', ') || error.message));
-      console.error(error);
+      console.error('获取 JWT 失败: ' + (error.response?.data?.errors?.join(', ') || error.message));
       return null;
     }
   }
@@ -89,7 +88,7 @@ class ZoomVideoService {
 
       return true;
     } catch (error) {
-      showSnackBar('加入会议失败: ' + error.message);
+      showSnackBar('加入会议失败' );
       console.error(error);
       return false;
     }
@@ -103,7 +102,7 @@ class ZoomVideoService {
         throw new Error('无法获取聊天客户端');
       }
     } catch (e) {
-      showSnackBar('初始化聊天失败: ' + e.message);
+      showSnackBar('初始化聊天失败');
       console.error(e);
     }
   }
@@ -135,7 +134,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
           });
     }
  } catch (error) {
-     showSnackBar('发送私聊消息失败: ' + error.message);
+     showSnackBar('发送私聊消息失败' );
     console.error(error);
 }
 }
@@ -210,7 +209,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
       const cancelFn = await this.chatClient.downloadFile(msgId, fileUrl, blob);
       return cancelFn;
     } catch (error) {
-      showSnackBar('下载文件失败:' + error.message);
+      showSnackBar('下载文件失败');
       console.error(error);
       return null;
     }
@@ -259,7 +258,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
         });
       }
     } catch (error) {
-      showSnackBar('发送聊天消息失败: ' + error.message);
+      showSnackBar('发送聊天消息失败' );
       console.error(error);
     }
   }
@@ -286,7 +285,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
       const videoOptions = { hd: true, ...options };
       await this.stream.startVideo(videoOptions);
     } catch (error) {
-      showSnackBar('开启本地视频失败:' + error.message);
+      showSnackBar('开启本地视频失败');
       console.error(error);
     }
   }
@@ -303,7 +302,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
         await this.stream.stopVideo();
       }
     } catch (error) {
-      showSnackBar('切换本地视频失败:' + error.message);
+      showSnackBar('切换本地视频失败');
       console.error(error);
     }
   }
@@ -353,7 +352,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
     try {
       await this.stream.startAudio();
     } catch (error) {
-      showSnackBar('开启音频失败:' + error.message);
+      showSnackBar('开启音频失败');
       console.error(error);
     }
   }
@@ -370,7 +369,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
         await this.stream.stopAudio();
       }
     } catch (error) {
-      showSnackBar('切换音频失败:' + error.message);
+      showSnackBar('切换音频失败');
       console.error(error);
     }
   }
@@ -424,7 +423,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
         }
         return true;
     } catch (error) {
-        showSnackBar('开启屏幕共享失败:' + error.message);
+        showSnackBar('开启屏幕共享失败');
         console.error(error);
         return false;
     }
@@ -441,7 +440,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
       const shareCanvas = document.getElementById('local-share-canvas');
       if (shareCanvas) shareCanvas.remove();
     } catch (error) {
-      showSnackBar('停止屏幕共享失败:' + error.message);
+      showSnackBar('停止屏幕共享失败' );
       console.error(error);
     }
   }
@@ -485,7 +484,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
       this.chatClient = null;
       this.isHost = false; // 重置 isHost
     } catch (error) {
-      showSnackBar('离开会议失败:' + error.message);
+      showSnackBar('离开会议失败');
       console.error(error);
     }
   }

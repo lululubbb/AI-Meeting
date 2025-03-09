@@ -10,7 +10,9 @@ import '@fortawesome/fontawesome-free/css/all.min.css'; // 引入 Font Awesome
 import 'element-plus/dist/index.css'; // Import Element Plus CSS globally
 import ElementPlus from 'element-plus';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
-import './assets/styles/global.css'; // 引入全局样式 
+import './assets/styles/global.css'; // 引入全局样式
+import { ElMessage } from 'element-plus'; // 导入 ElMessage
+
 // 设置中文语言包
 
 const app = createApp(App)

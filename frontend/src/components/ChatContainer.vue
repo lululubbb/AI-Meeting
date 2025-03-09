@@ -86,10 +86,6 @@ import {
   defineExpose,
   watch
 } from 'vue';
-import {
-  showSnackBar
-} from '../utils/utils.js'; // 假设的路径
-import ZoomVideoService from '../services/ZoomVideoService.js';
 import defaultAvatar from '../assets/柴犬.png';
 // 定义 props
 const props = defineProps({
@@ -345,7 +341,7 @@ watch(
     gap: 8px;   /* 缩小头像和昵称之间的距离 */
     margin-bottom: 4px;  /* 头像和消息内容之间的距离 */
 }
-     .user-avatar {
+    .user-avatar {
     width: 32px;  /* 缩小头像大小 */
     height: 32px;
     border-radius: 50%; /* 头像圆形 */

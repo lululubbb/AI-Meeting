@@ -54,7 +54,7 @@
 <script>
 import ActivityItem from './ActivityItem.vue';
 import CreateActivity from './CreateActivity.vue';
-import { ref, computed, onMounted } from 'vue'; // 导入 onMounted
+import { ref, computed, onMounted, nextTick, onBeforeUnmount   } from 'vue'; // 导入 onMounted
 import { useStore } from 'vuex';
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 
@@ -71,7 +71,7 @@ export default {
     const editedActivity = ref({ description: '', date: '' });
     // 从 Vuex store 获取 activities
     const activities = computed(() => store.getters.getActivities);
-
+    let asyncOperation;
     // 在组件挂载时获取活动数据
     onMounted(() => {
       store.dispatch('fetchActivities');
@@ -81,7 +81,7 @@ export default {
       isAddingActivity.value = !isAddingActivity.value;
     };
     // 调用 Vuex 的 addActivity action
-    const addActivity = (newActivity) => {
+    const addActivity = async (newActivity) => {
       const isDuplicate = activities.value.some(activity => {
         return activity.date === newActivity.date && activity.description === newActivity.description;
       });
@@ -91,42 +91,54 @@ export default {
         return;
       }
 
-      store.dispatch('addActivity', newActivity);
-      toggleAddActivityForm(); // 关闭表单
+      await store.dispatch('addActivity', newActivity);
+      await asyncOperation;
+      await nextTick(); 
+      toggleAddActivityForm(); 
     };
 
     const editActivity = (activityId) => {
-            const activity = activities.value.find(a => a.id === activityId);
-            if (activity) {
-                console.log('Editing activity with ID:', activity.id); // 打印 ID 进行确认
-                editedActivity.value = { ...activity };
-                isEditDialogVisible.value = true;
-            }
-        };
+      const activity = activities.value.find(a => a.id === activityId);
+      if (activity) {
+        console.log('Editing activity with ID:', activity.id);
+        editedActivity.value = { ...activity };
+        isEditDialogVisible.value = true;
+      }
+    };
 
-        const saveEditedActivity = async () => {
-            try {
-                await store.dispatch('updateActivity', { id: editedActivity.value.id, ...editedActivity.value });
-                closeEditDialog();
-            } catch (error) {
-                console.error('编辑活动失败:', error);
-                ElMessage.error('编辑活动失败：' + error.message);
-            }
-        };
+    const saveEditedActivity = async () => {
+      try {
+        await store.dispatch('updateActivity', { id: editedActivity.value.id, ...editedActivity.value });
+        await asyncOperation;
+        await nextTick(); 
+        closeEditDialog();
+      } catch (error) {
+        console.error('编辑活动失败:', error);
+        ElMessage.error('编辑活动失败');
+      }
+    };
 
-        const closeEditDialog = () => {
-            isEditDialogVisible.value = false;
-            editedActivity.value = { description: '', date: '' };
-        };
+    const closeEditDialog = () => {
+      isEditDialogVisible.value = false;
+      editedActivity.value = { description: '', date: '' };
+    };
 
-        const deleteActivity = async (activityId) => {
-            try {
-                await store.dispatch('deleteActivity', activityId);
-            } catch (error) {
-                console.error('删除活动失败:', error);
-                ElMessage.error('删除活动失败：' + error.message);
-            }
-        };
+    const deleteActivity = async (activityId) => {
+      try {
+        await store.dispatch('deleteActivity', activityId);
+        await asyncOperation;
+        await nextTick(); 
+      } catch (error) {
+        console.error('删除活动失败:', error);
+        ElMessage.error('删除活动失败');
+      }
+    };
+    onBeforeUnmount(() => {
+  if (asyncOperation) {
+    // 这里可以添加取消异步操作的逻辑，比如取消请求
+    asyncOperation = null;
+  }
+});
     return {
       activities,
       isAddingActivity,

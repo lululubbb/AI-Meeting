@@ -1,6 +1,5 @@
 import { db } from './FirebaseService.js';
 import { collection, addDoc, query, orderBy, onSnapshot, Timestamp, doc, updateDoc, getDoc, getDocs, setDoc, where, deleteDoc } from 'firebase/firestore';
-// import { showSnackBar } from '../utils/utils.js'; // 移除
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 
 class FirestoreService {
@@ -77,7 +76,7 @@ listenToTodos(userId, callback) {
       return meetingRef.id;
     } catch (error) {
       console.error('添加到会议历史记录失败:', error);
-      ElMessage.error('添加到会议历史记录失败:' + error.message); // 使用 ElMessage
+      ElMessage.error('添加到会议历史记录失败'); // 使用 ElMessage
       throw error;
     }
   }
@@ -96,7 +95,7 @@ listenToTodos(userId, callback) {
       console.log(`参与者 ${participantId} 加入会议 ${meetingId}`);
     } catch (error) {
         console.error('添加参与者会议记录失败:', error);
-        ElMessage.error('添加参与者会议记录失败：' + error.message); // 使用 ElMessage
+        ElMessage.error('添加参与者会议记录失败'); // 使用 ElMessage
         throw error; // 或返回 false, 根据你的错误处理策略
     }
   }
@@ -109,7 +108,7 @@ listenToTodos(userId, callback) {
       console.log('会议历史记录已更新，ID:', meetingId);
     } catch (error) {
       console.error('更新会议历史记录失败:', error);
-      ElMessage.error('更新会议历史记录失败：' + error.message);  // 使用 ElMessage
+      ElMessage.error('更新会议历史记录失败');  // 使用 ElMessage
       throw error;
     }
   }
@@ -127,7 +126,7 @@ listenToTodos(userId, callback) {
     }
     } catch (error) {
         console.error('获取转录文本失败:', error);
-        ElMessage.error('获取转录文本失败：' + error.message); // 使用 ElMessage
+        ElMessage.error('获取转录文本失败' ); // 使用 ElMessage
         throw error;
     }
 }
@@ -140,7 +139,7 @@ listenToTodos(userId, callback) {
     console.log('转录文本已保存');
     } catch (error) {
      console.error('保存转录文本失败:', error);
-     ElMessage.error('保存转录文本失败：' + error.message);  // 使用 ElMessage
+     ElMessage.error('保存转录文本失败');  // 使用 ElMessage
      throw error;
     }
 }
@@ -152,7 +151,7 @@ listenToTodos(userId, callback) {
      console.log('会议记录已删除:', meetingId);
    } catch (error) {
      console.error('删除会议记录失败:', error);
-     ElMessage.error('删除会议记录失败：' + error.message); // 使用 ElMessage
+     ElMessage.error('删除会议记录失败'); // 使用 ElMessage
      throw error; // 抛出错误
    }
  }
@@ -187,7 +186,7 @@ listenToTodos(userId, callback) {
       return null; // 或抛出错误, 根据你的需求
     } catch (error) {
         console.error('获取会议历史记录失败:', error);
-        ElMessage.error('获取会议历史记录失败：' + error.message); // 使用 ElMessage
+        ElMessage.error('获取会议历史记录失败'); // 使用 ElMessage
         throw error;
     }
   }
@@ -229,7 +228,7 @@ listenToTodos(userId, callback) {
             return meetings;
         } catch (error) {
            console.error('获取所有会议历史记录失败:', error);
-           ElMessage.error('获取所有会议历史记录失败：' + error.message); // 使用 ElMessage
+           ElMessage.error('获取所有会议历史记录失败'); // 使用 ElMessage
            throw error;
         }
     }
@@ -237,8 +236,8 @@ listenToTodos(userId, callback) {
   async addTodoItem(userId, todo) {
     try {
       console.log("即将添加待办事项:", todo); // 调试日志
-      if (!todo.title || !todo.date) {
-        throw new Error("待办事项缺少 title 或 date");
+      if (!todo.text  || !todo.date) {
+        throw new Error("待办事项缺少 text  或 date");
       }
 
       const userDocRef = doc(db, "users", userId);
@@ -308,7 +307,7 @@ listenToTodos(userId, callback) {
         return activities;
         } catch (error) {
             console.error("Error fetching user activities:", error);
-            ElMessage.error('获取用户活动记录失败：' + error.message); // 使用 ElMessage
+            ElMessage.error('获取用户活动记录失败'); // 使用 ElMessage
             throw error; // 或返回空数组, 根据你的错误处理策略
         }
     }
@@ -321,7 +320,7 @@ listenToTodos(userId, callback) {
         return result; // 返回promise
     } catch (error) {
         console.error("Error adding activity:", error);
-        ElMessage.error('添加活动失败：' + error.message); // 使用 ElMessage
+        ElMessage.error('添加活动失败'); // 使用 ElMessage
         throw error;
     }
 }
@@ -335,7 +334,7 @@ listenToTodos(userId, callback) {
       return true; // 返回删除成功标志
   } catch (error) {
       console.error('删除活动失败:', error);
-      ElMessage.error('删除活动失败: ' + error.message);
+      ElMessage.error('删除活动失败');
       throw error;
   }
 }
@@ -350,7 +349,7 @@ async updateActivity(userId, activity) {
       return true; // 返回更新成功标志
   } catch (error) {
       console.error('更新活动失败:', error);
-      ElMessage.error('编辑活动失败：' + error.message);
+      ElMessage.error('编辑活动失败');
       throw error;
   }
 }

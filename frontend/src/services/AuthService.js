@@ -16,6 +16,7 @@ import ZoomVideoService from './ZoomVideoService.js' // 引入 ZoomVideoService.
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from './FirebaseService.js'
 import defaultAvatar from '../assets/柴犬.png';
+import { ElMessage } from 'element-plus';
 
 class AuthService {
   // 使用邮箱和密码登录
@@ -69,7 +70,7 @@ class AuthService {
       }
     } catch (error) {
       console.error("登录错误:", error)
-      showSnackBar(error.message)
+      ElMessage.error("登陆失败，账号或者密码错误")
       return false
     }
   }
@@ -114,7 +115,7 @@ class AuthService {
       }
     } catch (error) {
       console.error("注册错误:", error)
-      showSnackBar(error.message)
+      ElMessage.error("注册失败，账号已经存在")
       return false
     }
   }
@@ -125,6 +126,7 @@ class AuthService {
       const result = await signInWithPopup(auth, googleProvider)
       const user = result.user
       console.log(`Google 登录成功，用户 ID: ${user.uid}`)
+      ElMessage.success("`Google 登录成功,用户 ID: ${user.uid}")
 
       // 如果是新用户，添加到 Firestore
       if (result.additionalUserInfo && result.additionalUserInfo.isNewUser) {
@@ -156,7 +158,7 @@ class AuthService {
       }
     } catch (error) {
       console.error("Google 登录错误:", error)
-      showSnackBar(error.message)
+      ElMessage.error("Google 登录错误")
       return false
     }
   }
@@ -168,7 +170,7 @@ class AuthService {
       store.commit('SET_USER', null)  // 清除 Vuex Store 中的用户信息
       return true
     } catch (error) {
-      showSnackBar(error.message)
+      showSnackBar("退出错误")
       return false
     }
   }
@@ -183,7 +185,7 @@ class AuthService {
       });
       return response.data.signature;
     } catch (error) {
-      showSnackBar("获取 JWT 失败: " + error.message);
+      console.log("获取 JWT 失败: " + error.message);
       return null;
     }
   }
@@ -208,7 +210,7 @@ class AuthService {
     }
     } catch (error) {
       console.error('更新用户信息失败:', error);
-      showSnackBar(error.message);
+      showSnackBar('更新用户信息失败');
       throw error;
     }
   }

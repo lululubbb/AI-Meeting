@@ -621,7 +621,7 @@ const downloadKeywordsSummary = () => {
 // 新增函数：下载参会者数据为 CSV
 const downloadParticipantsData = () => {
   if (!selectedMeeting.value || !selectedMeeting.value.participants) {
-    showSnackBar('没有参会者数据可供下载。');
+    ElMessage.info('没有参会者数据可供下载。');
     return;
   }
 
@@ -701,7 +701,7 @@ const formatDateTimeForCSV = (timestamp) => {
 // 新增函数：下载聊天数据
 const downloadChatData = () => {
   if (!selectedMeeting.value || !selectedMeeting.value.chatMessages) {
-    showSnackBar('没有聊天数据可供下载。');
+    ElMessage.info('没有聊天数据可供下载。');
     return;
   }
 
@@ -767,7 +767,7 @@ const showSection = async (section) => {
           console.log('获取到的转录文本:', transcription);
         } catch (error) {
           console.error('获取转录文本失败:', error);
-          showSnackBar('获取转录文本失败: ' + error.message);
+          showSnackBar('获取转录文本失败');
         }
       } else {
         console.warn('用户信息或 meetingId 不存在');
@@ -1111,7 +1111,7 @@ const analyzeParticipation = async () => {
   }
   // 检查是否有会议摘要
   // if (!summary.value) {
-  //   showSnackBar('暂无会议摘要，无法进行参与度分析。');
+  //   showSnackBar('暂无会议摘要，无法进行参与度分析');
   //   return;
   // }
   // 提取每个用户的参与数据
@@ -1179,7 +1179,7 @@ const analyzeParticipation = async () => {
     }
   } catch (error) {
     console.error('参与度分析请求失败:', error);
-    showSnackBar('参与度分析请求失败，请稍后重试。');
+    ElMessage.info('参与度分析请求失败，请稍后重试');
   } finally {
     // 结束加载，隐藏进度条
     isLoadingAnalysis.value = false;
@@ -1218,7 +1218,7 @@ const downloadParticipationAnalysis = () => {
   console.log('开始下载参与度分析结果');
   if (participationAnalysisResults.value.length === 0) {
     console.log('参与度分析结果为空，无法下载');
-    showSnackBar('参与度分析结果未准备好，请等待');
+    ElMessage.info('参与度分析结果未准备好，请等待');
     return;
   }
   const customHeader = ['用户名', '角色', '行为参与度', '认知参与度', '综合参与度'];
@@ -1239,13 +1239,13 @@ const downloadParticipationAnalysis = () => {
     console.log('Excel 文件生成并下载成功');
   } catch (error) {
     console.error('文件生成失败:', error);
-    showSnackBar('文件生成失败，请稍后重试。');
+    showSnackBar('文件生成失败，请稍后重试');
   }
 };
 // 下载参与者所有信息
 const downloadParticipantsAllData = () => {
   if (participationAnalysisResults.value.length === 0) {
-    showSnackBar('暂无参与度分析结果可供下载。');
+    ElMessage.info('暂无参与度分析结果可供下载');
     return;
   }
   // 合并参会者数据和参与度分析结果
