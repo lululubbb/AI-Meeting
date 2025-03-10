@@ -1,28 +1,27 @@
 import pyaudio
 import nls
 import json
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 import uuid
 import asyncio
 from queue import Queue
 import threading
-import simpleaudio as sa  # 导入 simpleaudio
+import simpleaudio as sa
 
 # 阿里云配置
 URL = "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1"
 TOKEN = "0195232cb99749e68961fefd7717b514"
 APPKEY = "wvpwo9lGGSkfMHfn"
-# 音频参数配置
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
-CHUNK = 512  # 这个现在只用于 simpleaudio 播放
+CHUNK = 512
 
 
 class SpeechRecognizer:
-    def __init__(self, session_id, loop):
+    def __init__(self, session_id, user_id, user_name, loop):
         self.transcriber = nls.NlsSpeechTranscriber(
             url=URL,
             token=TOKEN,
@@ -32,13 +31,13 @@ class SpeechRecognizer:
             on_error=self.on_error,
         )
         self.session_id = session_id
+        self.user_id = user_id
+        self.user_name = user_name
         self.loop = loop
         self.message_queue = Queue()
         self.websocket = None
         self.final_result = ""
         self.last_result = ""
-
-        # 启动消息处理线程
         self.thread = threading.Thread(target=self._process_messages)
         self.thread.start()
 
@@ -48,8 +47,6 @@ class SpeechRecognizer:
             if msg_type == "SHUTDOWN":
                 print(f"Session {self.session_id}: Shutting down message thread.")
                 break
-
-            # 在事件循环中异步处理
             asyncio.run_coroutine_threadsafe(
                 self._async_send(msg_type, data),
                 self.loop
@@ -59,11 +56,27 @@ class SpeechRecognizer:
         if self.websocket:
             try:
                 if msg_type == "INTERMEDIATE":
-                    await self.websocket.send_text(f"[INTERMEDIATE]{data}")
+                    # 发送带有 user_id 和 userName 的消息
+                    await self.websocket.send_text(json.dumps({
+                        "type": "INTERMEDIATE",
+                        "user_id": self.user_id,
+                        'userName': self.user_name,
+                        "text": data
+                    }))
                 elif msg_type == "FINAL":
-                    await self.websocket.send_text(f"[FINAL]{data}")
+                    await self.websocket.send_text(json.dumps({
+                        "type": "FINAL",
+                        "user_id": self.user_id,
+                        'userName': self.user_name,
+                        "text": data
+                    }))
                 elif msg_type == "ERROR":
-                    await self.websocket.send_text(f"[ERROR]{data}")
+                    await self.websocket.send_text(json.dumps({
+                        "type": "ERROR",
+                        "user_id": self.user_id,
+                        'userName': self.user_name,
+                        "text": data
+                    }))
             except Exception as e:
                 print(f"Session {self.session_id} send error: {e}")
 
@@ -72,10 +85,9 @@ class SpeechRecognizer:
             print(f"Session {self.session_id} raw message (on_result): {message}")
             data = json.loads(message)
             current_result = data.get('payload', {}).get('result', '')
-            print(f"Session {self.session_id} intermediate result: {current_result}")
+            # print(f"Session {self.session_id} intermediate result: {current_result}")
 
             if current_result and current_result != self.last_result:
-                # 计算新增部分
                 common_length = 0
                 min_length = min(len(self.last_result), len(current_result))
                 for i in range(1, min_length + 1):
@@ -86,7 +98,7 @@ class SpeechRecognizer:
                 new_text = current_result[common_length:]
                 self.final_result += new_text
                 self.last_result = current_result
-                self.message_queue.put(("INTERMEDIATE", self.final_result))
+                self.message_queue.put(("INTERMEDIATE", self.final_result))  # 只传递文本
 
         except Exception as e:
             print(f"Session {self.session_id} on_result error: {e}")
@@ -98,7 +110,7 @@ class SpeechRecognizer:
             data = json.loads(message)
             final_result = data.get('payload', {}).get('result', '')
             self.final_result = final_result or self.final_result
-            self.message_queue.put(("FINAL", self.final_result))
+            self.message_queue.put(("FINAL", self.final_result))  # 只传递文本
             print(f"Session {self.session_id} completed")
         except Exception as e:
             print(f"Session {self.session_id} on_completed error: {e}")
@@ -106,131 +118,148 @@ class SpeechRecognizer:
         finally:
             self.final_result = ""
             self.last_result = ""
-             # 在 on_completed 事件中停止并关闭 transcriber
             self.transcriber.stop()
             self.transcriber.shutdown()
 
     def on_error(self, message, *args):
         print(f"Session {self.session_id} raw message (on_error): {message}")
         try:
-            # 尝试解析错误信息，如果能解析则提取错误代码和消息
             error_data = json.loads(message)
             error_code = error_data.get("header", {}).get("status")
             error_message = error_data.get("header", {}).get("message")
             error_msg = (f"Session {self.session_id} error: Code={error_code}, "
                          f"Message={error_message}")
         except json.JSONDecodeError:
-            # 如果无法解析 JSON，则直接使用原始消息
             error_msg = f"Session {self.session_id} error: {message}"
 
         print(error_msg)
         self.message_queue.put(("ERROR", error_msg))
 
-
     async def stop(self):
-        # 将 SHUTDOWN 消息放入队列，以通知消息处理线程停止
         self.message_queue.put(("SHUTDOWN", None))
-        self.thread.join()  # 等待线程完全退出
+        self.thread.join()
         self.transcriber.stop()
         self.transcriber.shutdown()
 
 
-
-# 会话管理
 class SessionManager:
     def __init__(self, loop):
-        self.active_sessions = {}  # 存储活动会话
+        self.active_sessions = {}
         self.loop = loop
+        self.connections = {}  # 存储所有 websocket 连接
 
-    async def create_session(self, websocket):
-        session_id = str(uuid.uuid4())  # 生成唯一的会话 ID
-        recognizer = SpeechRecognizer(session_id, self.loop)
-        recognizer.websocket = websocket  # 将 websocket 对象与识别器关联
-        self.active_sessions[session_id] = recognizer  # 将识别器添加到活动会话字典中
-        print(f"New session created: {session_id}")  # 打印新会话创建的消息
+    async def create_session(self, websocket, user_id, user_name):
+        session_id = str(uuid.uuid4())
+        recognizer = SpeechRecognizer(session_id, user_id, user_name, self.loop)
+        recognizer.websocket = websocket
+        self.active_sessions[session_id] = recognizer
+        self.connections[websocket] = session_id
+        print(f"New session created: {session_id} for user: {user_id}")
         return recognizer
 
     async def remove_session(self, session_id):
         if session_id in self.active_sessions:
-            await self.active_sessions[session_id].stop()  # 停止识别器
-            del self.active_sessions[session_id]  # 从活动会话中移除识别器
-            print(f"Session removed: {session_id}")  # 打印会话移除的消息
+            await self.active_sessions[session_id].stop()
+            del self.active_sessions[session_id]
+
+            # 从 connections 中移除对应的 websocket
+            for ws, sid in list(self.connections.items()):  # 使用 list 避免 RuntimeError
+                if sid == session_id:
+                    del self.connections[ws]
+                    break
+            print(f"Session removed: {session_id}")
         else:
             print(f"Session {session_id} not found for removal.")
 
+    async def broadcast(self, message):
+        for websocket in self.connections.keys():
+            try:
+                await websocket.send_text(message)
+            except Exception as e:
+                print(f"广播错误:{e}")
 
-# FastAPI生命周期管理
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
-    app.state.session_manager = SessionManager(loop)  # 初始化 SessionManager
-    print("Application startup.")  # 打印应用启动消息
+    app.state.session_manager = SessionManager(loop)
+    print("Application startup.")
     yield
-    # 清理所有会话
-    print("Application shutdown.")  # 打印应用关闭消息
+    print("Application shutdown.")
     for session_id in list(app.state.session_manager.active_sessions.keys()):
-        await app.state.session_manager.remove_session(session_id)  # 移除所有会话
+        await app.state.session_manager.remove_session(session_id)
 
 
 app = FastAPI(lifespan=lifespan)
 
+
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, user_id: str = None):
     await websocket.accept()
     session_manager = app.state.session_manager
-    recognizer = await session_manager.create_session(websocket)
+
+    # 获取用户名
+    user_name = websocket.query_params.get('user_name')
+    # 如果没有提供 user_id，则生成一个
+    if user_id is None:
+        user_id = str(uuid.uuid4())
+        print(f"No user_id provided, generated: {user_id}")
+    recognizer = await session_manager.create_session(websocket, user_id, user_name)
 
     try:
         recognizer.transcriber.start(
             aformat="pcm",
-            sample_rate=RATE,  # 确保采样率正确！
+            sample_rate=RATE,
             enable_intermediate_result=True,
             enable_punctuation_prediction=True,
-            # enable_voice_detection=False,  # 如果不需要语音活动检测，可以关闭
+            # enable_voice_detection=False,
         )
 
-        audio_buffer = bytearray()  # 用于累积音频数据的缓冲区
+        audio_buffer = bytearray()
 
         while True:
             data = await websocket.receive_bytes()
-            # print(f"Received data type: {type(data)}, size: {len(data)}")
+            print("接收数据", data)
+            audio_buffer.extend(data)
 
-            audio_buffer.extend(data)  # 将接收到的数据添加到缓冲区
-
-            #  处理缓冲区 (这里我们只处理了播放，发送给 NLS 的部分也应该处理)
-            # while len(audio_buffer) >= 1024:  # 假设每次处理 1024 字节
-                # chunk = audio_buffer[:1024]
-                # audio_buffer = audio_buffer[1024:]
-            if len(audio_buffer)>0:
-                # 播放音频 (同步，阻塞)
+            if len(audio_buffer) > 0:
                 try:
-                    print("播放")
-                    wave_obj = sa.WaveObject(audio_buffer, CHANNELS, 2, RATE)  # 1 声道, 2 字节/样本, 16000 Hz
-                    play_obj = wave_obj.play()
-                    play_obj.wait_done()
+                    #  播放
+                    pass
                 except Exception as e:
-                    print(f"Audio playback error: {e}")
+                    print(f"Audio Playback error: {e}")
+
                 recognizer.transcriber.send_audio(audio_buffer)
-                audio_buffer = bytearray()  #清空
+                 #  发送音频给 NLS 后，立即广播
+                if recognizer.final_result != '' : # 只有当识别出了内容才广播
+                    msg = json.dumps({
+                        "type": "INTERMEDIATE",
+                        "user_id": recognizer.user_id,
+                        "userName": recognizer.user_name,
+                        "text": recognizer.final_result
+                    })
+                    await session_manager.broadcast(msg)
+                audio_buffer = bytearray()
 
             if data == b"[DONE]":
                 print("Received [DONE] message, stopping transcriber...")
-                # await recognizer.transcriber.stop()  #  在 on_completed 里已经 stop 了
+                #  on_completed 里处理
                 break
 
-
+    except WebSocketDisconnect:
+        print(f"Client disconnected.")
     except Exception as e:
-        print(f"WebSocket error: {type(e).__name__}: {e}")  # 打印更详细的错误信息
+        print(f"WebSocket error: {type(e).__name__}: {e}")
     finally:
         await session_manager.remove_session(recognizer.session_id)
-
+    #  移除 finally 块中的错误广播逻辑
 
 
 @app.get("/")
 async def get():
-    return HTMLResponse(content=open("index.html").read())  # 确保你有 index.html
+    return HTMLResponse(content=open("index.html").read())
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=4321, ws_ping_timeout=300) # 增加超时时间
+    uvicorn.run(app, host="0.0.0.0", port=4321, ws_ping_timeout=300)

@@ -96,9 +96,15 @@
               <p>当前无人共享</p>
             </div>
             <!-- 字幕容器 -->
-            <div class="subtitle">
+            <!-- <div class="subtitle">
               {{ subtitle }}
-            </div>
+            </div> -->
+            <div class="subtitle">
+  <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
+    <span class="subtitle-user">{{ sub.userName }}: </span>
+    <span class="subtitle-text">{{ sub.text }}</span>
+  </div>
+</div>
           </video-player-container>
 
           <!-- 底部控制栏 -->
@@ -1625,6 +1631,7 @@ let audioContext = null; // AudioContext
 let sourceNode = null;  // MediaStreamAudioSourceNode
 let gainNode = null; // GainNode (可选，用于音量控制)
 let processor = null;    // ScriptProcessorNode
+const subtitles = ref({}); // 使用对象存储多个用户的字幕
 
 const toggleTranscription = async () => {
   isTranscribing.value = !isTranscribing.value;
@@ -1634,100 +1641,142 @@ const toggleTranscription = async () => {
     stopTranscription();
   }
 };
+// 新增：用于更新/添加字幕的函数
+
+// 修改 updateSubtitle 函数：
+function updateSubtitle(userId, text, userName) {  // 增加 userName 参数
+  if (!subtitles.value[userId]) {
+    subtitles.value[userId] = {
+      userName: userName || userId, //  优先使用传入的 userName, 没有则使用 userId
+      text: text,
+    };
+  } else {
+    subtitles.value[userId].text = text;
+    //  不更新 userName, 保持第一次的值
+  }
+  subtitles.value = { ...subtitles.value }; // 强制更新
+}
 
 const startTranscription = async () => {
-    console.log("开始转录");
+  console.log("开始转录");
   try {
     // 1. 获取麦克风权限
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("麦克风已获取:", mediaStream);
+    console.log("麦克风已获取:", mediaStream);
 
-    // 2. 创建 WebSocket 连接
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:4321/ws`; //  WebSocket URL
-      console.log("尝试连接到:", wsUrl);
+    // 从 ZoomVideoService 获取当前用户信息
+    const curUser = ZoomVideoService.client.getCurrentUserInfo();
+    const userId = curUser.userId.toString(); // userId, 转为字符串
+    const userName = curUser.displayName; // displayName
+    console.log("User ID:", userId, "Username:", userName);
+
+    // 2. 创建 WebSocket 连接, 包含 user_id 和 user_name 查询参数
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.hostname}:4321/ws?user_id=${userId}&user_name=${userName}`; //  包含 user_name
+    console.log("尝试连接到:", wsUrl);
     websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
-       console.log("WebSocket 连接已建立");
+      console.log("WebSocket 连接已建立");
     };
 
     websocket.onmessage = (event) => {
-      //  处理从服务器接收到的消息
-        const data = event.data;
-        console.log("从服务器接收到消息:", data);  // 打印原始消息
+      const data = JSON.parse(event.data); // 解析 JSON
+      console.log("从服务器接收到消息:", data);
 
-      if (data.startsWith("[INTERMEDIATE]")) {
-        subtitle.value = data.substring(14); // 去掉 "[INTERMEDIATE]" 前缀
-          console.log("更新字幕 (中间结果):", subtitle.value);
-      } else if (data.startsWith("[FINAL]")) {
-        subtitle.value = data.substring(7);   //  去掉 "[FINAL]" 前缀
-          console.log("更新字幕 (最终结果):", subtitle.value);
-      } else if (data.startsWith("[ERROR]")) {
-        console.error("转录错误:", data.substring(7));  // 去掉 “[ERROR]” 前缀
+      if (data.type === "INTERMEDIATE") {
+        updateSubtitle(data.user_id, data.text, data.userName); // 更新字幕, 传入 userName
+      } else if (data.type === "FINAL") {
+        updateSubtitle(data.user_id, data.text, data.userName); // 更新字幕, 传入 userName
+      } else if (data.type === "ERROR") {
+        console.error(`转录错误 (用户 ${data.user_id}):`, data.text);
       }
     };
 
     websocket.onclose = () => {
-        console.log("WebSocket 连接已关闭");
-       if(isTranscribing.value)
-              {
-                  stopTranscription(); // 自动停止
-                  isTranscribing.value = false; // 更新状态
-              }
+      console.log("WebSocket 连接已关闭");
+      if (isTranscribing.value) {
+        stopTranscription(); // 自动停止
+        isTranscribing.value = false; // 更新状态
+      }
     };
-      websocket.onerror = (error) => {
-          console.error("WebSocket 错误:", error);
-      };
+    websocket.onerror = (error) => {
+      console.error("WebSocket 错误:", error);
+    };
 
     // 3. 创建音频处理上下文和节点
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 16000}); // 指定采样率！
-      console.log("AudioContext 已创建, 采样率:", audioContext.sampleRate);
-    sourceNode = audioContext.createMediaStreamSource(mediaStream);
-      console.log("源节点已创建",sourceNode);
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({
+      sampleRate: 16000,
+    });
+    console.log("AudioContext 已创建, 采样率:", audioContext.sampleRate);
 
-      gainNode = audioContext.createGain(); // 创建增益节点
-      gainNode.gain.value = 1.0; // 设置增益 (1.0 表示不变)
-      console.log("增益节点已创建",gainNode);
-      sourceNode.connect(gainNode);
+     if (audioContext.state !== 'running') {
+          console.warn('AudioContext state is not running, resuming...');
+          audioContext.resume().then(() => {
+            console.log('AudioContext resumed successfully.');
+              // 重新连接节点 (重要)
+              sourceNode = audioContext.createMediaStreamSource(mediaStream);
+              gainNode = audioContext.createGain();
+              gainNode.gain.value = 1.0;
+              processor = audioContext.createScriptProcessor(0, 1, 1);
+              setupAudioProcessing(); // 重新连接处理函数 (见下文)
 
-      processor = audioContext.createScriptProcessor(0, 1, 1);   // 缓冲区大小自动, 单声道输入, 单声道输出
-      console.log('处理器已创建',processor)
-      processor.onaudioprocess = (audioProcessingEvent) => {  //  处理音频数据
-      if (!isTranscribing.value || websocket.readyState !== WebSocket.OPEN) {
-          return;
-      }
-      const inputBuffer = audioProcessingEvent.inputBuffer;
-      const inputData = inputBuffer.getChannelData(0); //  获取第一个声道 (单声道)
+          }).catch(err => {
+            console.error('Failed to resume AudioContext:', err);
+          });
+        } else {
+            setupAudioProcessing(); // 连接处理函数 (见下文)
 
-      // 转换为 Int16 格式 (后端要求)
-      const int16Data = float32ToInt16(inputData);
+        }
 
-                // 检查数据长度, 如果很小, 可能是静音
-                if (int16Data.length > 0) {
-                    const buffer = int16Data.buffer; // 获取底层的 ArrayBuffer
-              
-                     console.log("发送音频数据, 大小:", buffer.byteLength);
-                    try {
-                        if(websocket && websocket.readyState === WebSocket.OPEN){
-                           websocket.send(buffer);
-                        }
-                    }
-                     catch(error){
-                       console.error("WebSocket 发送失败", error)
-                    }
-               }
-    };
+        // 把音频处理相关的连接操作封装成一个函数
+      function setupAudioProcessing(){
+          sourceNode = audioContext.createMediaStreamSource(mediaStream);
+        console.log("源节点已创建", sourceNode);
 
-      gainNode.connect(processor);
-     processor.connect(audioContext.destination); //  连接到 destination, 否则没有声音事件!
+        gainNode = audioContext.createGain();  // 创建增益节点
+        gainNode.gain.value = 1.0;
+        console.log("增益节点已创建", gainNode);
+        sourceNode.connect(gainNode);
 
+        processor = audioContext.createScriptProcessor(0, 1, 1);
+        console.log('处理器已创建', processor)
+        processor.onaudioprocess = (audioProcessingEvent) => {
+            console.log("onaudioprocess triggered"); // 确保触发
+            if (!isTranscribing.value || websocket.readyState !== WebSocket.OPEN) {
+              return;
+            }
+            const inputBuffer = audioProcessingEvent.inputBuffer;
+            const inputData = inputBuffer.getChannelData(0); //  获取第一个声道 (单声道)
+
+            // 转换为 Int16 格式 (后端要求)
+            const int16Data = float32ToInt16(inputData);
+
+            // 检查数据长度, 如果很小, 可能是静音
+            if (int16Data.length > 0) {
+                const buffer = int16Data.buffer; // 获取底层的 ArrayBuffer
+                // console.log("发送音频数据, 大小:", buffer.byteLength , "内容:", buffer); //修改这行
+
+              try {
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                  websocket.send(buffer);
+                }
+              } catch (error) {
+                console.error("WebSocket 发送失败", error);
+              }
+            }
+          };
+
+          gainNode.connect(processor);
+          processor.connect(audioContext.destination);
+        }
 
   } catch (error) {
     console.error("启动转录失败:", error);
-        ElMessage.error("启动转录失败，请检查麦克风权限")
+    ElMessage.error("启动转录失败，请检查麦克风权限");
   }
 };
+
 
 
 const stopTranscription = () => {
