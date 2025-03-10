@@ -42,7 +42,6 @@
     </ul>
 
     <div v-if="loading" class="loading-indicator">📥 加载中...</div>
-    <div v-if="allFilteredMeetings.length === 0" class="no-more-data">🎉 没有会议记录啦~</div>
     <!-- 页码导航 -->
     <div v-if="allFilteredMeetings.length > pageSize" class="pagination">
       <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
@@ -1354,12 +1353,13 @@ body {
   padding: 10px 10px;
   width: 95%;
   max-width: 900px;
-  max-height: 85vh;
+  max-height: 90vh;
   margin: 10px auto;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   border-radius: 15px;
   /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
   /* box-shadow: var(--global-box-shadow); 应用全局边框阴影 */
+  border: none;
   position: relative;
   overflow-y: auto;
   color: #000;
@@ -1477,11 +1477,7 @@ body {
   margin: 20px 0;
 }
 
-.no-more-data {
-  text-align: center;
-  color: #666;
-  margin: 20px 0;
-}
+
  .meeting-list li.finished {
   background-color: #f6ffed; /* 浅绿色背景 */
   border-color: #b7eb8f;

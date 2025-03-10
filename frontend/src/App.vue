@@ -227,10 +227,11 @@ export default {
 
 <style>
 /* 样式保持不变 */
-html, body, #app {
+html, #app {
   margin: 0;
   padding: 0;
   height: 100%;
+  border: none;
 }
 
 #app {
@@ -242,9 +243,9 @@ body {
   background-color: var(--background-color);
   color: var(--text-color);
   box-shadow: var(--global-box-shadow);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
   scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
+  border: none;
 }
 
 

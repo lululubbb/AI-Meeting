@@ -146,6 +146,12 @@ function formatDateForComparison(date) {
             borderRadius: [4, 4, 0, 0],
           },
           emphasis: {
+            scale: 1.05,
+            label: { 
+            show: true, 
+            fontSize: '12', 
+            fontWeight: 'bold' 
+          },
             itemStyle: {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: '#2378f7' },
@@ -239,7 +245,7 @@ function formatDateForComparison(date) {
             left: 'center',
             textStyle: { color: '#333', fontSize: 18}
         },
-          tooltip: {
+        tooltip: {
         trigger: 'item',
         formatter: '{a} <br/>{b}: {c} ({d}%)',
         backgroundColor: 'rgba(255,255,255,0.95)',
@@ -249,7 +255,7 @@ function formatDateForComparison(date) {
       },
       legend: {
         orient: 'vertical',
-        left: 'left',
+        right: '8%',
         textStyle: { color: '#555', fontSize: 12 }, // 使用全局变量/CSS变量更好
         icon: 'circle',
       },
@@ -267,12 +273,19 @@ function formatDateForComparison(date) {
           radius: ['40%', '70%'],
           avoidLabelOverlap: false,
           label: {
-            show: true,
-            formatter: '{b}: {d}%',
-            position: 'outside',
-            fontSize: 12,
-            color: '#333',
+          show: true,
+          // 使用富文本设置行高
+          formatter: function (params) {
+            return `{name|${params.name}}\n{percent|${params.percent}%}`;
           },
+          rich: {
+            name: { lineHeight: 20 }, // 第一行高度
+            percent: { lineHeight: 20 } // 第二行高度
+          },
+          position: 'outside',
+          fontSize: 12,
+          color: '#333',
+        },
           itemStyle: {
             borderRadius: 10,
             borderColor: '#fff',
@@ -283,8 +296,27 @@ function formatDateForComparison(date) {
             shadowOffsetY: 2
           },
           emphasis: {
-            label: { show: true, fontSize: '14', fontWeight: 'bold' },
-            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+            // label: { show: true, fontSize: '14', fontWeight: 'bold' },
+            label: {
+            show: true,
+            // 重新定义悬浮时的 rich 样式
+            formatter: function (params) {
+              return `{name|${params.name}}\n{percent|${params.percent}%}`;
+            },
+            rich: {
+              name: { 
+                lineHeight: 20, 
+                fontSize: 15, 
+                fontWeight: 'bold' 
+              }, // 悬浮时字体变大
+              percent: { 
+                lineHeight: 20, 
+                fontSize: 15, 
+                fontWeight: 'bold' 
+              }
+            }
+          },
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
           },
           data: seriesData
             .sort((a, b) => b.value - a.value)

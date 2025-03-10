@@ -27,11 +27,11 @@
   </div>
   <div v-if="mode === 'create'" class="input-group">
     <label for="userName">用户名:</label>
-    <input id="userName" v-model="config.userName" placeholder="请输入用户名" @paste="handlePaste"/>
+    <input id="userName" v-model="config.userName" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'create'" class="input-group">
     <label for="sessionPasscode">会议密码 (可选):</label>
-    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" @paste="handlePaste"/>
+    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码(无密码请不输入任何字符)" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="sessionName">会议名称:</label>
@@ -39,11 +39,11 @@
   </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="userName">用户名:</label>
-    <input id="userName" v-model="config.userName" placeholder="请输入用户名" @paste="handlePaste"/>
+    <input id="userName" v-model="config.userName" @paste="handlePaste"/>
   </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="sessionPasscode">会议密码 (可选):</label>
-    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" @paste="handlePaste"/>
+    <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码(无密码请不输入任何字符)" @paste="handlePaste"/>
   </div>
 
   <!-- 角色选择 (仅在创建会议时显示) -->
@@ -367,23 +367,37 @@ const getUserEmail = () => {
   return user.email || 'unknown@domain.com'
 };
 
-// // 获取当前用户的邮箱
-// getUserEmail() {
-//       const user = this.$store.getters.getUser;
-//       console.log('当前用户邮箱:', user.email); // 调试信息
-//       return user.email || 'unknown@domain.com';
-//     },
+// 获取当前用户的名字
+const getUserName = () => {
+      const user = store.getters.getUser;
+      console.log('当前用户名字:', user.name); // 调试信息
+      return user.name || 'user'
+};
+// 计算默认用户名
+const defaultUserName = computed(() => {
+  const user = store.state.user;
+  return user.name || user.email || '请输入用户名';
+});
 
 //复制预约会议信息
 const generateInvitationContent = () => {
-  const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${new Date().toLocaleString()}\n会议密码:${config.sessionPasscode}\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！`;
-  return meetingInfo;
+  // const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${new Date().toLocaleString()}\n会议密码:${config.sessionPasscode}\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！`;
+  // return meetingInfo;
+  let content = `用户${config.userName} 向您发来一个会议邀请~\n会议名称: ${config.sessionName}`;
+
+  // 仅当密码存在时才添加密码行
+  if (config.sessionPasscode) {
+    content += `\n会议密码: ${config.sessionPasscode}`;
+  }
+
+  content += '\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！';
+  return content;
 };
 
 const copyInvitationToClipboard = async () => {
   // 检查用户输入是否完整
-  if (!config.userName || !config.sessionName || !config.sessionPasscode) {
-    ElMessage.warning('请填写完整的会议信息后再复制');
+  if (!config.userName || !config.sessionName) {
+    ElMessage.warning('请填写完整的会议信息（用户名和会议名称）后再复制');
     return;
   }
   const invitationContent = generateInvitationContent();
@@ -399,8 +413,13 @@ const copyInvitationToClipboard = async () => {
 const parseInvitationContent = (text) => {
   console.log("开始解析",text)
   const userNameMatch = text.match(/用户(\S+)\s+向您发来一个会议邀请/);
-  const sessionNameMatch = text.match(/会议名称:\s*(.+)/);
-  const sessionPasscodeMatch = text.match(/会议密码:\s*(\d+)/);
+  // const sessionNameMatch = text.match(/会议名称:\s*(.+)/);
+  // const sessionPasscodeMatch = text.match(/会议密码:\s*(.*)/); // 修改正则表达式，允许匹配空字符串
+  const sessionNameMatch = text.match(/会议名称:\s*([^\n]+)/);
+  
+  // 使用正向预查确保只匹配到换行符前
+  const sessionPasscodeMatch = text.match(/会议密码:\s*([^\n]*)(?=\n|$)/);
+
 
   const result={
     userName: userNameMatch ? userNameMatch[1].trim() : '',
@@ -429,7 +448,10 @@ const handlePaste = async (event) => {
 
   // 更新响应式对象
   if (parsedData.sessionName) config.sessionName = parsedData.sessionName;
-  config.userName = getUserEmail();
+   // 先获取姓名，如果姓名为空则使用邮箱
+  const name = getUserName();
+  config.userName = name || getUserEmail();
+
   if (parsedData.sessionPasscode) config.sessionPasscode = parsedData.sessionPasscode;
 
   // 让 Vue 立即检测到变化
@@ -449,7 +471,9 @@ const handlePaste = async (event) => {
       if (parsedData.sessionName || parsedData.userName || parsedData.sessionPasscode) {
         config.sessionName = parsedData.sessionName;
         // config.userName = parsedData.userName;
-        config.userName=getUserEmail();
+         // 先获取姓名，如果姓名为空则使用邮箱
+        const name = getUserName();
+        config.userName = name || getUserEmail();
         config.sessionPasscode = parsedData.sessionPasscode;
 
         await nextTick(); 
@@ -466,7 +490,10 @@ const handlePaste = async (event) => {
 const config = reactive({
   videoSDKJWT: '',
   sessionName: '',
-  userName: '',
+  userName: computed(() => {
+    const user = store.state.user;
+    return user.name || user.email || '请输入用户名';
+  }).value,
   sessionPasscode: '',
   expirationSeconds: 7200,
   meetingId: '',  // 新增：用于 update
@@ -962,18 +989,62 @@ const sendChat = async () => {
     showSnackBar('发送消息失败');
   }
 };
+
 // 收到他人聊天消息
 function handleChatMessage(payload) {
     const { message, sender, receiver, file, timestamp, id} = payload; //  timestamp, 增加 id
-     // 3. 使用默认头像
-  const getAvatar = () => {
-  // 优先使用消息中的avatar
-  if (sender.avatar) return sender.avatar;
-  // 从store中查找用户信息
-  const userInStore = store.state.users?.find(u => u.userId === sender.userId);
-  return userInStore?.avatarUrl || defaultAvatar;
+//      // 3. 使用默认头像
+//   const getAvatar = () => {
+//   // 优先使用消息中的avatar
+//   if (sender.avatar) return sender.avatar;
+//   // 从store中查找用户信息
+//   const userInStore = store.state.users?.find(u => u.userId === sender.userId);
+//   return userInStore?.avatarUrl || defaultAvatar;
+// };
+// 修改getAvatar函数，优先从FirestoreService实时获取用户数据
+const getAvatar = () => {
+  // 强制类型转换关键点
+  const userId = String(sender.userId); // 将userId转为字符串
+  // 从Zoom服务获取时确保参数类型
+  const updatedUser = FirestoreService.getUserInfo(userId);
+  // 从store查询时统一比较类型
+  const storeUser = store.state.users?.find(u => 
+    String(u.userId) === userId // 统一转为字符串比较
+  );
+  return updatedUser?.avatar || storeUser?.avatarUrl || defaultAvatar;
 };
-  console.log("Received chat message:", payload); // 打印整个 payload
+ // 优化获取头像的函数
+//  const getAvatar = () => {
+//         // 优先使用消息中的 avatar
+//         if (sender.avatar) return sender.avatar;
+
+//         // 从 store 中查找用户信息
+//         const userInStore = store.state.users?.find(u => u.userId === sender.userId);
+//         if (userInStore?.avatarUrl) {
+//             return userInStore.avatarUrl;
+//         }
+
+//         // 尝试从 Firestore 获取用户信息
+//         try {
+//             const userData = FirestoreService.getUserInfo(sender.userId);
+//             if (userData?.avatarUrl) {
+//                 // 更新 store 中的用户信息
+//                 const userIndex = store.state.users.findIndex(u => u.userId === sender.userId);
+//                 if (userIndex !== -1) {
+//                     store.commit('UPDATE_USER_AVATAR', {
+//                         userId: sender.userId,
+//                         avatarUrl: userData.avatarUrl
+//                     });
+//                 }
+//                 return userData.avatarUrl;
+//             }
+//         } catch (error) {
+//             console.error('获取用户头像失败:', error);
+//         }
+
+//         return defaultAvatar;
+//     };
+    console.log("Received chat message:", payload); // 打印整个 payload
     console.log('Message ID:', id);
     console.log('Sender AvatarUrl:', sender.avatar);
     console.log('[DEBUG] 收到消息:', {
@@ -1030,7 +1101,7 @@ function handleChatMessage(payload) {
 function handleMessageSent(msg) {
      // 1. 添加 msgId, 防止重复处理
      ZoomVideoService.addMessageId(msg.id);    // 重要!
-
+    console.log("以下是handleMessageSent复用的handleChatMessage输出")
     // 2. 直接复用 handleChatMessage
     handleChatMessage(msg); // 复用
 }
@@ -1055,7 +1126,7 @@ function handleChatHistory(history) {
           senderId: msg.sender.userId,
           senderName: msg.sender.name,
           receiverId: msg.receiver.userId,
-          avatar: msg.sender.avatar || defaultAvatar, 
+          avatar: msg.sender.avatar || defaultAvatar,
           message: null,
           file: {
             name: msg.file.name,
@@ -1072,6 +1143,7 @@ function handleChatHistory(history) {
     scrollToBottom();
 }
 const chatMessages = ref(null);
+
 function scrollToBottom() {
   nextTick(() => {
     if (chatMessages.value) {
@@ -1946,7 +2018,7 @@ function subscribeEvents() {
     const { state, reason } = payload;
     console.log('[connection-change]', state, reason)
     if (state === 'Closed') {
-      ElMessage.info(`会议连接已关闭:${reason}`);
+      ElMessage.info(`会议连接已关闭`);
       leaveSession();
     } else if (state === "Reconnecting") {
       ElMessage.info("正在重新连接...")

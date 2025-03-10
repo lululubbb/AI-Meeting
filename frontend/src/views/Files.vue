@@ -1,307 +1,867 @@
-<!-- src/views/Files.vue -->
 <template>
-  <div class="home-container">
-    <!-- 主体布局 -->
-    <main class="main-layout">
-      <!-- 左侧区域 -->
-      <div class="left-section">
-        <!-- <Mood /> -->
-        <CalendarTodoList />
-      </div>
+    <div class="file-manager-container">
 
-      <!-- 中间部分 -->
-      <div class="middle-section">
-        <h1>上传文件</h1>
-        <!-- 分隔线 -->
-        <div class="divider"></div>
-        <!-- 文件上传组件 -->
-        <el-upload
-        ref="uploadRef"
-          class="upload-demo"
-          drag
-          :action="uploadUrl"
-          :file-list="fileList"
-          :auto-upload="false"
-          :before-upload="beforeUpload"
-          :on-change="handleFileChange"
-          :on-preview="handlePreview"
-          :on-remove="handleRemove"
-          :on-success="handleSuccess"
-          :before-remove="beforeRemove"
-          :http-request="customUpload"
-          :show-file-list="false"
-        >
-          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-          <div class="el-upload__text">拖拽文件至此或点击上传</div>
-        </el-upload>
-
-        <!-- 上传按钮 -->
-        <el-button
-          type="primary"
-          :disabled="fileList.length === 0 || isUploading"
-          @click="submitUpload"
-          style="margin-top: 10px;"
-        >
-          上传并生成摘要
-        </el-button>
-
-        <!-- 上传进度 -->
-        <div v-if="isUploading" style="margin-top: 10px;">
-          <el-progress :percentage="uploadPercent" ></el-progress>
-        </div>
-
-        <!-- 分隔线 -->
-        <div class="divider"></div>
-
-        <!-- 文件上传结果 -->
-        <FileAttachmentContainer :files="uploadedFiles" @cancel="handleCancel" @download="handleDownload" />
-
-        <!-- 摘要显示区域 -->
-        <div v-if="summary" class="summary-section">
-          <h2>生成的摘要</h2>
-          <el-card>
-            <p>{{ summary }}</p>
-          </el-card>
-        </div>
-      </div>
-
-      <!-- 右侧部分 -->
-      <div class="right-section">
-        <!-- 通讯录组件 -->
-      </div>
-    </main>
-
-    <footer>
-      <p>&copy; 慧议先锋.</p>
-    </footer>
-  </div>
-</template>
-
-<script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStore } from 'vuex';
-import FileAttachmentContainer from '../components/FileAttachmentContainer.vue';
-import CalendarTodoList from '../components/CalendarTodoList.vue';
-import Mood from '../components/Mood.vue';
-import { ElUpload, ElButton, ElProgress, ElMessage } from 'element-plus';
-import { UploadFilled } from '@element-plus/icons-vue';
-import axios from 'axios';
-
-// 获取路由实例
-const router = useRouter();
-
-// 获取 Vuex store 实例
-const store = useStore();
-
-const uploadRef = ref(null);
-
-// 文件上传相关
-const uploadUrl = 'http://localhost:4000/api/upload'; // 后端上传接口
-const fileList = ref([]);
-const uploadedFiles = ref([]);
-const isUploading = ref(false);
-const uploadPercent = ref(0);
-const summary = ref('');
-
-// 获取当前用户的邮箱
-const getUserEmail = () => {
-  const user = store.getters.getUser;
-  console.log('当前用户邮箱:', user.email); // 调试信息
-  return user.email || 'unknown@domain.com';
-};
-
-// 处理文件更改事件
-const handleFileChange = (newFile, newFileList) => {
-  console.log('文件上传发生变化:', newFile, newFileList);
+      <main class="main-content">
+        <h1 class="file-manager-title">
+          <el-icon><Document /></el-icon>
+          智能文件助手
+        </h1>
+        <p class="file-manager-description">
+          轻松上传、管理 PDF 和 Word 文档，智能生成摘要，提升工作效率。
+        </p>
   
-  // 更新文件列表
-  fileList.value = newFileList;
-};
+        <div class="upload-section">
+          <el-upload
+            ref="uploadRef"
+            class="upload-area"
+            drag
+            :action="uploadUrl"
+            :auto-upload="true"
+            :before-upload="beforeUpload"
+            :on-change="handleFileChange"
+            :on-remove="handleRemove"
+            :http-request="customUpload"
+            :show-file-list="false"
+          >
+            <el-icon class="upload-icon"><UploadFilled /></el-icon>
+            <div class="upload-text">将文件拖拽到此处，或<em>点击上传</em></div>
+            <template #tip>
+              <div class="upload-tip">PDF, Word (.pdf, .doc, .docx), ≤ 50MB</div>
+            </template>
+          </el-upload>
+  
+          <el-progress
+            v-if="isUploading"
+            :percentage="uploadPercent"
+            class="upload-progress"
+            :color="customColors"
+          ></el-progress>
+        </div>
+  
+         <el-divider class="divider" />
+  
+        <div class="content-wrapper">
+          <div class="file-list-section">
+            <div class="table-wrapper">
+            <el-table
+              :data="uploadedFiles"
+              v-loading="isLoadingFiles"
+              :row-class-name="tableRowClassName"
+              class="file-table"
+              stripe
+              :header-cell-style="{ background: '#f5f7fa', color: '#333', fontWeight: '600' }"
+            >
+              <el-table-column prop="fileName" label="文件名" sortable :show-overflow-tooltip="true" width="380"></el-table-column>
+              <el-table-column label="类型" align="center" width="120">
+                <template #default="scope">
+                  <div class="file-type-cell">
+                    <el-icon v-if="scope.row.fileType === 'pdf'" class="pdf-icon"><Document /></el-icon>
+                    <el-icon
+                      v-else-if="scope.row.fileType === 'doc' || scope.row.fileType === 'docx'"
+                      class="word-icon"
+                    ><DocumentCopy /></el-icon>
+                    <span v-else>{{ scope.row.fileType }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="fileSizeMB" label="大小 (MB)" sortable align="center" width="150"></el-table-column>
+              <el-table-column prop="uploadDate" label="上传日期" sortable align="center" width="180">
+                <template #default="scope">
+                  <span>{{ formatDate(scope.row.uploadDate) }}</span>
+                </template>
+              </el-table-column>
+            <el-table-column label="操作"  align="center">
+              <template #default="scope">
+                <div class="operations-cell">
+                  <div class="button-group">
+                      <el-button
+                      size="small"
+                      @click="handleDownload(scope.row)"
+                      class="download-button"
+                      :icon="Download"
+                      plain
+                      >
+                      下载
+                      </el-button>
+                      <el-button
+                      size="small"
+                      @click="generateSummaryForFile(scope.row)"
+                      class="summary-button"
+                      :icon="Memo"
+                      :loading="summaryLoading || scope.row.isGeneratingSummary"
+                      plain
+                      >
+                      生成摘要
+                      </el-button>
+                      <el-button
+                      size="small"
+                      @click="handleDelete(scope.row)"
+                      class="delete-button"
+                      :icon="Delete"
+                      plain
+                      >
+                      删除
+                      </el-button>
+                  </div>
+                </div>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+          </div>
+  
+          <div v-if="summary || summaryLoading" class="summary-section">
+          <!-- 文件摘要标题 -->
+            <div class="summary-header">
+            <h2 class="summary-title">文件摘要</h2>
+                <el-button
+                        size="small"
+                        @click="closeSummary"
+                        class="close-button"
+                        :icon="Close"
+                        plain
+                    >
+                </el-button>
+            </div>
+            <el-card class="summary-card">
+              <transition name="fade">
+                <div v-if="summaryLoading" class="summary-loading">
+                  <el-progress  :percentage="estimatedProgress"   :text-inside="true" :stroke-width="18"  :format="formatSummaryProgress"></el-progress>
+                </div>
+              </transition>
+  
+              <transition name="fade">
+                <p v-if="summary" class="summary-text">{{ summary }}</p>
+              </transition>
+              <p v-if="!summaryLoading && !summary" class="no-summary-text">暂无摘要</p>
+            </el-card>
+          </div>
+        </div>
+      </main>
+      <footer>
+      <p>&copy; 2024 慧议先锋. </p>
+      </footer>
+    </div>
+  </template>
+  
+  <script setup>
+  import { ref, onMounted, nextTick, computed } from 'vue';
+  import { useStore } from 'vuex';
+  import CalendarTodoList from '../components/CalendarTodoList.vue';
+  import { ElUpload, ElProgress, ElMessage, ElTable, ElTableColumn, ElIcon, ElDivider, ElCard, ElMessageBox } from 'element-plus';
+  import { UploadFilled, Document, DocumentCopy, Download, Close, Memo, Loading, Delete } from '@element-plus/icons-vue';
+  import axios from 'axios';
+  
+  const store = useStore();
+  const uploadRef = ref(null);
+  const uploadUrl = 'http://localhost:4000/api/upload';
+  const fileList = ref([]);
+  const uploadedFiles = ref([]);
+  const isUploading = ref(false);
+  const uploadPercent = ref(0);
+  const summary = ref('');
+  const isLoadingFiles = ref(false);
+  const summaryLoading = ref(false);
+  const summaryProgress = ref(0);
+  const receivedChars = ref(0);
+  const estimatedMaxChars = ref(200); // 初始估算最大字符数
 
-// 文件上传预览事件
-const handlePreview = (file) => {
-  console.log('预览文件:', file);
-};
+  // 进度条颜色
+  const customColors = [
+    { color: '#f56c6c', percentage: 20 },
+    { color: '#e6a23c', percentage: 40 },
+    { color: '#1989fa', percentage: 60 },
+    { color: '#5cb87a', percentage: 80 },
+    { color: '#6f7ad3', percentage: 100 },
+  ];
+  
+  // 计算属性：更可靠的进度估算
+  const estimatedProgress = computed(() => {
+     return Math.min(95, (receivedChars.value / estimatedMaxChars.value) * 100);
+  });
+  
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+  
+  // ... (其他函数: beforeUpload, handleFileChange, handleRemove, customUpload,
+  //      fetchUploadedFiles, handleDelete, handleDownload  保持不变) ...
+  const beforeUpload = (file) => {
+    const isPdfOrWord = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type);
+    const isLt50M = file.size / 1024 / 1024 < 50;
+  
+    if (!isPdfOrWord) {
+      ElMessage.error('只能上传 PDF 或 Word 文件');
+      return false;
+    }
+    if (!isLt50M) {
+      ElMessage.error('文件大小不能超过 50MB');
+      return false;
+    }
+    return isPdfOrWord && isLt50M;
+  };
+  
+  const handleFileChange = (newFile, newFileList) => {
+    // fileList.value = newFileList; // 通常不需要
+  };
+  
+  const handleRemove = (file, fileList) => {
+   // fileList.value = fileList;
+  };
+  
+  const customUpload = async (options) => {
+  const { file, onProgress, onSuccess, onError } = options;
 
-// 文件移除事件
-const handleRemove = (file, fileList) => {
-  console.log('文件移除:', file, fileList);
-  fileList.value = fileList;
-};
-
-// 文件上传成功事件
-const handleSuccess = (response, file, fileList) => {
-  console.log('文件上传成功:', response, file, fileList);
-};
-
-// 文件移除前的检查
-const beforeRemove = (file, fileList) => {
-  console.log('文件移除前:', file, fileList);
-  return true;
-};
-
-// 文件上传前的检查
-const beforeUpload = (file) => {
-  const isValidType = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type);
-  if (!isValidType) {
-    ElMessage.error('只能上传 PDF 或 Word 文件');
-  }
-  return isValidType;
-};
-
-// 自定义上传请求
-const customUpload = async (options) => {
-  const { file, onSuccess, onError, onProgress } = options;
   const formData = new FormData();
   formData.append('file', file);
 
   try {
-    isUploading.value = true;
-    uploadPercent.value = 0;
-    summary.value = '';
-
     const response = await axios.post(uploadUrl, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'multipart/form-data'
       },
       onUploadProgress: (progressEvent) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        uploadPercent.value = percentCompleted;
+        onProgress({ percent: percentCompleted });
       }
     });
 
-    onSuccess(response.data, file);
-    ElMessage.success('文件上传并生成摘要成功');
-
-    // 更新已上传文件列表
-    uploadedFiles.value = [
-      ...uploadedFiles.value,
-      {
-        id: Date.now(),
-        fileName: file.name,
-        fileType: file.type.split('/')[1],
-        fileSizeMB: (file.size / (1024 * 1024)).toFixed(2),
-        downloadUrl: response.data.downloadUrl || '#', // 根据需要调整
-        uploader: getUserEmail(),
-        isDownloading: false,
-        progress: 0,
-      }
-    ];
-
-    // 显示摘要
-    summary.value = response.data.summary;
-
-    isUploading.value = false;
-    uploadPercent.value = 0;
+    onSuccess(response.data);
+    fetchUploadedFiles(); // 刷新文件列表
   } catch (error) {
-    console.error('上传出错:', error);
-    const serverError = error.response?.data?.error;
-    const errorMessage = serverError?.message || 
-                      serverError?.details || 
-                      error.message || 
-                      '文件上传或摘要生成失败';
-  
-  ElMessage.error(`操作失败: ${errorMessage}`);
     onError(error);
-    ElMessage.error('文件上传或摘要生成失败');
-    isUploading.value = false;
-    uploadPercent.value = 0;
+    ElMessage.error('文件上传失败');
   }
 };
 
-// 提交上传
-const submitUpload = () => {
-  if (uploadRef.value) {
-    uploadRef.value.submit(); // 直接调用组件的 submit 方法
+  // const customUpload = async (options) => {
+  //   const { file, onSuccess, onError, onProgress } = options;
+  //   const formData = new FormData();
+  //   formData.append('file', file);
+  
+  //   try {
+  //     isUploading.value = true;
+  //     uploadPercent.value = 0;
+  
+  //     const response = await axios.post(uploadUrl, formData, {
+  //       headers: { 'Content-Type': 'multipart/form-data' },
+  //       onUploadProgress: progressEvent => {
+  //         uploadPercent.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+  //       }
+  //     });
+  
+  //     onSuccess(response.data);
+  //     await fetchUploadedFiles();
+  
+  //   } catch (error) {
+  //     console.error('文件上传失败:', error);
+  //     const msg = error.response?.data?.error || error.message || '文件上传失败，请重试';
+  //     ElMessage.error(msg);
+  //     onError(error);
+  
+  //   } finally {
+  //     isUploading.value = false;
+  //     uploadPercent.value = 0;
+  //   }
+  // };
+  
+  const fetchUploadedFiles = async () => {
+    try {
+      isLoadingFiles.value = true;
+      const response = await axios.get('http://localhost:4000/api/files');
+      uploadedFiles.value = response.data.map(file => ({
+        ...file,
+        isGeneratingSummary: false
+      }));
+    } catch (error) {
+      console.error('获取文件列表失败:', error);
+      ElMessage.error('获取文件列表失败');
+    } finally {
+      isLoadingFiles.value = false;
+    }
+  };
+  
+  const handleDelete = async (file) => {
+    try {
+      await ElMessageBox.confirm(
+        `确定要删除文件 "${file.fileName}" 吗？`,
+        '警告',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      );
+      await axios.delete(`http://localhost:4000/api/delete/${file.id}`);
+      uploadedFiles.value = uploadedFiles.value.filter(item => item.id !== file.id);
+      ElMessage.success('文件删除成功');
+  
+    } catch (error) {
+      if (error !== 'cancel') {
+        console.error('文件删除失败:', error);
+        ElMessage.error('文件删除失败');
+      }
+    }
+  };
+  
+  const formatSummaryProgress = (percentage) => {
+    return `生成中 ${percentage}%`;
+  };
+// 处理文件下载
+const handleDownload = async file => {
+    try {
+      const response = await axios.get(`http://localhost:4000/api/download/${file.id}`, {
+        responseType: 'blob'
+      });
+  
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = file.fileName;
+       if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+         if (fileNameMatch && fileNameMatch[1]) {
+            fileName = decodeURIComponent(escape(fileNameMatch[1].replace(/['"]/g, ''))); //关键修改
+          }
+      }
+  
+      const blob = new Blob([response.data]);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('下载文件失败:', error);
+      ElMessage.error('下载失败');
+    }
+  };
+
+  const generateSummaryForFile = async (file) => {
+    console.log('发起摘要生成请求:', file);
+    summaryProgress.value = 0;
+    receivedChars.value = 0;
+    file.isGeneratingSummary = true;
+    summary.value = '';
+    summaryLoading.value = true;
+  
+    // 动态调整估算的最大字符数 (基于文件大小)
+    estimatedMaxChars.value = 2000 + Math.round(file.fileSizeMB * 1000); // 基础值 + 文件大小相关的值
+  
+    const eventSource = new EventSource(`http://localhost:4000/api/generate-summary?fileId=${file.id}`);
+    let displayIndex = 0;
+    eventSource.onmessage = event => {
+      const dataStr = event.data;
+      console.log('接收到的数据:', dataStr);
+      if (dataStr === '[DONE]') {        
+        eventSource.close();
+        summaryLoading.value = false;
+        file.isGeneratingSummary = false;
+        return;
+      }
+      try {
+        const jsonData = JSON.parse(dataStr);
+        if (jsonData?.content) {
+          const char = jsonData.content;
+          console.log('接收到的字符:', char); 
+                // 直接将接收到的字符添加到摘要内容中
+                // 逐字符添加到 summary
+        setTimeout(() => {
+        summary.value += char;
+      }, displayIndex * 20); // 每个字符间隔 50ms
+      displayIndex++;
+    }
+      } catch (error) {
+        console.error('解析流数据出错:', error, '原始数据:', dataStr);
+      }
+    };
+  
+    eventSource.onerror = error => {
+      console.error('EventSource 错误:', error);
+      ElMessage.error('生成摘要时发生错误');
+      eventSource.close();
+      summaryLoading.value = false;
+      file.isGeneratingSummary = false;
+    };
+  };
+  
+const closeSummary = () => {
+    summary.value = '';
+    summaryLoading.value = false;
+};
+
+
+// 在script setup中修改onMounted部分
+onMounted(() => {
+  fetchUploadedFiles();
+})
+  
+  const tableRowClassName = ({ row, rowIndex }) => {
+    return rowIndex % 2 === 1 ? 'odd-row' : 'even-row';
+  };
+  </script>
+  
+  
+  <style scoped>
+
+.file-manager-container {
+  position: relative;
+  overflow: hidden;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    /* background-color: #f8f9fa; */
+    background-color: var(--background-color);
+    display: flex;
+    height: 100vh;
+}
+  
+  /* 主内容区 */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 30px;
+    overflow: auto;
+    position: relative;
+    /* background-color: #f8f9fa; */
+    background-color: var(--background-color);
+    min-height: 80vh; /* 增加最小高度 */
   }
-};
+  
+  /* 标题 */
+  .file-manager-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  .file-manager-description {
+    font-size: 15px;
+    color: #7f8c8d;
+    margin-bottom: 25px;
+    text-align: center;
+  }
+  
+  /* 上传区域 */
+  .upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+  
+  .upload-area {
+    border: 2px dashed #bdc3c7;
+    border-radius: 15px;
+    padding: 40px 50px;
+    text-align: center;
+    width: 500px;
+    cursor: pointer;
+    transition: border-color 0.3s, background-color 0.3s;
+    background-color: var(--background-color);
+    box-shadow: var(--global-box-shadow);
+  }
+  
+  .upload-area:hover {
+    border-color: #3498db;
+    background-color: #f0f8ff;
+  }
+  
+  .upload-icon {
+    font-size: 45px;
+    color: #3498db;
+  }
+  
+  .upload-text {
+    font-size: 17px;
+    color: #000;;
+    margin-top: 18px;
+  }
+  
+  .upload-text em {
+    color: #3498db;
+    font-style: normal;
+  }
+  
+  .upload-tip {
+    font-size: 13px;
+    color: var(--text-color);
+    margin-top: 10px;
+  }
+  
+  .upload-progress {
+    margin-top: 25px;
+    width: 65%;
+  }
+  
+  /* 内容区域 */
+  .content-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    overflow: visible;;
+  }
+  
+  /* 分割线 */
+  .divider{
+      margin-top: 1rem;
+      margin-bottom: 2rem;
+  }
 
-// 取消上传
-const handleCancel = (file) => {
-  console.log('取消上传:', file);
-};
+  /* 文件列表 */
+  .file-list-section {
+  flex: 2;
+  min-width: 400px;
+  max-height: calc(100vh - 320px);
+  height: 600px; /* 固定高度 */
+  overflow-x: auto; 
+  overflow-y: auto;
+  border-radius: 15px;
+  position: relative;  
+  }
 
-// 下载文件
-const handleDownload = (file) => {
-  window.open(file.downloadUrl, '_blank');
-};
-</script>
-
-<style scoped>
-.home-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  .table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto; 
+  border-radius: 15px;
+  margin-top: 15px;
+  }
+  .el-table-column {
+  min-width: 120px;
+}
+.file-table {
   width: 100%;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  overflow: hidden;
-  margin: 10px;
+  min-width: 500px;       /* 根据列宽总和调整 */
+  border-radius: 15px;
+  box-shadow: var(--global-box-shadow);
 }
+  
+  .file-table :deep(.el-table__row) {
+    height: 55px;
+    background-color: var(--background-color);
+    border-bottom: 1px solid #eaeff1;
+    color: #47666e;
+  }
+  
+  .file-type-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .pdf-icon,
+  .word-icon {
+    font-size: 19px;
+    margin-right: 5px;
+  }
+  
+  .pdf-icon {
+    color: #e74c3c;
+  }
+  
+  .word-icon {
+    color: #3498db;
+  }
+  
+  /* 操作按钮容器 */
+  .operations-cell {
+    display: flex;
+    justify-content: center; 
+  }
 
-.main-layout {
+  .button-group {
   display: flex;
-  flex: 1;
-  overflow: hidden;
-  flex-wrap: wrap;
-}
-
-.upload-demo {
-  margin-top: 10px;
-}
-
-/* 左侧部分 */
-.left-section {
-  flex: 0.8;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  padding: 10px;
-  /* box-shadow: inset -1px 0 0 #ddd; */
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
-  overflow: auto;
-}
-
-/* 中间部分 */
-.middle-section {
-  flex: 1.3;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  padding: 0px;
-  /* box-shadow: inset -1px 0 0 #ddd; */
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
-  overflow: auto;
-  align-items: center;
-  display: flex;
-  flex-direction: column;
   gap: 2px;
-  margin: 0px;
+  flex-wrap: wrap; /* 允许换行 */
+  justify-content: center;
+}
+  .download-button,
+  .summary-button,
+  .delete-button {
+    padding: 5px 10px;    /* 调整内边距 */
+    border-radius: 8px;  /* 圆角 */
+    border: none;
+    transition: all 0.2s ease;
+    width: auto;
+  }
+  .download-button {
+  background-color: transparent;
+  color:#67b9ef;
+  font-weight: bold;
+
 }
 
-/* 右侧部分 */
-.right-section {
-  flex: 0.8;
+.download-button:hover {
+  color:#2f93d6;
+}
+
+.summary-button {
+  background-color: transparent;
+  color: #38d714;
+  font-weight: bold;
+}
+
+.summary-button:hover {
+  color: rgb(30, 218, 74);
+}
+
+.delete-button {
+  background-color: transparent;
+  color: #ff7070;  
+  font-weight: bold;
+}
+
+.delete-button:hover {
+  color: #ff4c4c;
+}
+.download-button,
+.summary-button,
+.delete-button {
+  min-width: 120px; /* 最小宽度 */
+  flex-shrink: 0; /* 禁止缩小 */
+  white-space: normal; /* 允许文字换行 */
+  padding: 6px 12px;
+}
+  .download-button:hover,
+  .summary-button:hover,
+  .delete-button:hover {
+    background-color: #ecf5ff; /* 统一的浅蓝色悬停背景 */
+    transform: translateY(-1px); /* 上移 */
+  }
+  .download-button:focus,
+  .download-button:active,
+  .summary-button:focus,
+  .summary-button:active,
+  .delete-button:focus,
+  .delete-button:active{
+    outline: none; /* 移除焦点框 */
+    transform: translateY(0);
+    box-shadow: none;
+  }
+  
+  /* 摘要区域 */
+  .summary-section {
+    flex: 1;
+    min-width: 320px;
+    background-color: var(--background-color);
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    padding: 25px;
+    max-height: calc(100vh - 320px);;
+    overflow-y: auto;
+    position: relative;
+  }
+  
+  .summary-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+  .summary-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-color);
+    text-align: center; /* 标题居中 */
+    margin: 0;
+    margin-bottom: 15px;
+  }
+
+  .close-button {
+  background-color: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
   display: flex;
-  flex-direction: column;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  padding: 10px;
-  overflow: auto;
+  align-items: center;
+  gap: 4px;
+  font-size: 24px;
+  position: absolute; /* 使用绝对定位 */
+  top: 25px; /* 距离顶部的距离，与摘要区域的内边距一致 */
+  right: 25px; /* 距离右侧的距离，与摘要区域的内边距一致 */
 }
 
-footer {
-  height: 30px;
-  background-color: var(--background-color); /* 使用全局背景颜色 */  display: flex;
+.close-button:hover {
+  font-weight: bold;
+  transform: translateY(-1px);
+}
+
+.close-button:focus,
+.close-button:active {
+  outline: none;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+  .summary-card {
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background-color: transparent;
+  }
+  
+  .summary-loading {
+    padding: 20px 0;
+  }
+  
+  .summary-text {
+    font-size: 15px;
+    color: var(--text-color);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  
+  .no-summary-text {
+    font-style: italic;
+    color: #95a5a6;
+  }
+  
+
+  footer {
+  height: 25px;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+  display: flex;
   align-items: center;
   justify-content: center;
   border-top: 1px solid #ddd;
+  z-index: 10;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.08);
+  bottom: 0;
+  width: 100%;
+  position: fixed;
+}
+  /* 过渡效果 */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+
+  @media (max-width: 768px) {
+  .file-manager-container {
+    flex-direction: column;
+    height: auto;
+    padding: 15px;
+  }
+
+  .main-content {
+    padding: 20px;
+    min-height: auto;
+  }
+
+  .file-manager-title {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .file-manager-description {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .upload-area {
+    width: 100%;
+    padding: 30px;
+  }
+
+  .upload-text {
+    font-size: 15px;
+  }
+
+  .content-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .file-list-section {
+    height: 400px;
+    max-height: 60vh;
+  }
+
+  .file-table :deep(.el-table__row) {
+    height: 48px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .download-button,
+  .summary-button,
+  .delete-button {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .summary-section {
+    max-height: 50vh;
+  }
 }
 
-.divider {
-  width: 100%;
-  height: 1px; /* 分界线的高度 */
-  background-color: #cccccc; /* 分界线颜色 */
-  margin: 15px 0; /* 增加上下间距 */
-}
+@media (max-width: 480px) {
+  .file-manager-title {
+    font-size: 20px;
+  }
 
-.summary-section {
-  width: 100%;
-  margin-top: 20px;
+  .file-manager-description {
+    font-size: 13px;
+  }
+
+  .upload-area {
+    padding: 20px;
+  }
+
+  .upload-text {
+    font-size: 14px;
+  }
+
+  .upload-tip {
+    font-size: 12px;
+  }
+
+  .el-table-column {
+    min-width: 80px;
+  }
+
+  .file-table {
+    min-width: 320px;
+  }
+
+  .file-type-cell .el-icon {
+    font-size: 16px;
+  }
+
+  .summary-title {
+    font-size: 18px;
+  }
+
+  .summary-text {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  footer {
+    height: 40px;
+    font-size: 12px;
+  }
+
+  .close-button {
+    padding: 4px;
+    font-size: 18px;
+    top: 20px;
+    right: 20px;
+  }
 }
-</style>
+  </style>
+  
