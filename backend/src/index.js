@@ -499,41 +499,35 @@ function getOriginalFileName(uuidFileName) {
  }
 //  文件下载
 app.get('/api/download/:fileId', (req, res) => {
-  const fileName = `${originalName}${fileExt}`;
-  const encodedFileName = encodeURIComponent(fileName)
-    .replace(/['()]/g, escape)
-    .replace(/\*/g, '%2A');
-
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename*=UTF-8''${encodedFileName}`
-  );
   const { fileId } = req.params;
   const uploadPath = path.join(__dirname, 'uploads');
 
-  //  使用  glob  来查找文件 (更安全,  避免路径遍历)
   const files = fs.readdirSync(uploadPath);
   const matchingFiles = files.filter(file => file.startsWith(fileId));
-
 
   if (matchingFiles.length === 0) {
       return res.status(404).json({ error: '文件未找到' });
   }
+
   const file = matchingFiles[0];
   const filePath = path.join(uploadPath, file);
-  const fileExt = path.extname(file);
-  const originalName = getOriginalFileName(file);
-  const downloadFileName = originalName + fileExt
-  //  设置响应头
-    res.setHeader('Content-Disposition', `attachment; filename=${downloadFileName}`);
+  const originalName = getOriginalFileName(file); // 获取原始文件名 (包含扩展名)
+  const encodedFileName = encodeURIComponent(originalName)
+    .replace(/['()]/g, escape)
+    .replace(/\*/g, '%2A');
+
+
+  // 设置响应头 (Content-Disposition)
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`);
   res.setHeader('Content-Type', 'application/octet-stream');
 
+  // 创建文件流并发送
   const fileStream = fs.createReadStream(filePath);
   fileStream.pipe(res);
 
   fileStream.on('error', (err) => {
-      console.error('文件流读取错误:', err);
-      res.status(500).json({ error: '文件下载失败' });
+    console.error('文件流读取错误:', err);
+    res.status(500).json({ error: '文件下载失败' });
   });
 });
 
