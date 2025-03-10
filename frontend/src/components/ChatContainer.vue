@@ -108,6 +108,7 @@ const props = defineProps({
 });
 
 const onAvatarError = (msg) => {
+  console.error(`头像加载失败:`);
   msg.avatar = defaultAvatar; // 回退到默认头像
 };
 

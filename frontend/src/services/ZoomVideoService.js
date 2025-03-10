@@ -76,7 +76,8 @@ class ZoomVideoService {
       // 获取当前用户信息，包含avatarUrl
       const currentUser = this.client.getCurrentUserInfo();
       console.log('Current user info:', JSON.stringify(currentUser, null, 2));
-      console.log('Zoom Current user avatar:', currentUser.avatar);
+      console.log('Zoom用户头像URL:', currentUser.avatar);
+      console.log('Zoom用户显示名称:', currentUser.displayName);
       this.stream = this.client.getMediaStream();
       this.sessionJoined = true;
       await this.startLocalAudio();

@@ -1353,12 +1353,13 @@ body {
   padding: 10px 10px;
   width: 95%;
   max-width: 900px;
-  max-height: 85vh;
+  max-height: 90vh;
   margin: 10px auto;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   border-radius: 15px;
   /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
   /* box-shadow: var(--global-box-shadow); 应用全局边框阴影 */
+  border: none;
   position: relative;
   overflow-y: auto;
   color: #000;

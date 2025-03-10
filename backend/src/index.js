@@ -2,7 +2,6 @@
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
-
 import dotenv from 'dotenv';
 import axios from 'axios';
 import { KJUR } from 'jsrsasign';
@@ -326,14 +325,14 @@ app.post('/api/analyze-file', async (req, res) => {
              const dataStr = line.replace(/^data:/, '').trim();
               if (dataStr !== '[DONE]') {
                 try {
-                    const data = JSON.parse(dataStr);
-                   if (data.choices && data.choices.length > 0) {
-                      const delta = data.choices[0].delta;
-                      if (delta && delta.content) {
-                        // 逐字发送
-                        for (const char of delta.content) {
-                          res.write(`data: ${JSON.stringify({ content: char })}\n\n`);
-                          }
+                  const parsedData = JSON.parse(dataStr);
+                  const content = parsedData.choices[0]?.delta?.content;
+                  if (content) {
+                    // 去除多余空格和换行符
+                    const cleanedContent = content.trim().replace(/\s+/g, ' ');
+                    if (cleanedContent) {
+                      res.write(`data: ${JSON.stringify({ content: cleanedContent })}\n\n`);
+
                            }
                         }
                   } catch (error) {
@@ -599,12 +598,18 @@ app.get('/api/generate-summary', async (req, res) => {
         }
       } else if (['.doc', '.docx'].includes(fileExt)) {
         const docBuffer = fs.readFileSync(filePath);
+        try{
         const result = await mammoth.extractRawText({ buffer: docBuffer });
         extractedText = result.value;
           // 清理 mammoth 提取的文本中的特殊字符和多余空格
           extractedText = extractedText.replace(/[\t\n\r\f\v]/g, ' ') // 移除特殊空白符
                                     .replace(/ {2,}/g, ' ')        // 将多个空格替换为单个空格
                                      .replace(/#/g, ''); // 移除 # 符号
+        console.log('Word 文件解析成功');
+      } catch (wordError) {
+        console.error('Word 文件解析错误:', wordError);
+        return res.status(500).json({ error: 'Word 文件解析失败，请检查文件是否损坏' });
+    }
       } else {
         return res.status(400).json({ error: '不支持的文件类型' });
       }
@@ -645,7 +650,14 @@ app.get('/api/generate-summary', async (req, res) => {
                   const parsedData = JSON.parse(dataStr);
                   const content = parsedData.choices[0]?.delta?.content;
                   if (content) {
-                    res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                    //res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                     // 关键优化：强制逐字符拆分并立即发送
+                    for (let i = 0; i < content.length; i++) {
+                      const char = content[i];
+                      const escapedChar = char.replace(/\n/g, '\\n');
+                      console.log('Sending character:', escapedChar); // 新增日志
+                      res.write(`data: ${JSON.stringify({ content: escapedChar })}\n\n`);
+                  }
                   }
                 } catch (parseError) {
                     console.error("AI 响应解析错误:", parseError, "原始数据:", dataStr);
