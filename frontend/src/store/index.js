@@ -29,7 +29,7 @@ export default createStore({
   },
   mutations: {
     SET_USER(state, user) {
-      state.user = { ...state.user, ...user };
+      state.user = { ...state.user, ...user};
     },
     SET_MEETINGS(state, meetings) {
       state.meetings = meetings;
@@ -53,8 +53,8 @@ export default createStore({
       state.isVideoCallActive = isActive;
     },
      //存储会议信息
-     SET_MEETING_CONFIG(state, config){
-       state.meetingConfig = config;
+    SET_MEETING_CONFIG(state, config){
+      state.meetingConfig = config;
     },
     SET_VIDEOCALL_MAXIMIZED(state, isMaximized) { // 新增
       state.isMaximized = isMaximized;
@@ -64,20 +64,22 @@ export default createStore({
     },
   },
   actions: {
-     // 修改initAuth action
-  async initAuth({ commit, dispatch }) {
+
+  initAuth({ commit, dispatch }) {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         const userData = await FirestoreService.getUserInfo(user.uid);
+          // 获取用户活动
         const userActivities = await FirestoreService.getUserActivities(user.uid);
         commit('SET_USER', { ...userData, uid: user.uid, email: user.email });
         await dispatch('listenToMeetings');
-        await dispatch('listenToTodos'); // 新增监听
+        await dispatch('listenToTodos'); 
+          // 设置活动到 Vuex
         commit('SET_ACTIVITIES', userActivities);
       } else {
         commit('SET_USER', null);
         commit('SET_MEETINGS', []);
-        commit('SET_ACTIVITIES', []); 
+        commit('SET_ACTIVITIES', []); // 未登录时清空活动
       }
     });
   },
@@ -279,7 +281,7 @@ export default createStore({
     theme: (state) => state.theme,
     language: (state) => state.language,
     getActivities: (state) => state.activities, // 新增：获取活动列表
-     getMeetingsForDate: (state) => (date) => {
+    getMeetingsForDate: (state) => (date) => {
       return state.meetings.filter(meeting => 
         new Date(meeting.startTime).toDateString() === new Date(date).toDateString()
       );

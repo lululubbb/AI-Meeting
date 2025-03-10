@@ -127,7 +127,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
        const curUser = this.client.getCurrentUserInfo();
         this.onMessageSent({
               ...result,
-              sender: { userId: curUser.userId, name: curUser.displayName, avatar:curUser.avatar|| store.state.user.avatarUrl }, // 同时发送 userId
+              sender: { userId: curUser.userId, name: curUser.displayName, avatar:store.state.user.avatarUrl || curUser.avatarl }, // 同时发送 userId
               message: text,
               receiver: { userId },
               timestamp: timestamp.getTime() // 传递时间戳的数值
@@ -251,7 +251,7 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
           const curUser = this.client.getCurrentUserInfo();
           this.onMessageSent({
             ...result,  // 直接使用SDK返回的消息对象
-            sender: { userId: curUser.userId, name: curUser.displayName, avatar:curUser.avatar|| store.state.user.avatarUrl},
+            sender: { userId: curUser.userId, name: curUser.displayName, avatar:store.state.user.avatarUrl || curUser.avatar },
             receiver: { userId: '0' }, //  '0' 表示群发
             message, //  message
             timestamp: timestamp.getTime()

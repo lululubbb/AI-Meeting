@@ -20,7 +20,7 @@
       <section class="hero-section">
         <div class="hero-content">
           <h1 class="hero-title">智能 AI 会议平台</h1>
-          <p class="hero-subtitle">开启高效、智能的会议新体验</p>
+          <p class="hero-subtitle">打造智能高效的沟通新生态</p>
           <button @click="goToLogin" class="cta-button">立即体验</button>
         </div>
         <img :src="heroImage" alt="AI 会议场景图" class="hero-image" />

@@ -17,7 +17,7 @@
       <!-- 用户名 -->
       <div class="input-group">
         <label for="userName">用户名:</label>
-        <input id="userName" v-model="config.userName" placeholder="请输入用户名" />
+        <input id="userName" v-model="config.userName" />
       </div>
 
       <!-- 会议密码 (可选) -->
@@ -73,7 +73,7 @@ const generateInvitationContent = () => {
 
   const copyInvitationToClipboard = async () => {
   // 检查用户输入是否完整
-  if (!config.userName || !config.sessionName || !config.sessionPasscode) {
+  if (!config.userName || !config.sessionName) {
     ElMessage.warning('请填写完整的会议信息后再复制');
     return;
   }
@@ -94,7 +94,10 @@ const store = useStore();
 
 const config = reactive({
   sessionName: '',
-  userName: '',
+  userName: computed(() => {
+    const user = store.state.user;
+    return user.name || user.email || '请输入用户名';
+  }).value,
   sessionPasscode: '',
   meetingDateRange: [],
 });

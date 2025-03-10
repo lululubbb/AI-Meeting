@@ -57,6 +57,8 @@ const iconColor = ref('#5dc983');
 
 // 活动类型映射
 const activityTypes = {
+  '学习': { color: '#67b2fd', icon: '📖' },
+  '计划': { color: '#67b2fd', icon: '📆' },
   '会议': { color: '#67b2fd', icon: '👥' },
   '培训': { color: '#67b2fd', icon: '📚' },
   '出差': { color: '#67b2fd', icon: '✈️' },
