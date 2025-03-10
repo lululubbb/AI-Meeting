@@ -103,6 +103,11 @@
 
           <!-- 底部控制栏 -->
           <div class="controls">
+            <button @click="toggleTranscription" :class="{ active: isTranscribing }">
+  <img v-if="isTranscribing" src="@/assets/transcription_off.png" alt="停止转录" />
+  <img v-else src="@/assets/transcription_on.png" alt="开始转录" />
+</button>
+
             <button @click="toggleVideo" :class="{ active: isVideoOn }">
               <img v-if="isVideoOn" src="@/assets/video_off.png" alt="关闭视频" />
               <img v-else src="@/assets/video_on.png" alt="开启视频" />
@@ -294,11 +299,10 @@
       </div>
     </div>
   </main>
-  <div class="transcription-float">
-        <RealtimeTranscription />  <!--  在这里真正使用 RealtimeTranscription 组件 -->
-    </div>
-
-
+  <!-- 字幕容器 -->
+<div class="subtitle">
+   {{ subtitle }}
+</div>
 
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
@@ -322,7 +326,7 @@ import defaultAvatar from '../assets/柴犬.png';
 const { t } = useI18n();
 
 import { ElMessage,ElMessageBox} from 'element-plus';
-import RealtimeTranscription from '../components/RealtimeTranscription.vue'; // 导入新组件
+
 
 /// Vuex / Router
 const store = useStore();
@@ -1540,6 +1544,180 @@ function resetState() {
 /* *********************
 转录方面
    ********************* */
+// ... 其他已有的代码 ...
+const isTranscribing = ref(false);
+const subtitle = ref("");  // 用于存储字幕
+let mediaStream = null;      // 用于存储麦克风流
+let websocket = null;       // WebSocket 连接
+let audioContext = null; // AudioContext
+let sourceNode = null;  // MediaStreamAudioSourceNode
+let gainNode = null; // GainNode (可选，用于音量控制)
+let processor = null;    // ScriptProcessorNode
+
+const toggleTranscription = async () => {
+  isTranscribing.value = !isTranscribing.value;
+  if (isTranscribing.value) {
+    await startTranscription();
+  } else {
+    stopTranscription();
+  }
+};
+
+const startTranscription = async () => {
+    console.log("开始转录");
+  try {
+    // 1. 获取麦克风权限
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("麦克风已获取:", mediaStream);
+
+    // 2. 创建 WebSocket 连接
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.hostname}:4321/ws`; //  WebSocket URL
+      console.log("尝试连接到:", wsUrl);
+    websocket = new WebSocket(wsUrl);
+
+    websocket.onopen = () => {
+       console.log("WebSocket 连接已建立");
+    };
+
+    websocket.onmessage = (event) => {
+      //  处理从服务器接收到的消息
+        const data = event.data;
+        console.log("从服务器接收到消息:", data);  // 打印原始消息
+
+      if (data.startsWith("[INTERMEDIATE]")) {
+        subtitle.value = data.substring(14); // 去掉 "[INTERMEDIATE]" 前缀
+          console.log("更新字幕 (中间结果):", subtitle.value);
+      } else if (data.startsWith("[FINAL]")) {
+        subtitle.value = data.substring(7);   //  去掉 "[FINAL]" 前缀
+          console.log("更新字幕 (最终结果):", subtitle.value);
+      } else if (data.startsWith("[ERROR]")) {
+        console.error("转录错误:", data.substring(7));  // 去掉 “[ERROR]” 前缀
+      }
+    };
+
+    websocket.onclose = () => {
+        console.log("WebSocket 连接已关闭");
+       if(isTranscribing.value)
+              {
+                  stopTranscription(); // 自动停止
+                  isTranscribing.value = false; // 更新状态
+              }
+    };
+      websocket.onerror = (error) => {
+          console.error("WebSocket 错误:", error);
+      };
+
+    // 3. 创建音频处理上下文和节点
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 16000}); // 指定采样率！
+      console.log("AudioContext 已创建, 采样率:", audioContext.sampleRate);
+    sourceNode = audioContext.createMediaStreamSource(mediaStream);
+      console.log("源节点已创建",sourceNode);
+
+      gainNode = audioContext.createGain(); // 创建增益节点
+      gainNode.gain.value = 1.0; // 设置增益 (1.0 表示不变)
+      console.log("增益节点已创建",gainNode);
+      sourceNode.connect(gainNode);
+
+      processor = audioContext.createScriptProcessor(0, 1, 1);   // 缓冲区大小自动, 单声道输入, 单声道输出
+      console.log('处理器已创建',processor)
+      processor.onaudioprocess = (audioProcessingEvent) => {  //  处理音频数据
+      if (!isTranscribing.value || websocket.readyState !== WebSocket.OPEN) {
+          return;
+      }
+      const inputBuffer = audioProcessingEvent.inputBuffer;
+      const inputData = inputBuffer.getChannelData(0); //  获取第一个声道 (单声道)
+
+      // 转换为 Int16 格式 (后端要求)
+      const int16Data = float32ToInt16(inputData);
+
+                // 检查数据长度, 如果很小, 可能是静音
+                if (int16Data.length > 0) {
+                    const buffer = int16Data.buffer; // 获取底层的 ArrayBuffer
+              
+                     console.log("发送音频数据, 大小:", buffer.byteLength);
+                    try {
+                        if(websocket && websocket.readyState === WebSocket.OPEN){
+                           websocket.send(buffer);
+                        }
+                    }
+                     catch(error){
+                       console.error("WebSocket 发送失败", error)
+                    }
+               }
+    };
+
+      gainNode.connect(processor);
+     processor.connect(audioContext.destination); //  连接到 destination, 否则没有声音事件!
+
+
+  } catch (error) {
+    console.error("启动转录失败:", error);
+        ElMessage.error("启动转录失败，请检查麦克风权限")
+  }
+};
+
+
+const stopTranscription = () => {
+ console.log("停止转录");
+
+    // 1. 关闭 WebSocket
+    if (websocket && websocket.readyState !== WebSocket.CLOSED) {
+         // 发送 [DONE] 消息 (如果连接还开着)
+           if (websocket.readyState === WebSocket.OPEN) {
+            websocket.send(new Uint8Array([0x5B, 0x44, 0x4F, 0x4E, 0x45, 0x5D])); //  "[DONE]" 的二进制表示
+
+            console.log('已发送[DONE]')
+        }
+    }
+    websocket.close();
+      websocket = null;
+  // 2. 停止麦克风
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+
+  // 3. 关闭音频上下文和节点
+  if (audioContext) {
+    if(sourceNode) sourceNode.disconnect();
+    if(gainNode) gainNode.disconnect();
+      if(processor) processor.disconnect(); // 断开
+        audioContext.close().then(()=>{
+         audioContext = null;
+           sourceNode = null;
+        processor = null;
+        gainNode = null;
+        console.log('音频上下文已关闭')
+    });
+  }
+      subtitle.value = ""
+};
+
+// Float32Array 转 Int16Array 的辅助函数
+function float32ToInt16(buffer) {
+    let l = buffer.length;
+    const buf = new Int16Array(l);
+    while (l--) {
+        buf[l] = Math.min(1, buffer[l]) * 0x7FFF;
+    }
+    return buf;
+}
+
+// 记得在组件卸载时停止转录 (重要!)
+onBeforeUnmount(() => {
+    if (sessionJoined.value) {
+        ZoomVideoService.leaveSession(false);
+        sessionJoined.value = false;
+    }
+    if (isTranscribing.value) {
+      stopTranscription();
+    }
+
+
+// ... 其他已有的 onBeforeUnmount 内容 ...
+});
+
 
 
 // stopRecording(); 
@@ -2339,21 +2517,23 @@ canvas.video-element.share-video {
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
     }
 
-  .subtitle {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    max-width: 80%;
-    text-align: center;
-    font-size: 20px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
+    .subtitle {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
+  color: #fff;
+  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
+  border-radius: 8px; /* 稍微增大圆角，更美观 */
+  max-width: 90%; /* 增大最大宽度，适应更多内容 */
+  text-align: center;
+  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
+  white-space: normal; /* 自动换行，无需强制保留空白符 */
+  word-break: break-word; /* 更好的长单词断行处理 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
+  z-index: 100; /* 确保字幕在其他内容之上 */
+}
 
   #transcriptionContainer {
     width: 100%;

@@ -12,9 +12,8 @@ import simpleaudio as sa  # 导入 simpleaudio
 
 # 阿里云配置
 URL = "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1"
-TOKEN = "f27d622d92d04a95b32f901f41c6aeba"
+TOKEN = "0195232cb99749e68961fefd7717b514"
 APPKEY = "wvpwo9lGGSkfMHfn"
-
 # 音频参数配置
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -205,10 +204,10 @@ async def websocket_endpoint(websocket: WebSocket):
             if len(audio_buffer)>0:
                 # 播放音频 (同步，阻塞)
                 try:
-                    # print("播放")
+                    print("播放")
                     wave_obj = sa.WaveObject(audio_buffer, CHANNELS, 2, RATE)  # 1 声道, 2 字节/样本, 16000 Hz
-                    # play_obj = wave_obj.play()
-                    # play_obj.wait_done()
+                    play_obj = wave_obj.play()
+                    play_obj.wait_done()
                 except Exception as e:
                     print(f"Audio playback error: {e}")
                 recognizer.transcriber.send_audio(audio_buffer)
