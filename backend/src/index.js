@@ -1,6 +1,8 @@
 // server.js
 import express from 'express';
 import cors from 'cors';
+import { v4 as uuidv4 } from 'uuid';
+
 import dotenv from 'dotenv';
 import axios from 'axios';
 import { KJUR } from 'jsrsasign';
@@ -49,21 +51,35 @@ app.use((req, res, next) => {
   next();
 });
 
-// 文件存储配置
+//  文件存储配置 (修改 filename)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath);
-    }
-    cb(null, uploadPath);
+      const uploadPath = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath);
+      }
+      cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+      const uniqueId = uuidv4();
+      const fileExt = path.extname(file.originalname);
+      const originalName = file.originalname; // 原始文件名
+      const finalName = `${uniqueId}-${originalName}`; // 组合
+      cb(null, finalName);
   }
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage: storage,  // 使用修改后的 storage
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (allowedTypes.includes(file.mimetype)) {
+          cb(null, true);
+      } else {
+          cb(new Error('不支持的文件类型'));
+      }
+  }
+});
 // 静态资源中间件（关键修改）
 app.use('/avatar', express.static(path.join(parentDir, 'avatar')));
 // 新增：头像存储配置
@@ -422,98 +438,247 @@ app.post('/api/analyze-file', async (req, res) => {
         }
     });
            
+
  
- 
-// 文件上传与摘要生成路由
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+//   文件上传 (只处理上传)
+app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    //console.log('接收到文件:', req.file);
-
-    const filePath = req.file.path;
-    const fileExt = path.extname(req.file.originalname).toLowerCase();
-    let extractedText = '';
-
-        // 添加文件类型白名单验证
-    const allowedTypes = ['application/pdf', 
-    'application/msword', 
-     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(req.file.mimetype)) {
-    return res.status(400).json({ 
-    error: "不支持的格式",
-    details: `仅支持PDF/Word文档，当前类型：${req.file.mimetype}`
-    });
-    }
-
-    // 根据文件类型提取文本
-    if (fileExt === '.pdf') {
-      const pdfBytes = fs.readFileSync(filePath);
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      const pages = pdfDoc.getPages();
-      for (const page of pages) {
-        const text = await page.getTextContent();
-        extractedText += text.items.map(item => item.str).join(' ') + '\n';
-      }
-    } else if (['.doc', '.docx'].includes(fileExt)) {
-      const docBuffer = fs.readFileSync(filePath);
-      const result = await mammoth.extractRawText({ buffer: docBuffer });
-      extractedText = result.value;
-    } else {
-      return res.status(400).json({ error: 'Unsupported file type' });
-    }
-
-    //console.log('提取的文本长度:', extractedText.length);
-
-    if (extractedText.length === 0) {
-      return res.status(400).json({ error: 'No text found in the document' });
-    }
-
-    // 调用讯飞星火大模型生成摘要
-    const aiRequestBody = {
-      model: "lite",      // 指定请求的模型版本
-      // user: this.getUserEmail(), // 可选：添加用户唯一ID              
-      messages: [{
-        role: "user",
-        content: `请为以下文档内容生成一个摘要：\n\n${extractedText}`
-      }],
-      temperature: 0.5,
-      max_tokens: 1000          // 根据需要调整生成摘要的 token 数量
+    const fileInfo = {
+      id: req.file.filename.split('-')[0],
+      fileName: req.file.originalname, // 直接使用原始文件名
+      fileType: req.file.mimetype.split('/')[1],
+      fileSizeMB: (req.file.size / (1024 * 1024)).toFixed(2),
+      uploadDate: new Date()
     };
-
-    const aiResponse = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', aiRequestBody, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.XF_API_PASSWORD}`
-      }
-    });
-
-    const summary = aiResponse.data.choices[0].message.content.trim();
-    //console.log('生成的摘要:', summary);
-
-    // 可选：删除上传的文件以节省存储空间
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        //console.error('删除文件出错:', err);
-      } else {
-        //console.log('已删除上传的文件:', filePath);
-      }
-    });
-
-    return res.json({ summary });
+    res.json({ file: fileInfo });
   } catch (error) {
-    //console.error('处理上传文件出错:', error.response ? error.response.data : error.message);
-    res.status(error.response ? error.response.status : 500).json({
-      error: error.response ? error.response.data : 'Internal Server Error'
-    });
+    res.status(500).json({ error: '上传失败' });
   }
 });
 
+//  获取文件列表
+app.get('/api/files', (req, res) => {
+  const uploadPath = path.join(__dirname, 'uploads');
+  fs.readdir(uploadPath, (err, files) => {
+      if (err) {
+          console.error('读取文件列表出错:', err);
+          return res.status(500).json({ error: '无法读取文件列表' });
+      }
+
+      const fileDetails = [];
+      files.forEach(file => {
+          const filePath = path.join(uploadPath, file);
+          const stats = fs.statSync(filePath);
+
+          if (stats.isDirectory()) return;
+
+          const fileExt = path.extname(file).toLowerCase();
+          const fileNameWithoutExt = path.basename(file, fileExt); // UUID部分
+
+          fileDetails.push({
+              id: fileNameWithoutExt.split('-')[0],  // 只保留UUID
+              fileName: getOriginalFileName(file),       //  提取原始文件名
+              fileType: fileExt.slice(1),
+              fileSizeMB: (stats.size / (1024 * 1024)).toFixed(2),
+              uploadDate: stats.birthtime,
+          });
+      });
+      res.json(fileDetails);
+
+  });
+});
+
+// 从UUID文件名中提取原始文件名 (辅助函数)
+function getOriginalFileName(uuidFileName) {
+  const parts = uuidFileName.split('-');
+  if (parts.length > 1) {
+      //  找到第一个破折号后的所有内容
+     return parts.slice(1).join('-');
+   }
+   return uuidFileName;
+ }
+//  文件下载
+app.get('/api/download/:fileId', (req, res) => {
+  const fileName = `${originalName}${fileExt}`;
+  const encodedFileName = encodeURIComponent(fileName)
+    .replace(/['()]/g, escape)
+    .replace(/\*/g, '%2A');
+
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename*=UTF-8''${encodedFileName}`
+  );
+  const { fileId } = req.params;
+  const uploadPath = path.join(__dirname, 'uploads');
+
+  //  使用  glob  来查找文件 (更安全,  避免路径遍历)
+  const files = fs.readdirSync(uploadPath);
+  const matchingFiles = files.filter(file => file.startsWith(fileId));
 
 
+  if (matchingFiles.length === 0) {
+      return res.status(404).json({ error: '文件未找到' });
+  }
+  const file = matchingFiles[0];
+  const filePath = path.join(uploadPath, file);
+  const fileExt = path.extname(file);
+  const originalName = getOriginalFileName(file);
+  const downloadFileName = originalName + fileExt
+  //  设置响应头
+    res.setHeader('Content-Disposition', `attachment; filename=${downloadFileName}`);
+  res.setHeader('Content-Type', 'application/octet-stream');
 
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+
+  fileStream.on('error', (err) => {
+      console.error('文件流读取错误:', err);
+      res.status(500).json({ error: '文件下载失败' });
+  });
+});
+
+//  文件删除 (新增)
+app.delete('/api/delete/:fileId', (req, res) => {
+  const { fileId } = req.params;
+
+  if (!fileId) {
+      return res.status(400).json({ error: '缺少 fileId' });
+  }
+
+  const uploadPath = path.join(__dirname, 'uploads');
+  const files = fs.readdirSync(uploadPath);
+  const matchingFiles = files.filter(file => file.startsWith(fileId));
+
+  if (matchingFiles.length === 0) {
+      return res.status(404).json({ error: '文件未找到' });
+  }
+  const fileName = matchingFiles[0];
+  const filePath = path.join(uploadPath, fileName);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: '文件未找到' });
+}
+try{
+    fs.unlinkSync(filePath); // 删除文件
+    res.json({ message: '文件删除成功' });
+  }
+  catch (error) {
+      console.error('删除文件出错:', error);
+      res.status(500).json({ error: '文件删除失败' }); // 统一错误消息
+  }
+});
+//生成摘要
+app.get('/api/generate-summary', async (req, res) => {
+  const fileId = req.query.fileId;
+
+  if (!fileId) {
+    return res.status(400).json({ error: '缺少 fileId' });
+  }
+
+  const uploadPath = path.join(__dirname, 'uploads');
+  const files = fs.readdirSync(uploadPath);
+  const matchingFiles = files.filter(file => file.startsWith(fileId));
+
+  if (matchingFiles.length === 0) {
+    return res.status(404).json({ error: '文件未找到' });
+  }
+
+  const fileName = matchingFiles[0];
+  const filePath = path.join(uploadPath, fileName);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: '文件未找到' });
+  }
+
+  const fileExt = path.extname(fileName).toLowerCase();
+
+    try {
+      let extractedText = '';
+
+      if (fileExt === '.pdf') {
+        const pdfBytes = fs.readFileSync(filePath);
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pages = pdfDoc.getPages();
+        for (const page of pages) {
+          const textContent = await page.getTextContent();
+          extractedText += textContent.items.map(item => item.str).join(' ') + '\n';
+        }
+      } else if (['.doc', '.docx'].includes(fileExt)) {
+        const docBuffer = fs.readFileSync(filePath);
+        const result = await mammoth.extractRawText({ buffer: docBuffer });
+        extractedText = result.value;
+          // 清理 mammoth 提取的文本中的特殊字符和多余空格
+          extractedText = extractedText.replace(/[\t\n\r\f\v]/g, ' ') // 移除特殊空白符
+                                    .replace(/ {2,}/g, ' ')        // 将多个空格替换为单个空格
+                                     .replace(/#/g, ''); // 移除 # 符号
+      } else {
+        return res.status(400).json({ error: '不支持的文件类型' });
+      }
+
+      if (!extractedText) {
+        return res.status(400).json({ error: '无法提取文本内容' });
+      }
+        // 调用讯飞星火大模型
+      const aiRequestBody = {
+        model: "lite",
+        messages: [{
+            role: "user",
+            content: `请为以下文档内容生成一个摘要：\n\n${extractedText}`
+        }],
+        temperature: 0.5,
+        max_tokens: 1000,
+        stream: true, // 开启流式
+      };
+  const aiResponse = await axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', aiRequestBody, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.XF_API_PASSWORD}`
+    },
+    responseType: 'stream'
+    });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    aiResponse.data.on('data', (chunk) => {
+    const lines = chunk.toString('utf8').split('\n').filter(line => line.trim() !== '');
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          let dataStr = line.substring(5).trim();
+            if (dataStr !== '[DONE]') {
+              try {
+                  const parsedData = JSON.parse(dataStr);
+                  const content = parsedData.choices[0]?.delta?.content;
+                  if (content) {
+                    res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                  }
+                } catch (parseError) {
+                    console.error("AI 响应解析错误:", parseError, "原始数据:", dataStr);
+                }
+            }
+           else { // 收到 [DONE]
+             res.write('data: [DONE]\n\n');  // 明确发送 [DONE]
+              }
+          }
+      }
+    });
+      aiResponse.data.on('end', () => {
+          console.log("AI 响应流结束"); // 调试日志
+          res.end();
+      });
+
+    aiResponse.data.on('error', (err) => {
+      console.error("AI 响应流错误:", err);
+      res.status(500).write('data: {"error": "生成摘要时发生错误"}\n\n');
+      res.end();
+    });
+
+    } catch (error) {
+    console.error('生成摘要出错 (详细):', error.response || error);
+      return res.status(500).json({ error: "生成摘要失败" });
+  }
+});
 
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
