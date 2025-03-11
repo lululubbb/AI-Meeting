@@ -12,7 +12,7 @@ import simpleaudio as sa
 
 # 阿里云配置
 URL = "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1"
-TOKEN = "0195232cb99749e68961fefd7717b514"
+TOKEN = "bf79ce161b5548ebbb1368cf43098032"
 APPKEY = "wvpwo9lGGSkfMHfn"
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
