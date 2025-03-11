@@ -57,7 +57,7 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(msg);
       if (data?.payload?.result) {
-        console.log(`[Server] 用户 ${userId} 收到中间结果: ${data.payload.result}`); // 打印中间结果
+        // console.log(`[Server] 用户 ${userId} 收到中间结果: ${data.payload.result}`); // 打印中间结果
         broadcastTranscription(userId, userName, data.payload.result, 'interim');
       } else {
         console.error(`[Server] 用户 ${userId} 的无效中间结果:`, data);
@@ -71,7 +71,7 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(msg);
       if (data?.payload?.result) {
-        console.log(`[Server] 用户 ${userId} 收到最终结果: ${data.payload.result}`); // 打印最终结果
+        // console.log(`[Server] 用户 ${userId} 收到最终结果: ${data.payload.result}`); // 打印最终结果
         broadcastTranscription(userId, userName, data.payload.result, 'final');
       } else {
         console.error(`[Server] 用户 ${userId} 的无效最终结果:`, data);
@@ -111,7 +111,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('message', (audioData) => {
     if (isServiceStarted && audioData instanceof Buffer) {
-      console.log(`[Server] 收到用户 ${userId} 的音频数据, 长度: ${audioData.length}`); // 打印收到的音频数据长度
+    //   console.log(`[Server] 收到用户 ${userId} 的音频数据, 长度: ${audioData.length}`); // 打印收到的音频数据长度
       if (!st.sendAudio(audioData)) {
         console.error(`[Server] 用户 ${userId} 音频发送失败`);
       }
