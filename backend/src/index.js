@@ -1,4 +1,5 @@
 // server.js
+
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,19 +8,24 @@ import axios from 'axios';
 import { KJUR } from 'jsrsasign';
 import { toStringArray } from './utils.js';
 import {
-  inNumberArray,
-  isBetween,
-  isLengthLessThan,
-  isRequired,
-  matchesStringArray,
-  validateRequest
+    inNumberArray,
+    isBetween,
+    isLengthLessThan,
+    isRequired,
+    matchesStringArray,
+    validateRequest
 } from './validations.js';
 import multer from 'multer';
+import Tesseract from 'tesseract.js';
 import { PDFDocument } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
+import pdfPoppler from 'pdf-poppler';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pdfParse from 'pdf-parse';
+
 
 dotenv.config();
 // 获取当前模块的文件名和目录名
@@ -36,8 +42,8 @@ app.use(cors({
 }))
 // 中间件
 
-app.use(express.json({ limit: '100mb' })); // 增加请求体大小限制 (例如 50MB)
-app.use(express.urlencoded({ limit: '100mb', extended: true })); // 也要增加 urlencoded 的限制
+app.use(express.json({ limit: '100mb', charset: 'utf-8' })); // 增加请求体大小限制 (例如 50MB)
+app.use(express.urlencoded({ limit: '100mb', extended: true, charset: 'utf-8'  })); // 也要增加 urlencoded 的限制
 
 // 配置内容安全策略 (CSP) 和 SharedArrayBuffer 支持
 app.use((req, res, next) => {
@@ -51,22 +57,43 @@ app.use((req, res, next) => {
 });
 
 //  文件存储配置 (修改 filename)
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//       const uploadPath = path.join(__dirname, 'uploads');
+//       if (!fs.existsSync(uploadPath)) {
+//           fs.mkdirSync(uploadPath);
+//       }
+//       cb(null, uploadPath);
+//   },
+//   filename: function (req, file, cb) {
+//       const uniqueId = uuidv4();
+//       const fileExt = path.extname(file.originalname);
+//       const originalName = file.originalname; // 原始文件名
+//       const finalName = `${uniqueId}--${originalName}`; // 使用双破折号分隔
+//       console.log(`[文件上传] 存储文件名: ${finalName}（原始文件名: ${originalName}）`);
+//       cb(null, finalName);
+//   }
+// });
+
+// 文件存储配置（关键修改）
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-      const uploadPath = path.join(__dirname, 'uploads');
-      if (!fs.existsSync(uploadPath)) {
-          fs.mkdirSync(uploadPath);
-      }
-      cb(null, uploadPath);
+    const uploadPath = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-      const uniqueId = uuidv4();
-      const fileExt = path.extname(file.originalname);
-      const originalName = file.originalname; // 原始文件名
-      const finalName = `${uniqueId}-${originalName}`; // 组合
-      cb(null, finalName);
+    const uniqueId = uuidv4();
+    const encodedOriginalName = encodeURIComponent(file.originalname); // 编码原始文件名
+    const finalName = `${uniqueId}--${encodedOriginalName}`; // 使用编码后的名称
+    console.log(`[文件上传] 存储文件名: ${finalName}（原始文件名: ${file.originalname}）`);
+    cb(null, finalName);
   }
 });
+
+
 const upload = multer({
   storage: storage,  // 使用修改后的 storage
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -278,7 +305,69 @@ app.post('/api/analyze-file', async (req, res) => {
 
     let extractedText = '';
     if (fileType === 'pdf') {
-       // ... (PDF 处理逻辑) ...
+      console.log('开始解析 PDF 文件:', filePath);
+      const dataBuffer = fs.readFileSync(filePath);
+
+      try {
+          // 尝试使用 pdf-parse 解析
+          const data = await pdfParse(dataBuffer);
+          extractedText = data.text;
+
+          if (extractedText.length === 0) {
+              // 若解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理
+              console.log('pdf-parse 解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理...');
+
+              // 定义转换选项
+              const options = {
+                  format: 'png',
+                  out_dir: path.dirname(filePath),
+                  out_prefix: path.basename(filePath, path.extname(filePath)),
+                  page: null // 处理所有页面
+              };
+
+              // 执行 PDF 到图像的转换
+              const outputFiles = await pdfPoppler.convert(filePath, options);
+
+              for (const outputFile of outputFiles) {
+                  const { data: { text } } = await Tesseract.recognize(
+                      outputFile,
+                      'chi_sim', // 如果是中文文档，使用 'chi_sim'
+                      {
+                          logger: m => console.log(m)
+                      }
+                  );
+                  extractedText += text;
+              }
+
+                 // 完成 OCR 处理后，删除生成的 PNG 文件
+              for (const outputFile of outputFiles) {
+                try {
+                  fs.unlinkSync(outputFile);
+                  console.log(`已删除临时文件: ${outputFile}`);
+                } catch (deleteError) {
+                  console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
+                }
+              }               
+
+              if (extractedText.length === 0) {
+                  // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
+                  console.log('OCR 处理结果为空，尝试使用 pdfjs-dist 解析...');
+                  const pdfData = new Uint8Array(dataBuffer);
+                  const loadingTask = pdfjsLib.getDocument(pdfData);
+                  const pdfDoc = await loadingTask.promise;
+                  for (let i = 1; i <= pdfDoc.numPages; i++) {
+                      const page = await pdfDoc.getPage(i);
+                      const content = await page.getTextContent();
+                      const pageText = content.items.map(item => item.str).join(' ');
+                      extractedText += pageText;
+                  }
+              }
+          }
+          console.log('PDF 解析完成，提取文本长度:', extractedText.length);
+      } catch (pdfError) {
+          console.error('解析 PDF 文件出错:', pdfError);
+          return res.status(500).json({ error: 'PDF 文件解析失败，请检查文件是否损坏' });
+      }
     } else if (fileType === 'doc' || fileType === 'docx') {
         const result = await mammoth.extractRawText({ buffer: fileBuffer });
         extractedText = result.value;
@@ -455,35 +544,83 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 });
 
-//  获取文件列表
+
+// //  获取文件列表
+// app.get('/api/files', (req, res) => {
+//   const uploadPath = path.join(__dirname, 'uploads');
+//   fs.readdir(uploadPath, (err, files) => {
+//       if (err) {
+//           console.error('读取文件列表出错:', err);
+//           return res.status(500).json({ error: '无法读取文件列表' });
+//       }
+
+//       const fileDetails = [];
+//       files.forEach(file => {
+//           const filePath = path.join(uploadPath, file);
+//           const stats = fs.statSync(filePath);
+
+//           if (stats.isDirectory()) return;
+
+//           const fileExt = path.extname(file).toLowerCase();
+//           const fileNameWithoutExt = path.basename(file, fileExt); // UUID部分
+
+//           const originalName = getOriginalFileName(file);
+//           // 确保文件名以 UTF-8 编码返回
+//           //const encodedOriginalName = Buffer.from(originalName, 'binary').toString('utf8');
+//           const encodedOriginalName = iconv.decode(Buffer.from(originalName, 'binary'), 'utf-8');
+
+//           fileDetails.push({
+//               id: fileNameWithoutExt.split('-')[0],  // 只保留UUID
+//               fileName: encodedOriginalName,       //  提取原始文件名
+//               fileType: fileExt.slice(1),
+//               fileSizeMB: (stats.size / (1024 * 1024)).toFixed(2),
+//               uploadDate: stats.birthtime,
+//           });
+//       });
+//       console.log('返回的文件列表:', fileDetails); // 添加日志确认返回的数据
+//       res.json(fileDetails);
+
+//   });
+// });
+
+// 修改版
+// 获取文件列表路由（优化解析逻辑）
+// server.js 中文件列表路由（/api/files）
+// 文件列表路由（/api/files）
 app.get('/api/files', (req, res) => {
   const uploadPath = path.join(__dirname, 'uploads');
-  fs.readdir(uploadPath, (err, files) => {
-      if (err) {
-          console.error('读取文件列表出错:', err);
-          return res.status(500).json({ error: '无法读取文件列表' });
+  
+  fs.readdir(uploadPath, { encoding: 'utf8' }, (err, files) => { // 显式指定UTF-8编码
+    if (err) {
+      console.error('读取文件列表出错:', err);
+      return res.status(500).json({ error: '无法读取文件列表' });
+    }
+
+    const fileDetails = files.map(file => {
+      try {
+        const filePath = path.join(uploadPath, file);
+        const stats = fs.statSync(filePath);
+        if (stats.isDirectory()) return null;
+
+        // 关键修改：解析文件名并解码URL编码
+        const [uuid, encodedOriginalName] = file.split('--', 2);
+        const originalName = decodeURIComponent(encodedOriginalName); // 解码URL编码
+
+        return {
+          id: uuid,
+          fileName: originalName, // 使用解码后的名称
+          fileType: path.extname(originalName).slice(1), // 从解码后的名称获取扩展名
+          fileSizeMB: (stats.size / (1024 * 1024)).toFixed(2),
+          uploadDate: stats.birthtime
+        };
+      } catch (error) {
+        console.error('文件解析错误:', file, error);
+        return null;
       }
+    }).filter(Boolean);
 
-      const fileDetails = [];
-      files.forEach(file => {
-          const filePath = path.join(uploadPath, file);
-          const stats = fs.statSync(filePath);
-
-          if (stats.isDirectory()) return;
-
-          const fileExt = path.extname(file).toLowerCase();
-          const fileNameWithoutExt = path.basename(file, fileExt); // UUID部分
-
-          fileDetails.push({
-              id: fileNameWithoutExt.split('-')[0],  // 只保留UUID
-              fileName: getOriginalFileName(file),       //  提取原始文件名
-              fileType: fileExt.slice(1),
-              fileSizeMB: (stats.size / (1024 * 1024)).toFixed(2),
-              uploadDate: stats.birthtime,
-          });
-      });
-      res.json(fileDetails);
-
+    console.log('返回的文件列表:', fileDetails);
+    res.json(fileDetails);
   });
 });
 
@@ -492,35 +629,70 @@ function getOriginalFileName(uuidFileName) {
   const parts = uuidFileName.split('-');
   if (parts.length > 1) {
       //  找到第一个破折号后的所有内容
-     return parts.slice(1).join('-');
-   }
-   return uuidFileName;
- }
+    return parts.slice(1).join('-');
+  }
+  return uuidFileName;
+}
 //  文件下载
+// app.get('/api/download/:fileId', (req, res) => {
+//   const { fileId } = req.params;
+//   const uploadPath = path.join(__dirname, 'uploads');
+//   const files = fs.readdirSync(uploadPath);
+//   const matchingFiles = files.filter(file => file.startsWith(fileId));
+
+//   if (matchingFiles.length === 0) {
+//       return res.status(404).json({ error: '文件未找到' });
+//   }
+
+//   const file = matchingFiles[0];
+//   const filePath = path.join(uploadPath, file);
+//   const originalName = getOriginalFileName(file); // 获取原始文件名 (包含扩展名)
+//   // const encodedFileName = encodeURIComponent(originalName)
+//   //   .replace(/['()]/g, escape)
+//   //   .replace(/\*/g, '%2A');
+
+
+//   // 设置响应头 (Content-Disposition)
+//   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`);
+//   res.setHeader('Content-Type', 'application/octet-stream');
+
+//   // 创建文件流并发送
+//   const fileStream = fs.createReadStream(filePath);
+//   fileStream.pipe(res);
+
+//   fileStream.on('error', (err) => {
+//     console.error('文件流读取错误:', err);
+//     res.status(500).json({ error: '文件下载失败' });
+//   });
+// });
+
+
+// 文件下载路由（简化解析逻辑）
 app.get('/api/download/:fileId', (req, res) => {
   const { fileId } = req.params;
   const uploadPath = path.join(__dirname, 'uploads');
-
   const files = fs.readdirSync(uploadPath);
-  const matchingFiles = files.filter(file => file.startsWith(fileId));
+
+  // 查找匹配的文件（关键修改）
+  const matchingFiles = files.filter(file => {
+    const [uuid] = file.split('--', 2);
+    return uuid === fileId;
+  });
 
   if (matchingFiles.length === 0) {
-      return res.status(404).json({ error: '文件未找到' });
+    return res.status(404).json({ error: '文件未找到' });
   }
 
-  const file = matchingFiles[0];
-  const filePath = path.join(uploadPath, file);
-  const originalName = getOriginalFileName(file); // 获取原始文件名 (包含扩展名)
-  const encodedFileName = encodeURIComponent(originalName)
-    .replace(/['()]/g, escape)
-    .replace(/\*/g, '%2A');
+  const storedFileName = matchingFiles[0];
+  const filePath = path.join(uploadPath, storedFileName);
+  const [uuid, originalName] = storedFileName.split('--', 2);
 
+  console.log(`[文件下载] UUID: ${uuid}, 原始文件名: ${originalName}`);
 
-  // 设置响应头 (Content-Disposition)
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`);
+  // 设置响应头（关键修改）
+  res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
 
-  // 创建文件流并发送
   const fileStream = fs.createReadStream(filePath);
   fileStream.pipe(res);
 
@@ -530,37 +702,88 @@ app.get('/api/download/:fileId', (req, res) => {
   });
 });
 
-//  文件删除 (新增)
+
+// 文件删除路由（优化匹配逻辑）
 app.delete('/api/delete/:fileId', (req, res) => {
   const { fileId } = req.params;
-
-  if (!fileId) {
-      return res.status(400).json({ error: '缺少 fileId' });
-  }
-
   const uploadPath = path.join(__dirname, 'uploads');
   const files = fs.readdirSync(uploadPath);
-  const matchingFiles = files.filter(file => file.startsWith(fileId));
+  
+  // 查找匹配的文件（关键修改）
+  const matchingFiles = files.filter(file => {
+    const [uuid] = file.split('--', 2);
+    return uuid === fileId;
+  });
 
   if (matchingFiles.length === 0) {
-      return res.status(404).json({ error: '文件未找到' });
+    return res.status(404).json({ error: '文件未找到' });
   }
+
   const fileName = matchingFiles[0];
   const filePath = path.join(uploadPath, fileName);
+  const [uuid, originalName] = fileName.split('--', 2);
+
+  console.log(`[文件删除] UUID: ${uuid}, 原始文件名: ${originalName}`);
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: '文件未找到' });
-}
-try{
-    fs.unlinkSync(filePath); // 删除文件
-    res.json({ message: '文件删除成功' });
   }
-  catch (error) {
-      console.error('删除文件出错:', error);
-      res.status(500).json({ error: '文件删除失败' }); // 统一错误消息
+
+  try {
+    fs.unlinkSync(filePath);
+    console.log(`[文件删除] 成功删除文件: ${filePath}`);
+    res.json({ message: '文件删除成功' });
+  } catch (error) {
+    console.error('删除文件出错:', error);
+    res.status(500).json({ error: '文件删除失败' });
   }
 });
+
+
+// //  文件删除 (新增)原版
+// app.delete('/api/delete/:fileId', (req, res) => {
+//   const { fileId } = req.params;
+
+//   if (!fileId) {
+//       return res.status(400).json({ error: '缺少 fileId' });
+//   }
+
+//   const uploadPath = path.join(__dirname, 'uploads');
+//   const files = fs.readdirSync(uploadPath);
+//   const matchingFiles = files.filter(file => file.startsWith(fileId));
+
+//   if (matchingFiles.length === 0) {
+//       return res.status(404).json({ error: '文件未找到' });
+//   }
+//   const fileName = matchingFiles[0];
+//   const filePath = path.join(uploadPath, fileName);
+
+//   if (!fs.existsSync(filePath)) {
+//     return res.status(404).json({ error: '文件未找到' });
+// }
+// try{
+//     fs.unlinkSync(filePath); // 删除文件
+//     res.json({ message: '文件删除成功' });
+//   }
+//   catch (error) {
+//       console.error('删除文件出错:', error);
+//       res.status(500).json({ error: '文件删除失败' }); // 统一错误消息
+//   }
+// });
 //生成摘要
+
+// 手动实现 Promise.withResolvers 以兼容旧版本 Node.js
+if (!Promise.withResolvers) {
+  Promise.withResolvers = () => {
+      let resolve, reject;
+      const promise = new Promise((res, rej) => {
+          resolve = res;
+          reject = rej;
+      });
+      return { promise, resolve, reject };
+  };
+}
+
 app.get('/api/generate-summary', async (req, res) => {
   const fileId = req.query.fileId;
 
@@ -584,19 +807,75 @@ app.get('/api/generate-summary', async (req, res) => {
   }
 
   const fileExt = path.extname(fileName).toLowerCase();
-
-    try {
-      let extractedText = '';
+  let extractedText = '';
+    try { 
 
       if (fileExt === '.pdf') {
-        const pdfBytes = fs.readFileSync(filePath);
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const pages = pdfDoc.getPages();
-        for (const page of pages) {
-          const textContent = await page.getTextContent();
-          extractedText += textContent.items.map(item => item.str).join(' ') + '\n';
+        console.log('开始解析 PDF 文件:', filePath);
+        const dataBuffer = fs.readFileSync(filePath);
+
+        try {
+            // 尝试使用 pdf-parse 解析
+            const data = await pdfParse(dataBuffer);
+            extractedText = data.text;
+
+            if (extractedText.length === 0) {
+                // 若解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理
+                console.log('pdf-parse 解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理...');
+
+                // 定义转换选项
+                const options = {
+                    format: 'png',
+                    out_dir: path.dirname(filePath),
+                    out_prefix: path.basename(filePath, path.extname(filePath)),
+                    page: null // 处理所有页面
+                };
+
+                // 执行 PDF 到图像的转换
+                const outputFiles = await pdfPoppler.convert(filePath, options);
+
+                for (const outputFile of outputFiles) {
+                    const { data: { text } } = await Tesseract.recognize(
+                        outputFile,
+                        'chi_sim', // 如果是中文文档，使用 'chi_sim'
+                        {
+                            logger: m => console.log(m)
+                        }
+                    );
+                    extractedText += text;
+                }
+
+                   // 完成 OCR 处理后，删除生成的 PNG 文件
+                for (const outputFile of outputFiles) {
+                  try {
+                    fs.unlinkSync(outputFile);
+                    console.log(`已删除临时文件: ${outputFile}`);
+                  } catch (deleteError) {
+                    console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
+                  }
+                }               
+
+                if (extractedText.length === 0) {
+                    // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
+                    console.log('OCR 处理结果为空，尝试使用 pdfjs-dist 解析...');
+                    const pdfData = new Uint8Array(dataBuffer);
+                    const loadingTask = pdfjsLib.getDocument(pdfData);
+                    const pdfDoc = await loadingTask.promise;
+                    for (let i = 1; i <= pdfDoc.numPages; i++) {
+                        const page = await pdfDoc.getPage(i);
+                        const content = await page.getTextContent();
+                        const pageText = content.items.map(item => item.str).join(' ');
+                        extractedText += pageText;
+                    }
+                }
+            }
+            console.log('PDF 解析完成，提取文本长度:', extractedText.length);
+        } catch (pdfError) {
+            console.error('解析 PDF 文件出错:', pdfError);
+            return res.status(500).json({ error: 'PDF 文件解析失败，请检查文件是否损坏' });
         }
-      } else if (['.doc', '.docx'].includes(fileExt)) {
+      } 
+        else if (['.doc', '.docx'].includes(fileExt)) {
         const docBuffer = fs.readFileSync(filePath);
         try{
         const result = await mammoth.extractRawText({ buffer: docBuffer });
@@ -647,21 +926,25 @@ app.get('/api/generate-summary', async (req, res) => {
           let dataStr = line.substring(5).trim();
             if (dataStr !== '[DONE]') {
               try {
-                  const parsedData = JSON.parse(dataStr);
-                  const content = parsedData.choices[0]?.delta?.content;
-                  if (content) {
-                    //res.write(`data: ${JSON.stringify({ content })}\n\n`);
-                     // 关键优化：强制逐字符拆分并立即发送
-                    for (let i = 0; i < content.length; i++) {
-                      const char = content[i];
-                      const escapedChar = char.replace(/\n/g, '\\n');
-                      console.log('Sending character:', escapedChar); // 新增日志
-                      res.write(`data: ${JSON.stringify({ content: escapedChar })}\n\n`);
-                  }
-                  }
-                } catch (parseError) {
-                    console.error("AI 响应解析错误:", parseError, "原始数据:", dataStr);
+                const parsedData = JSON.parse(dataStr);
+                // 检查是否有错误码
+                if (parsedData.code) {
+                    console.error("AI 接口返回错误:", parsedData.message);
+                    res.status(500).write(`data: {"error": "${parsedData.message}"} \n\n`);
+                    continue;
                 }
+                const content = parsedData.choices[0]?.delta?.content;
+                if (content) {
+                    for (let i = 0; i < content.length; i++) {
+                        const char = content[i];
+                        const escapedChar = char.replace(/\n/g, '\\n');
+                        console.log('Sending character:', escapedChar);
+                        res.write(`data: ${JSON.stringify({ content: escapedChar })}\n\n`);
+                    }
+                }
+            } catch (parseError) {
+                console.error("AI 响应解析错误:", parseError, "原始数据:", dataStr);
+            }
             }
            else { // 收到 [DONE]
              res.write('data: [DONE]\n\n');  // 明确发送 [DONE]

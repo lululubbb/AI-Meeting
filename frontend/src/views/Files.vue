@@ -211,6 +211,7 @@
    // fileList.value = fileList;
   };
   
+  //原版
   const customUpload = async (options) => {
   const { file, onProgress, onSuccess, onError } = options;
 
@@ -267,21 +268,79 @@
   //   }
   // };
   
-  const fetchUploadedFiles = async () => {
-    try {
-      isLoadingFiles.value = true;
-      const response = await axios.get('http://localhost:4000/api/files');
+//修改版
+const fetchUploadedFiles = async () => {
+  try {
+    isLoadingFiles.value = true;
+    const response = await axios.get('http://localhost:4000/api/files', {
+      responseType: 'json' // 关键修改：让 Axios 自动处理 JSON 解析
+    });
+
+    if (Array.isArray(response.data)) {
       uploadedFiles.value = response.data.map(file => ({
         ...file,
         isGeneratingSummary: false
       }));
-    } catch (error) {
-      console.error('获取文件列表失败:', error);
-      ElMessage.error('获取文件列表失败');
-    } finally {
-      isLoadingFiles.value = false;
+    } else {
+      console.error('响应数据不是数组:', response.data);
     }
-  };
+  } catch (error) {
+    console.error('获取文件列表失败:', error);
+    ElMessage.error('获取文件列表失败');
+  } finally {
+    isLoadingFiles.value = false;
+  }
+};
+// const fetchUploadedFiles = async () => {
+//     try {
+//         isLoadingFiles.value = true;
+//         const response = await axios.get('http://localhost:4000/api/files', {
+//             responseType: 'text',
+//             headers: {
+//                 'Accept-Charset': 'utf-8'
+//             }
+//         });
+
+//         // 将字符串解析为 JSON 数组
+//         const data = JSON.parse(response.data);
+
+//         if (Array.isArray(data)) {
+//             uploadedFiles.value = data.map(file => {
+//                 console.log('接收到的文件名:', file.fileName);
+//                 return {
+//                     ...file,
+//                     isGeneratingSummary: false
+//                 };
+//             });
+//         } else {
+//             console.error('响应数据不是数组:', data);
+//         }
+//     } catch (error) {
+//         console.error('获取文件列表失败:', error);
+//         ElMessage.error('获取文件列表失败');
+//     } finally {
+//         isLoadingFiles.value = false;
+//     }
+// };
+
+//   const fetchUploadedFiles = async () => {
+//   try {
+//     isLoadingFiles.value = true;
+//     const response = await axios.get('http://localhost:4000/api/files');
+//     uploadedFiles.value = response.data.map(file => {
+//       console.log('接收到的文件名:', file.fileName); // 新增日志，确认接收到的文件名
+//       return {
+//         ...file,
+//         isGeneratingSummary: false
+//       };
+//     });
+//   } catch (error) {
+//     console.error('获取文件列表失败:', error);
+//     ElMessage.error('获取文件列表失败');
+//   } finally {
+//     isLoadingFiles.value = false;
+//   }
+// };
   
   const handleDelete = async (file) => {
     try {
@@ -368,7 +427,8 @@ const handleDownload = async file => {
                 // 直接将接收到的字符添加到摘要内容中
                 // 逐字符添加到 summary
         setTimeout(() => {
-        summary.value += char;
+        // summary.value += char;
+        summary.value += char.replace(/\\n/g, '\n');
       }, displayIndex * 20); // 每个字符间隔 50ms
       displayIndex++;
     }
