@@ -1622,222 +1622,156 @@ function resetState() {
 /* *********************
 转录方面
    ********************* */
-// ... 其他已有的代码 ...
+// videocall.vue  <script setup> 部分
+
+// ... 其他 import 和变量 ...
 const isTranscribing = ref(false);
-const subtitle = ref("");  // 用于存储字幕
-let mediaStream = null;      // 用于存储麦克风流
-let websocket = null;       // WebSocket 连接
-let audioContext = null; // AudioContext
-let sourceNode = null;  // MediaStreamAudioSourceNode
-let gainNode = null; // GainNode (可选，用于音量控制)
-let processor = null;    // ScriptProcessorNode
-const subtitles = ref({}); // 使用对象存储多个用户的字幕
+const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
+const subtitle = ref(''); // (已弃用)
+const transcriptionWs = ref(null); //  转录 WebSocket
+let audioContext = null;         //  全局的 AudioContext
+let scriptNode = null;          //  全局的 ScriptProcessorNode
+let mediaStream = null;         // 全局
 
 const toggleTranscription = async () => {
-  isTranscribing.value = !isTranscribing.value;
   if (isTranscribing.value) {
-    await startTranscription();
-  } else {
     stopTranscription();
+  } else {
+    await startTranscription();
   }
 };
-// 新增：用于更新/添加字幕的函数
-
-// 修改 updateSubtitle 函数：
-function updateSubtitle(userId, text, userName) {  // 增加 userName 参数
-  if (!subtitles.value[userId]) {
-    subtitles.value[userId] = {
-      userName: userName || userId, //  优先使用传入的 userName, 没有则使用 userId
-      text: text,
-    };
-  } else {
-    subtitles.value[userId].text = text;
-    //  不更新 userName, 保持第一次的值
-  }
-  subtitles.value = { ...subtitles.value }; // 强制更新
-}
 
 const startTranscription = async () => {
-  console.log("开始转录");
   try {
-    // 1. 获取麦克风权限
+    // 1. 获取麦克风权限和音频流
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log("麦克风已获取:", mediaStream);
 
-    // 从 ZoomVideoService 获取当前用户信息
-    const curUser = ZoomVideoService.client.getCurrentUserInfo();
-    const userId = curUser.userId.toString(); // userId, 转为字符串
-    const userName = curUser.displayName; // displayName
-    console.log("User ID:", userId, "Username:", userName);
+    // 2. 创建 AudioContext (如果尚未创建)
+    if (!audioContext) {
+      audioContext = new AudioContext({ sampleRate: 16000 });
+       audioContext.onstatechange = () => {
+        console.log("AudioContext state:", audioContext.state);
+    }
+    }
 
-    // 2. 创建 WebSocket 连接, 包含 user_id 和 user_name 查询参数
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}:4321/ws?user_id=${userId}&user_name=${userName}`; //  包含 user_name
-    console.log("尝试连接到:", wsUrl);
-    websocket = new WebSocket(wsUrl);
+    // 3. 创建 MediaStreamSource
+    const source = audioContext.createMediaStreamSource(mediaStream);
 
-    websocket.onopen = () => {
-      console.log("WebSocket 连接已建立");
-    };
-
-    websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data); // 解析 JSON
-      console.log("从服务器接收到消息:", data);
-
-      if (data.type === "INTERMEDIATE") {
-        updateSubtitle(data.user_id, data.text, data.userName); // 更新字幕, 传入 userName
-      } else if (data.type === "FINAL") {
-        updateSubtitle(data.user_id, data.text, data.userName); // 更新字幕, 传入 userName
-      } else if (data.type === "ERROR") {
-        console.error(`转录错误 (用户 ${data.user_id}):`, data.text);
-      }
-    };
-
-    websocket.onclose = () => {
-      console.log("WebSocket 连接已关闭");
-      if (isTranscribing.value) {
-        stopTranscription(); // 自动停止
-        isTranscribing.value = false; // 更新状态
-      }
-    };
-    websocket.onerror = (error) => {
-      console.error("WebSocket 错误:", error);
-    };
-
-    // 3. 创建音频处理上下文和节点
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({
-      sampleRate: 16000,
-    });
-    console.log("AudioContext 已创建, 采样率:", audioContext.sampleRate);
-
-     if (audioContext.state !== 'running') {
-          console.warn('AudioContext state is not running, resuming...');
-          audioContext.resume().then(() => {
-            console.log('AudioContext resumed successfully.');
-              // 重新连接节点 (重要)
-              sourceNode = audioContext.createMediaStreamSource(mediaStream);
-              gainNode = audioContext.createGain();
-              gainNode.gain.value = 1.0;
-              processor = audioContext.createScriptProcessor(0, 1, 1);
-              setupAudioProcessing(); // 重新连接处理函数 (见下文)
-
-          }).catch(err => {
-            console.error('Failed to resume AudioContext:', err);
-          });
-        } else {
-            setupAudioProcessing(); // 连接处理函数 (见下文)
-
-        }
-
-        // 把音频处理相关的连接操作封装成一个函数
-      function setupAudioProcessing(){
-          sourceNode = audioContext.createMediaStreamSource(mediaStream);
-        console.log("源节点已创建", sourceNode);
-
-        gainNode = audioContext.createGain();  // 创建增益节点
-        gainNode.gain.value = 1.0;
-        console.log("增益节点已创建", gainNode);
-        sourceNode.connect(gainNode);
-
-        processor = audioContext.createScriptProcessor(0, 1, 1);
-        console.log('处理器已创建', processor)
-        processor.onaudioprocess = (audioProcessingEvent) => {
-            console.log("onaudioprocess triggered"); // 确保触发
-            if (!isTranscribing.value || websocket.readyState !== WebSocket.OPEN) {
-              return;
-            }
-            const inputBuffer = audioProcessingEvent.inputBuffer;
-            const inputData = inputBuffer.getChannelData(0); //  获取第一个声道 (单声道)
-
-            // 转换为 Int16 格式 (后端要求)
-            const int16Data = float32ToInt16(inputData);
-
-            // 检查数据长度, 如果很小, 可能是静音
-            if (int16Data.length > 0) {
-                const buffer = int16Data.buffer; // 获取底层的 ArrayBuffer
-                // console.log("发送音频数据, 大小:", buffer.byteLength , "内容:", buffer); //修改这行
-
-              try {
-                if (websocket && websocket.readyState === WebSocket.OPEN) {
-                  websocket.send(buffer);
+    // 4. 创建 ScriptProcessorNode (如果尚未创建)
+    if (!scriptNode) {
+            scriptNode = audioContext.createScriptProcessor(1024, 1, 1);
+          scriptNode.onaudioprocess = (e) => {
+                console.log('onaudioprocess triggered'); // 确认事件触发
+                const pcmData = e.inputBuffer.getChannelData(0);
+                const buffer = new Int16Array(pcmData.length);
+                  // 转换为 16bit PCM
+                for(let i=0; i< pcmData.length; i++){
+                  buffer[i] = pcmData[i] * 32767;
                 }
-              } catch (error) {
-                console.error("WebSocket 发送失败", error);
-              }
+
+            // 5. 建立 WebSocket 连接 (如果尚未建立)
+                if (transcriptionWs.value && transcriptionWs.value.readyState === WebSocket.OPEN) {
+                        console.log('Sending audio data:', buffer.buffer)
+                        transcriptionWs.value.send(buffer.buffer);
+                    }
+                };
+    }
+    // 连接节点
+    source.connect(scriptNode);
+    scriptNode.connect(audioContext.destination);
+
+    // 获取当前用户信息
+    const curUser = ZoomVideoService.client.getCurrentUserInfo();
+    if (!curUser || !curUser.userId) {
+      console.error("无法获取当前用户信息");
+      return;
+    }
+       if (!transcriptionWs.value || transcriptionWs.value.readyState !== WebSocket.OPEN) {
+    // 6. 构建 WebSocket URL, 带上 userId 和 userName 参数
+        const wsUrl = `ws://localhost:4399?userId=${curUser.userId}&userName=${encodeURIComponent(curUser.displayName)}`;
+        transcriptionWs.value = new WebSocket(wsUrl);
+
+        transcriptionWs.value.onopen = () => {
+          console.log('[Client] 转录 WebSocket 连接已建立');
+          isTranscribing.value = true;
+        };
+
+        transcriptionWs.value.onmessage = (event) => {
+          //  ... (处理消息的代码, 和之前一样) ...
+           const data = JSON.parse(event.data);
+          //  更新 subtitles 对象
+          if (data.type === 'interim') {
+              //  有 userId, 更新到 subtitles 对象中
+            if (!subtitles.value[data.userId]) {
+                subtitles.value[data.userId] = { userName: data.userName, text: '' };
             }
-          };
+            subtitles.value[data.userId].text = data.text; // 更新
 
-          gainNode.connect(processor);
-          processor.connect(audioContext.destination);
-        }
+          } else if (data.type === 'final') {
+            if (!subtitles.value[data.userId]) {
+                subtitles.value[data.userId] = { userName: data.userName, text: ''};
+            }
+            subtitles.value[data.userId].text = data.text;
 
+          }
+        };
+
+        transcriptionWs.value.onerror = (error) => {
+          console.error('[Client] 转录 WebSocket 错误:', error);
+            ElMessage.error("转录服务出错")
+          isTranscribing.value = false;
+        };
+
+        transcriptionWs.value.onclose = () => {
+          console.log('[Client] 转录 WebSocket 连接已关闭');
+          isTranscribing.value = false;
+              subtitles.value = {}; // 清空
+        };
+      }
   } catch (error) {
-    console.error("启动转录失败:", error);
-    ElMessage.error("启动转录失败，请检查麦克风权限");
+    console.error('启动转录失败:', error);
+     ElMessage.error("启动转录失败,请检查麦克风权限")
   }
 };
 
-
-
+// 停止转录 (修改)
 const stopTranscription = () => {
- console.log("停止转录");
-
-    // 1. 关闭 WebSocket
-    if (websocket && websocket.readyState !== WebSocket.CLOSED) {
-         // 发送 [DONE] 消息 (如果连接还开着)
-           if (websocket.readyState === WebSocket.OPEN) {
-            websocket.send(new Uint8Array([0x5B, 0x44, 0x4F, 0x4E, 0x45, 0x5D])); //  "[DONE]" 的二进制表示
-
-            console.log('已发送[DONE]')
-        }
+    // 1. 关闭 WebSocket 连接 (如果存在)
+    if (transcriptionWs.value && (transcriptionWs.value.readyState === WebSocket.OPEN || transcriptionWs.value.readyState === WebSocket.CONNECTING)) {
+        transcriptionWs.value.close();
     }
-    websocket.close();
-      websocket = null;
-  // 2. 停止麦克风
-  if (mediaStream) {
-    mediaStream.getTracks().forEach(track => track.stop());
-    mediaStream = null;
-  }
+    transcriptionWs.value = null;
 
-  // 3. 关闭音频上下文和节点
-  if (audioContext) {
-    if(sourceNode) sourceNode.disconnect();
-    if(gainNode) gainNode.disconnect();
-      if(processor) processor.disconnect(); // 断开
-        audioContext.close().then(()=>{
-         audioContext = null;
-           sourceNode = null;
-        processor = null;
-        gainNode = null;
-        console.log('音频上下文已关闭')
-    });
-  }
-      subtitle.value = ""
+    // 2. 停止麦克风 (如果已开启)
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
+
+    // 3. 停止 ScriptProcessorNode (如果已创建), 防止内存泄漏
+    if (scriptNode) {
+        scriptNode.disconnect();
+        scriptNode = null;
+    }
+
+  // 4. 关闭 AudioContext (可选, 根据需要) 如果不需要复用, 可以在停止时关闭
+//   if (audioContext) {
+//     audioContext.close(); 
+//     audioContext = null;
+//   }
+
+  isTranscribing.value = false;
+    subtitles.value = {};
 };
 
-// Float32Array 转 Int16Array 的辅助函数
-function float32ToInt16(buffer) {
-    let l = buffer.length;
-    const buf = new Int16Array(l);
-    while (l--) {
-        buf[l] = Math.min(1, buffer[l]) * 0x7FFF;
-    }
-    return buf;
-}
-
-// 记得在组件卸载时停止转录 (重要!)
-onBeforeUnmount(() => {
-    if (sessionJoined.value) {
-        ZoomVideoService.leaveSession(false);
-        sessionJoined.value = false;
-    }
-    if (isTranscribing.value) {
-      stopTranscription();
-    }
-
-
-// ... 其他已有的 onBeforeUnmount 内容 ...
+onUnmounted(() => {
+    // ... 其他清理
+  stopTranscription(); // 
+  //stopRecording(); 
+ZoomVideoService.client.off('chat-file-download-progress', handleFileDownloadProgress); 
 });
+
+
 
 
 
