@@ -1,5 +1,5 @@
 // server.js
-// server.js
+
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
@@ -305,45 +305,69 @@ app.post('/api/analyze-file', async (req, res) => {
 
     let extractedText = '';
     if (fileType === 'pdf') {
+      console.log('开始解析 PDF 文件:', filePath);
+      const dataBuffer = fs.readFileSync(filePath);
+
       try {
-        console.log('开始解析 PDF 文件...');
-        // 尝试使用 pdf-parse 解析
-        let data = await pdfParse(fileBuffer);
-        extractedText = data.text;
+          // 尝试使用 pdf-parse 解析
+          const data = await pdfParse(dataBuffer);
+          extractedText = data.text;
 
-        if (extractedText.length === 0) {
-            // 若解析结果为空，尝试 OCR 处理（假设是扫描版 PDF）
-            console.log('pdf-parse 解析结果为空，尝试 OCR 处理...');
-            const { data: { text } } = await Tesseract.recognize(
-                fileBuffer,
-                'chi_sim', // 中文识别，根据需求调整
-                {
-                    logger: m => console.log(m)
+          if (extractedText.length === 0) {
+              // 若解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理
+              console.log('pdf-parse 解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理...');
+
+              // 定义转换选项
+              const options = {
+                  format: 'png',
+                  out_dir: path.dirname(filePath),
+                  out_prefix: path.basename(filePath, path.extname(filePath)),
+                  page: null // 处理所有页面
+              };
+
+              // 执行 PDF 到图像的转换
+              const outputFiles = await pdfPoppler.convert(filePath, options);
+
+              for (const outputFile of outputFiles) {
+                  const { data: { text } } = await Tesseract.recognize(
+                      outputFile,
+                      'chi_sim', // 如果是中文文档，使用 'chi_sim'
+                      {
+                          logger: m => console.log(m)
+                      }
+                  );
+                  extractedText += text;
+              }
+
+                 // 完成 OCR 处理后，删除生成的 PNG 文件
+              for (const outputFile of outputFiles) {
+                try {
+                  fs.unlinkSync(outputFile);
+                  console.log(`已删除临时文件: ${outputFile}`);
+                } catch (deleteError) {
+                  console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
                 }
-            );
-            extractedText = text;
+              }               
 
-            if (extractedText.length === 0) {
-                // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
-                console.log('OCR 处理结果为空，尝试使用 pdfjs-dist 解析...');
-                const pdfData = new Uint8Array(fileBuffer);
-                const loadingTask = pdfjsLib.getDocument(pdfData);
-                const pdfDoc = await loadingTask.promise;
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const content = await page.getTextContent();
-                    const pageText = content.items.map(item => item.str).join(' ');
-                    extractedText += pageText;
-                }
-            }
-        }
-
-        extractedText = cleanExtractedText(extractedText);
-        console.log('PDF 解析完成，提取文本长度:', extractedText.length);
-    } catch (error) {
-        console.error('解析 PDF 文件出错:', error);
-        return res.status(500).json({ error: 'PDF 文件解析失败' });
-    }
+              if (extractedText.length === 0) {
+                  // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
+                  console.log('OCR 处理结果为空，尝试使用 pdfjs-dist 解析...');
+                  const pdfData = new Uint8Array(dataBuffer);
+                  const loadingTask = pdfjsLib.getDocument(pdfData);
+                  const pdfDoc = await loadingTask.promise;
+                  for (let i = 1; i <= pdfDoc.numPages; i++) {
+                      const page = await pdfDoc.getPage(i);
+                      const content = await page.getTextContent();
+                      const pageText = content.items.map(item => item.str).join(' ');
+                      extractedText += pageText;
+                  }
+              }
+          }
+          console.log('PDF 解析完成，提取文本长度:', extractedText.length);
+      } catch (pdfError) {
+          console.error('解析 PDF 文件出错:', pdfError);
+          return res.status(500).json({ error: 'PDF 文件解析失败，请检查文件是否损坏' });
+      }
     } else if (fileType === 'doc' || fileType === 'docx') {
         const result = await mammoth.extractRawText({ buffer: fileBuffer });
         extractedText = result.value;
@@ -649,6 +673,7 @@ app.get('/api/download/:fileId', (req, res) => {
   const uploadPath = path.join(__dirname, 'uploads');
   const files = fs.readdirSync(uploadPath);
 
+  // 查找匹配的文件（关键修改）
   const matchingFiles = files.filter(file => {
     const [uuid] = file.split('--', 2);
     return uuid === fileId;
@@ -660,12 +685,12 @@ app.get('/api/download/:fileId', (req, res) => {
 
   const storedFileName = matchingFiles[0];
   const filePath = path.join(uploadPath, storedFileName);
-  const [uuid, encodedOriginalName] = storedFileName.split('--', 2);
-  const originalName = decodeURIComponent(encodedOriginalName); // 解码原始文件名
+  const [uuid, originalName] = storedFileName.split('--', 2);
 
-  // 设置 Content-Disposition 头（使用 RFC 5987 标准编码）
-  const encodedFileName = encodeURIComponent(originalName);
-  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFileName}`);
+  console.log(`[文件下载] UUID: ${uuid}, 原始文件名: ${originalName}`);
+
+  // 设置响应头（关键修改）
+  res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
 
   const fileStream = fs.createReadStream(filePath);

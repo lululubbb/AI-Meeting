@@ -369,68 +369,33 @@ const fetchUploadedFiles = async () => {
     return `生成中 ${percentage}%`;
   };
 // 处理文件下载
-// const handleDownload = async file => {
-//     try {
-//       const response = await axios.get(`http://localhost:4000/api/download/${file.id}`, {
-//         responseType: 'blob'
-//       });
+const handleDownload = async file => {
+    try {
+      const response = await axios.get(`http://localhost:4000/api/download/${file.id}`, {
+        responseType: 'blob'
+      });
   
-//       const contentDisposition = response.headers['content-disposition'];
-//       let fileName = file.fileName;
-//        if (contentDisposition) {
-//         const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-//          if (fileNameMatch && fileNameMatch[1]) {
-//             fileName = decodeURIComponent(escape(fileNameMatch[1].replace(/['"]/g, ''))); //关键修改
-//           }
-//       }
-  
-//       const blob = new Blob([response.data]);
-//       const link = document.createElement('a');
-//       link.href = URL.createObjectURL(blob);
-//       link.setAttribute('download', fileName);
-//       document.body.appendChild(link);
-//       link.click();
-//       document.body.removeChild(link);
-//     } catch (error) {
-//       console.error('下载文件失败:', error);
-//       ElMessage.error('下载失败');
-//     }
-//   };
-
-
-const handleDownload = async (file) => {
-  try {
-    const response = await axios.get(`http://localhost:4000/api/download/${file.id}`, {
-      responseType: 'blob'
-    });
-
-    // 优先解析 RFC 5987 格式的 filename*
-    let fileName = file.fileName; // 默认使用后端返回的 fileName
-    const contentDisposition = response.headers['content-disposition'];
-    if (contentDisposition) {
-      const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''(.+)/i);
-      if (rfc5987Match) {
-        fileName = decodeURIComponent(rfc5987Match[1]);
-      } else {
-        // 回退到旧的 filename 参数（兼容性处理）
-        const legacyMatch = contentDisposition.match(/filename=["']?(.*?)["']?;/i);
-        if (legacyMatch) {
-          fileName = decodeURIComponent(legacyMatch[1]);
-        }
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = file.fileName;
+       if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+         if (fileNameMatch && fileNameMatch[1]) {
+            fileName = decodeURIComponent(escape(fileNameMatch[1].replace(/['"]/g, ''))); //关键修改
+          }
       }
+  
+      const blob = new Blob([response.data]);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('下载文件失败:', error);
+      ElMessage.error('下载失败');
     }
-    const blob = new Blob([response.data]);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error('下载文件失败:', error);
-    ElMessage.error('下载失败');
-  }
-};
+  };
 
   const generateSummaryForFile = async (file) => {
     console.log('发起摘要生成请求:', file);
