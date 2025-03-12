@@ -76,23 +76,39 @@ app.use((req, res, next) => {
 // });
 
 // 文件存储配置（关键修改）
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     const uploadPath = path.join(__dirname, 'uploads');
+//     if (!fs.existsSync(uploadPath)) {
+//       fs.mkdirSync(uploadPath);
+//     }
+//     cb(null, uploadPath);
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueId = uuidv4();
+//     const encodedOriginalName = encodeURIComponent(file.originalname); // 编码原始文件名
+//     const finalName = `${uniqueId}--${encodedOriginalName}`; // 使用编码后的名称
+//     console.log(`[文件上传] 存储文件名: ${finalName}（原始文件名: ${file.originalname}）`);
+//     cb(null, finalName);
+//   }
+// });
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath);
-    }
-    cb(null, uploadPath);
+      const uploadPath = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath);
+      }
+      cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    const uniqueId = uuidv4();
-    const encodedOriginalName = encodeURIComponent(file.originalname); // 编码原始文件名
-    const finalName = `${uniqueId}--${encodedOriginalName}`; // 使用编码后的名称
-    console.log(`[文件上传] 存储文件名: ${finalName}（原始文件名: ${file.originalname}）`);
-    cb(null, finalName);
+      const uniqueId = uuidv4();
+      const fileExt = path.extname(file.originalname);
+      const originalName = file.originalname; // 原始文件名
+      const finalName = `${uniqueId}--${originalName}`; // 使用双破折号分隔
+      console.log(`[文件上传] 存储文件名: ${finalName}（原始文件名: ${originalName}）`);
+      cb(null, finalName);
   }
 });
-
 
 const upload = multer({
   storage: storage,  // 使用修改后的 storage
@@ -304,7 +320,7 @@ app.post('/api/analyze-file', async (req, res) => {
     }
 
     let extractedText = '';
-    if (fileType === 'pdf') {
+    if (fileType === '.pdf') {
       console.log('开始解析 PDF 文件:', filePath);
       const dataBuffer = fs.readFileSync(filePath);
 
@@ -368,7 +384,8 @@ app.post('/api/analyze-file', async (req, res) => {
           console.error('解析 PDF 文件出错:', pdfError);
           return res.status(500).json({ error: 'PDF 文件解析失败，请检查文件是否损坏' });
       }
-    } else if (fileType === 'doc' || fileType === 'docx') {
+    } 
+      else if (fileType === 'doc' || fileType === 'docx') {
         const result = await mammoth.extractRawText({ buffer: fileBuffer });
         extractedText = result.value;
     } else {
@@ -400,18 +417,18 @@ app.post('/api/analyze-file', async (req, res) => {
               'Authorization': `Bearer ${process.env.XF_API_PASSWORD}`
             },
           responseType: 'stream', //  重要:  流式响应
-       });
+      });
 
       //  设置响应头,  SSE
-       res.setHeader('Content-Type', 'text/event-stream');
-       res.setHeader('Cache-Control', 'no-cache');
-       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
     
-       aiResponse.data.on('data', (chunk) => {
+      aiResponse.data.on('data', (chunk) => {
         const lines = chunk.toString('utf8').split('\n').filter(line => line.trim() !== '');
-         for (const line of lines) {
-           if (line.startsWith('data:')) {
-             const dataStr = line.replace(/^data:/, '').trim();
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const dataStr = line.replace(/^data:/, '').trim();
               if (dataStr !== '[DONE]') {
                 try {
                   const parsedData = JSON.parse(dataStr);
@@ -422,12 +439,12 @@ app.post('/api/analyze-file', async (req, res) => {
                     if (cleanedContent) {
                       res.write(`data: ${JSON.stringify({ content: cleanedContent })}\n\n`);
 
-                           }
+                          }
                         }
                   } catch (error) {
                    //console.error('解析JSON失败:', error);
-                 }
-               }
+                }
+              }
             }
            }
          });
