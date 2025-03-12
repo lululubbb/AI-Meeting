@@ -1150,7 +1150,7 @@ const analyzeParticipation = async () => {
     isLoadingAnalysis.value = true;
     analysisProgress.value = 0;
 
-    模拟进度条更新
+    // 模拟进度条更新
     const intervalId = setInterval(() => {
       if (analysisProgress.value < 100) {
         analysisProgress.value += 9;
