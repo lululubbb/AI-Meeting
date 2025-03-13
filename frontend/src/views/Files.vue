@@ -147,7 +147,6 @@
   <script setup>
   import { ref, onMounted, nextTick, computed } from 'vue';
   import { useStore } from 'vuex';
-  import CalendarTodoList from '../components/CalendarTodoList.vue';
   import { ElUpload, ElProgress, ElMessage, ElTable, ElTableColumn, ElIcon, ElDivider, ElCard, ElMessageBox } from 'element-plus';
   import { UploadFilled, Document, DocumentCopy, Download, Close, Memo, Loading, Delete } from '@element-plus/icons-vue';
   import axios from 'axios';
@@ -439,7 +438,7 @@ const handleDownload = async file => {
   
     eventSource.onerror = error => {
       console.error('EventSource 错误:', error);
-      ElMessage.error('生成摘要时发生错误');
+      ElMessage.warning('无法处理扫描件或图片型 PDF，生成摘要失败');
       eventSource.close();
       summaryLoading.value = false;
       file.isGeneratingSummary = false;
