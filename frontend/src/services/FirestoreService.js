@@ -5,27 +5,47 @@ import { ElMessage } from 'element-plus'; // 导入 ElMessage
 class FirestoreService {
 
      // 获取用户信息
-       async getUserInfo(userId) {
-         try {
-           const userDocRef = doc(db, 'users', userId);
-           const userDoc = await getDoc(userDocRef);
-           if (userDoc.exists()) {
-             return userDoc.data(); // 返回 Firestore 中的用户数据
-           } else {
-             return null; // 用户不存在
-           }
-         } catch (error) {
-           console.error('获取用户信息失败:', error);
-           throw error;
-         }
-       }
+     async getUserInfo(userId) {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('zoomUserId', '==', userId)); // 使用 Zoom 的 userId, 字段名改为 zoomUserId
+        const querySnapshot = await getDocs(q);
+  
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          return userDoc.data();
+        } else {
+          console.log('No user found with userId:', userId);
+          return null;
+        }
+      } catch (error) {
+        console.error('获取用户信息失败:', error);
+        throw error;
+      }
+    }
+        // 新增: 更新/创建 用户的 Zoom userId (新增)
+  async updateUserZoomId(firebaseUid, zoomUserId) {
+    try {
+      const userDocRef = doc(db, 'users', firebaseUid);
+      await setDoc(userDocRef, { zoomUserId: zoomUserId }, { merge: true });
+      console.log('Zoom userId 已更新/创建');
+    } catch (error) {
+      console.error('更新/创建 Zoom userId 失败:', error);
+      throw error; // 或根据需要处理
+    }
+  }
       // 更新用户状态
-     async updateUserStatus(userId, status){
-      const userDocRef = doc(db,'users',userId);
-      await updateDoc(userDocRef,{
-        status:status,
-      })
-     }
+      async updateUserStatus(userData){
+        const userDocRef = doc(db,'users',userData.uid);
+        await updateDoc(userDocRef,{
+          name:userData.name,
+          status:userData.status,
+          workLocation: userData.workLocation,
+          mood: userData.mood,
+          avatarUrl: userData.avatarUrl,
+          zoomUserId: userData.zoomUserId, // 确保 zoomUserId 也被更新
+        })
+       }
       // 更新用户工作位置
      async updateUserWorkLocation(userId, workLocation){
          const userDocRef = doc(db,'users',userId);

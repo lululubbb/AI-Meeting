@@ -306,7 +306,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, onBeforeUnmount, nextTick, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, onBeforeUnmount, nextTick, computed ,provide, inject} from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import FirestoreService from '../services/FirestoreService.js';
@@ -329,7 +329,11 @@ const store = useStore();
 const route = useRoute();
 const router = useRouter(); 
 const isMaximized = computed(() => store.state.isMaximized);
-
+const users = computed(() => store.state.usersInMeeting);
+// *关键*:  通过 provide 暴露 handleChatMessage 给子组件
+provide('handleChatMessage', handleChatMessage);
+// *新增*: 用于强制刷新 users 计算属性
+const usersRefreshKey = ref(0);
 const goHome = () => {
   store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
   store.commit('SET_VIDEOCALL_ACTIVE', true); // 显示
@@ -686,151 +690,200 @@ const handleSession = async () => {
 /* *********************
 会议初始化
    ********************* */
-const joinSession = async () => {
-    try {
-        const success = await ZoomVideoService.joinSession(config);
-        if (!success) {
-            isJoining.value = false;
-            return;
+   const joinSession = async () => {
+  try {
+    const success = await ZoomVideoService.joinSession(config);
+    if (!success) {
+      isJoining.value = false;
+      return;
+    }
+    sessionJoined.value = true;
+    isJoining.value = false;
+    // 检查是否支持多路视频
+    if (!ZoomVideoService.stream.isSupportMultipleVideos()) {
+      console.warn('当前环境不支持多路视频，只能渲染本地+1路远端');
+    }
+
+    checkIfHost(); // *务必* 先调用 checkIfHost, 设置好 config.hostId
+
+    // 拿到当前用户, 并加入 users 列表
+    const currentUser = ZoomVideoService.client.getCurrentUserInfo();
+
+    // *关键修改*:  dispatch action, 初始化 Vuex 中的 usersInMeeting
+    // 放到 subscribeEvents 之前, 且在 users.value 初始化之后.
+    store.dispatch('initializeUsersInMeeting', []); // 初始化为空数组
+    if (currentUser && currentUser.userId) {
+      currentUserId.value = currentUser.userId;
+      // *关键*:  获取当前用户的头像
+      const currentUserAvatar = store.state.user.avatarUrl || defaultAvatar;
+
+        //------------------------------------------
+        // 新增:  获取并存储 Zoom userId (在这里获取并存储)
+        //------------------------------------------
+        const zoomUserId = currentUser.userId; // Zoom 的 userId (数值类型)
+        const firebaseUid = store.state.user.uid; // Firebase Auth uid (字符串)
+
+        if (firebaseUid) {
+            try {
+                // **重要**: 调用 FirestoreService 的方法来更新/创建文档
+                await FirestoreService.updateUserZoomId(firebaseUid, zoomUserId);
+                console.log('已存储Zoom UserId', zoomUserId);
+
+            } catch (error) {
+                console.error("存储 Zoom userId 失败:", error);
+            }
         }
-        sessionJoined.value = true;
-        isJoining.value = false;
-        // 检查是否支持多路视频
-        if (!ZoomVideoService.stream.isSupportMultipleVideos()) {
-            console.warn('当前环境不支持多路视频，只能渲染本地+1路远端');
-        }
+        // -----------------------------------------
 
-        checkIfHost();   // *务必* 先调用 checkIfHost, 设置好 config.hostId
 
-        // 拿到当前用户, 并加入 users 列表
-        const currentUser = ZoomVideoService.client.getCurrentUserInfo();
-        if (currentUser && currentUser.userId) {
-            currentUserId.value = currentUser.userId;
-            // 把当前用户加入 users 数组 (无论主持人还是参与者)
-            users.value.push({
-                userId: currentUser.userId,
-                userName: currentUser.displayName,
-                role: isHost.value ? 'host' : 'participant',
-                joinTime: new Date(),
-                leaveTime: null,
-                hasVideo: {
-                    initial: isVideoOn.value,
-                    final: isVideoOn.value,
-                    timeline: [{ time: Date.now(), value: isVideoOn.value }],
-                },
-                isAudioOn: {
-                    initial: isAudioOn.value,
-                    final: isAudioOn.value,
-                    timeline: [{ time: Date.now(), value: isAudioOn.value }],
-                },
-                isSharing: {
-                    initial: false,
-                    final: false,
-                    timeline: [{ time: Date.now(), value: false }],
-                },
-                isUpdated: false,  // 用于标记是否已更新
-                hostId: config.hostId, // *重要*: 所有用户都记录 hostId, 方便后续查询
-                uploads: 0,
-                downloads: 0,
-                messagesSent: 0,
-            });
+      // 把当前用户加入 users 数组 (无论主持人还是参与者)
+      const localUser = {
+        // 立即创建本地用户对象
+        userId: currentUser.userId,
+        userName: currentUser.displayName,
+        avatarUrl: currentUserAvatar, // *** 重要 *** 使用获取到的头像
+        role: isHost.value ? 'host' : 'participant',
+        joinTime: new Date(),
+        leaveTime: null,
 
-            const user = store.getters.getUser; // 从 Vuex 获取用户信息
+        hasVideo: {
+          initial: isVideoOn.value,
+          final: isVideoOn.value,
+          timeline: [{ time: Date.now(), value: isVideoOn.value }],
+        },
+        isAudioOn: {
+          initial: isAudioOn.value,
+          final: isAudioOn.value,
+          timeline: [{ time: Date.now(), value: isAudioOn.value }],
+        },
+        isSharing: {
+          initial: false,
+          final: false,
+          timeline: [{ time: Date.now(), value: false }],
+        },
+        isUpdated: false,
+        hostId: config.hostId,
+        uploads: 0,
+        downloads: 0,
+        messagesSent: 0,
+      };
+      users.value.push(localUser);
 
-          if (user) {
-              // 如果是主持人, 什么都不做 (已经在 handleSession 中创建了主会议文档)
-              if (isHost.value) {
-                  // 什么都不做!
-              } else {
-                  // 如果是参与者, 调用 addParticipantMeeting, 创建指向主持人文档的引用
-                  // *重要*: 在这里检查 config.hostId 是否为空
-                  if (!config.hostId) {
-                      const allUsers = ZoomVideoService.client.getAllUser();
-                        allUsers.forEach(u => {
-                            if(u.isHost){
-                                config.hostId = u.userId.toString(); // 将数值类型转换为字符串类型
-                            }
-                        })
-                      console.warn('config.hostId 为空! 尝试从 allUser 中获取');
-                      //  可以添加更详细的错误处理, 例如给用户提示, 或者直接退出会议
-                  }
-                  try {
-                      await FirestoreService.addParticipantMeeting(
-                        user.uid,            // 参与者自己的 ID
-                        config.hostId,     // 主持人 ID
-                        config.meetingId,   // 会议 ID (来自路由参数或 handleSession)
-                        new Date()          // 加入时间
-                      );
-                  } catch (err) {
-                      console.error('添加参与者会议记录失败:', err);
-                      showSnackBar('添加参与者会议记录失败');
-                      // 可以考虑更完善的错误处理
-                  }
+      const user = store.getters.getUser;  // 从 Vuex 获取用户信息
+      if (user) {
+        // 如果是主持人, 什么都不做 (已经在 handleSession 中创建了主会议文档)
+        if (isHost.value) {
+          // 什么都不做!
+        } else {
+          // 如果是参与者, 调用 addParticipantMeeting, 创建指向主持人文档的引用
+          // *重要*: 在这里检查 config.hostId 是否为空
+          if (!config.hostId) {
+            const allUsers = ZoomVideoService.client.getAllUser();
+            allUsers.forEach(u => {
+              if(u.isHost){
+                config.hostId = u.userId.toString(); // 将数值类型转换为字符串类型
               }
+            })
+            console.warn('config.hostId 为空! 尝试从 allUser 中获取');
+            //  可以添加更详细的错误处理, 例如给用户提示, 或者直接退出会议
+          }
+          try {
+            await FirestoreService.addParticipantMeeting(
+              user.uid, // 参与者自己的 ID
+              config.hostId, // 主持人 ID
+              config.meetingId, // 会议 ID (来自路由参数或 handleSession)
+              new Date() // 加入时间
+            );
+          } catch (err) {
+            console.error('添加参与者会议记录失败:', err);
+            showSnackBar('添加参与者会议记录失败');
+            // 可以考虑更完善的错误处理
           }
         }
-        // 订阅 SDK 事件
-        subscribeEvents();
 
-        // 获取已加入会议的用户, 并加入 users 列表 (用于 UI 显示和统计)
-        const allUsers = ZoomVideoService.client.getAllUser();
-        const localId = currentUserId.value;
+        // *关键*:  dispatch action,  更新 Vuex 中的 usersInMeeting
+        store.dispatch('updateUserAvatarInMeeting', {
+          userId: currentUser.userId,
+          avatarUrl: currentUserAvatar
+        });
+        usersRefreshKey.value += 1;  // 强制刷新 users 计算属性
+      }
+    }
+
+    // 订阅 SDK 事件 (user-added 的处理在这里)
+    subscribeEvents();
+
+    // 获取已加入会议的用户, 并加入 users 列表 (用于 UI 显示和统计)
+    // 这部分用户信息不完整,  主要用于占位,  在 user-added 事件中会更新
+    const allUsers = ZoomVideoService.client.getAllUser();
+    const localId = currentUserId.value;
+    // *关键修改*: 先获取已经在 users 数组中的用户 (主要是当前用户)
+    const existingUserIds = new Set(users.value.map(u => u.userId));
+
 
       allUsers.forEach(u => {
-      if (u.userId !== localId) { // *不* 重复添加自己
-        users.value.push({
-          userId: u.userId,
-          userName: u.displayName,
-          role: u.isHost ? 'host' : 'participant',
-          joinTime: new Date(), // 注意: 这里简化了, 实际加入时间应该通过 user-added 事件获取更准确
-          leaveTime: null,
-          hasVideo: {
-            initial: u.bVideoOn,
-            final: u.bVideoOn,
-            timeline: [{ time: Date.now(), value: u.bVideoOn }]
-          },
-          isAudioOn: {
-            initial: true, // 假设默认开启音频
-            final: true,
-            timeline: [{ time: Date.now(), value: true }]
-          },
-          isSharing: {
-            initial: u.sharerOn,
-            final: u.sharerOn,
-            timeline: [{ time: Date.now(), value: u.sharerOn }]
-          },
-          isUpdated: false, //
-          hostId: config.hostId,  // *重要*:  所有用户 (包括已加入的) 都记录 hostId
-          uploads: 0,
-          downloads: 0,
-          messagesSent: 0,
-        });
-      }
-    });
+          if (u.userId !== localId && !existingUserIds.has(u.userId)) {
+            users.value.push({ // *不* 重复添加自己
+              userId: u.userId,
+              userName: u.displayName,
+              avatarUrl: defaultAvatar, //这里还是用默认值
+              role: u.isHost ? 'host' : 'participant',
+              joinTime: new Date(),
+              leaveTime: null,
+              hasVideo: {
+                  initial: u.bVideoOn,
+                  final: u.bVideoOn,
+                  timeline: [{ time: Date.now(), value: u.bVideoOn }]
+              },
+            isAudioOn:{
+              initial: true, // 假设默认开启音频
+              final: true,
+              timeline: [{ time: Date.now(), value: true }]
+            },
+            isSharing: {
+              initial: u.sharerOn,
+              final: u.sharerOn,
+              timeline: [{ time: Date.now(), value: u.sharerOn }]
+            },
+            isUpdated: false,
+            hostId: config.hostId, // *重要*: 所有用户都记录 hostId
+            uploads: 0,
+            downloads: 0,
+            messagesSent: 0,
+          });
+          // *关键*:  dispatch action,  更新 Vuex 中的 usersInMeeting, user-added中会从firestore中获取信息
+          store.dispatch('updateUserAvatarInMeeting', {
+            userId: u.userId,
+            avatarUrl: defaultAvatar
+          });
+          }
+      });
+
         // 等待 DOM 渲染完成
-        await nextTick();
-
-        // attach 远端用户的视频
-        for (const u of allUsers) {
-         if (u.userId !== localId) { //
-            if (u.bVideoOn) {
-                await ZoomVideoService.attachUserVideo(u.userId, VideoQuality.VIDEO_360P);
-          }
-          if (u.sharerOn) {
-              await ZoomVideoService.attachScreenShare(u.userId);
-          }
+    await nextTick();
+       // attach 远端用户的视频/共享
+    for (const u of allUsers) {
+      if (u.userId !== localId) { // 不渲染自己
+        if (u.bVideoOn) {
+           await ZoomVideoService.attachUserVideo(u.userId, VideoQuality.VIDEO_360P);
         }
+        if (u.sharerOn) {
+          await ZoomVideoService.attachScreenShare(u.userId);
+        }
+      }
     }
-        // 初始化可聊天用户列表
-        updateChatReceivers();
-        // 订阅服务质量事件
-        subscribeServiceQuality();
+    // *关键*: 调用 initChat, 并传入 handleChatMessage
+    await ZoomVideoService.initChat(handleChatMessage); //  正确调用!
+    // 初始化可聊天用户列表
+    updateChatReceivers();
+    // 订阅服务质量事件
+     subscribeServiceQuality();
 
-    } catch (error) {
-        console.error('joinSession error:', error);
-        showSnackBar('加入会议失败');
-        isJoining.value = false;
-    }
+  } catch (error) {
+    console.error('joinSession error:', error);
+    showSnackBar('加入会议失败');
+     isJoining.value = false;
+  }
 };
 
 function checkIfHost() {
@@ -943,7 +996,7 @@ const fileToAnalyze = ref(null); // 存储要分析的文件信息，用于传�
 const fileMsgId = ref(null);
 
 /* 用户列表 */
-const users = ref([]);       //  改回数组
+//  改回数组
 const currentUserId = ref(null);
 const isHost = ref(false);
 // 发送信息
@@ -988,29 +1041,7 @@ const sendChat = async () => {
 // 收到他人聊天消息
 function handleChatMessage(payload) {
     const { message, sender, receiver, file, timestamp, id} = payload; //  timestamp, 增加 id
-     // 3. 使用默认头像
-  const getAvatar = () => {
-  // 优先使用消息中的avatar
-  if (sender.avatar) return sender.avatar;
-  // 从store中查找用户信息
-  const userInStore = store.state.users?.find(u => u.userId === sender.userId);
-  return userInStore?.avatarUrl || defaultAvatar;
-};
-//   const getAvatar = () => {
-//   // 实时同步用户数据
-//   const updatedUser = ZoomVideoService.getUserInfo(sender.userId);
-//   return updatedUser?.avatar 
-//     || store.state.users.find(u => u.userId === sender.userId)?.avatarUrl
-//     || defaultAvatar;
-// };
-    console.log("Received chat message:", payload); // 打印整个 payload
-    console.log('Message ID:', id);
-    console.log('Sender AvatarUrl:', sender.avatar);
-    console.log('[DEBUG] 收到消息:', {
-    senderId: payload.sender.userId,
-    senderAvatar: getAvatar(),
-    currentUserId: store.state.user.uid // 当前用户 ID
-  });
+
     // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
     if (ZoomVideoService.isMessageAlreadyAdded(id)) {
         return;
@@ -1018,7 +1049,24 @@ function handleChatMessage(payload) {
     // 2. 如果不存在, 添加到已处理列表
     ZoomVideoService.addMessageId(id);
 
-    // 3. 构造消息对象, 添加到列表 (和之前一样)
+    // 3. 获取头像 (修改部分)
+    const getAvatar = () => {
+      // 优先从 users 数组中查找 (本地+已加入的远端)
+      const userInStore = users.value.find(u => u.userId === sender.userId);
+      console.log('在vuex中查找头像',userInStore);
+      return userInStore?.avatarUrl || defaultAvatar;
+  };
+   console.log("Received chat message:", payload); // 打印整个 payload
+  console.log('Message ID:', id);
+  console.log('Sender AvatarUrl:', sender.avatar);
+//4. 打印调试信息
+  console.log('[DEBUG] 收到消息:', {
+    senderId: payload.sender.userId,
+    senderAvatar: getAvatar(),
+    currentUserId: store.state.user.uid // 当前用户 ID
+   });
+
+    // 5. 构造消息对象, 添加到列表 (和之前一样)
     let messageObj;
     if (!file) {
       messageObj = {
@@ -1049,10 +1097,49 @@ function handleChatMessage(payload) {
         timestamp: timestamp ? new Date(timestamp) : new Date(),
         fileDownloadProgress: 0,
         fileDownloadStatus: null,
-        msgId: id 
+        msgId: id
       };
   }
   chatMessagesList.value.push(messageObj);
+  scrollToBottom();
+}
+
+// 聊天历史
+// 聊天历史
+function handleChatHistory(history) {
+  history.forEach(msg => {
+    if (!msg.file) {
+      chatMessagesList.value.push({
+        type: msg.receiver.userId === '0' ? 'group' : 'private',
+        senderId: msg.sender.userId,
+        senderName: msg.sender.name,
+        receiverId: msg.receiver.userId,
+        message: msg.message,
+        avatar: store.state.usersInMeeting.find(u => u.userId === msg.sender.userId)?.avatarUrl || defaultAvatar, // *关键修改*: 移除 ?
+        file: null,
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date() // 使用传入的时间戳
+      });
+    } else {
+      chatMessagesList.value.push({
+        type: msg.receiver.userId === '0' ? 'group' : 'private',
+        senderId: msg.sender.userId,
+        senderName: msg.sender.name,
+        receiverId: msg.receiver.userId,
+        // *关键修改*: 移除 ?
+        avatar: store.state.usersInMeeting.find(u => u.userId === msg.sender.userId)?.avatarUrl || defaultAvatar, // 从Vuex store中取
+        message: null,
+        file: {
+          name: msg.file.name,
+          size: msg.file.size,
+          fileUrl: msg.file.fileUrl
+        },
+         timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(), // 使用传入的时间戳
+        fileDownloadProgress: msg.file.download?.progress || 0,
+        fileDownloadStatus: msg.file.download?.status || null,
+        msgId: msg.id
+      });
+    }
+  });
   scrollToBottom();
 }
 
@@ -1065,42 +1152,7 @@ function handleMessageSent(msg) {
     handleChatMessage(msg); // 复用
 }
 
-// 聊天历史
-function handleChatHistory(history) {
-    history.forEach(msg => {
-      if (!msg.file) {
-        chatMessagesList.value.push({
-          type: msg.receiver.userId === '0' ? 'group' : 'private',
-          senderId: msg.sender.userId,
-          senderName: msg.sender.name,
-          receiverId: msg.receiver.userId,
-          message: msg.message,
-          avatar: msg.sender.avatar || defaultAvatar,
-          file: null,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date() // 使用传入的时间戳
-        });
-      } else {
-        chatMessagesList.value.push({
-          type: msg.receiver.userId === '0' ? 'group' : 'private',
-          senderId: msg.sender.userId,
-          senderName: msg.sender.name,
-          receiverId: msg.receiver.userId,
-          avatar: msg.sender.avatar || defaultAvatar,
-          message: null,
-          file: {
-            name: msg.file.name,
-            size: msg.file.size,
-            fileUrl: msg.file.fileUrl
-          },
-           timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(), // 使用传入的时间戳
-          fileDownloadProgress: msg.file.download?.progress || 0,
-          fileDownloadStatus: msg.file.download?.status || null,
-          msgId: msg.id
-        });
-      }
-    });
-    scrollToBottom();
-}
+
 const chatMessages = ref(null);
 
 function scrollToBottom() {
@@ -1584,105 +1636,136 @@ ZoomVideoService.client.off('chat-file-download-progress', handleFileDownloadPro
 /* *********************
 SDK事件订阅
    ********************* */
-function subscribeEvents() {
+   function subscribeEvents() {
   const client = ZoomVideoService.client;
 
   client.on('user-added', async (userList) => {
-    if (!Array.isArray(userList)) return;
-    for (const user of userList) {
-      if (!users.value.find(u => u.userId === user.userId)) {
-        console.log('[user-added] =>', user);
+      if (!Array.isArray(userList)) return;
+        for (const user of userList) {
+          if(!users.value.find(u => u.userId === user.userId)){ //防止重复添加
+                console.log('[user-added] =>', user);
+                // *关键修改*: 从 Firestore 获取用户信息 (包括头像)
+              let avatarUrl = defaultAvatar; // 默认头像
+              try {
+                const userInfo = await FirestoreService.getUserInfo(user.userId); // 使用 Zoom 的 userId
+                avatarUrl = userInfo?.avatarUrl || defaultAvatar; // 如果有, 用 Firestore 的; 否则用默认头像
+                } catch (error) {
+                        console.error('获取用户信息失败 (user-added):', error);
+                 }
+              // *关键修改*:  在获取到 avatarUrl 之后,  再创建 newUser 对象
+              const newUser = {
+                userId: user.userId, // *** 重要 *** Zoom 的 userId (数值)
+                userName: user.displayName,
+                role: user.isHost ? 'host' : 'participant',
+                joinTime: new Date(),
+                leaveTime: null,
+                avatarUrl: avatarUrl, //  *关键*:  使用获取到的头像 URL
+                hasVideo: {
+                  initial: user.bVideoOn,
+                  final: user.bVideoOn,
+                  timeline: [{ time: Date.now(), value: user.bVideoOn }],
+                },
+                isAudioOn: {
+                   initial: true,
+                    final: true,
+                    timeline: [{time: Date.now(), value:true}]
+                },
+                isSharing: {
+                    initial: user.sharerOn,
+                    final: user.sharerOn,
+                    timeline: [{time: Date.now(), value: user.sharerOn}]
+                },
+                 messagesSent: 0,
+                 hostId: config.hostId,  // *重要*: 所有用户都记录 hostId, 方便后续查询
+                 uploads: 0,   //
+                 downloads: 0,  //
+              };
 
-        // 将新用户添加到 users 数组
-        const newUser = {
-          userId: user.userId,
-          userName: user.displayName,
-          role: user.isHost ? 'host' : 'participant',
-          joinTime: new Date(),
-          leaveTime: null,
-          avatar: user.avatar,
-          hasVideo: {
-            initial: user.bVideoOn,
-            final: user.bVideoOn,
-            timeline: [{ time: Date.now(), value: user.bVideoOn }],
-          },
-          isAudioOn: {
-            initial: true, // 假设新加入的用户默认开启音频
-            final: true,
-            timeline: [{ time: Date.now(), value: true }],
-          },
-          isSharing: {
-            initial: user.sharerOn,
-            final: user.sharerOn,
-            timeline: [{ time: Date.now(), value: user.sharerOn }],
-          },
-          messagesSent: 0,
-        };
-        users.value.push(newUser);
+              // *关键*:  在获取 avatarUrl 之后,  再添加到 users 和 Vuex
+               if (!users.value.find(u => u.userId === newUser.userId)) {
+                   users.value.push(newUser);
+                    // *关键*: 更新 store.state.usersInMeeting.  在添加到 users 之后执行。
+                   store.dispatch('updateUserAvatarInMeeting', {
+                       userId: user.userId,
+                       avatarUrl: avatarUrl
+                  });
+               }
+            // 新增 (或移动到这里):
+            const zoomUserId = user.userId;
+            const firebaseUid = store.state.user.uid; // 当前登录用户的 uid
 
-        // 如果当前用户是主持人，更新 host 的 participants 字段
-        if (isHost.value) {
-          const loginUser = store.getters.getUser;
-          if (loginUser && config.meetingId) {
-            try {
-              // 过滤 undefined, *包括* timeline 数组中的 undefined
-              const filteredUsers = users.value.map(userData => {
-                const filteredUser = { ...userData }; //  浅拷贝
-
-                // 深度过滤
-                function deepFilter(obj) {
-                  for (const key in obj) {
-                    if (obj.hasOwnProperty(key)) {
-                      if (obj[key] === undefined) {
-                        delete obj[key]; // 删除 undefined 属性
-                      } else if (Array.isArray(obj[key])) {
-                        // 过滤数组中的 undefined 元素
-                        obj[key] = obj[key].filter(item => item !== undefined);
-                        // 如果数组是 timeline, 进一步检查
-                        if (key === 'timeline') {
-                          obj[key] = obj[key].filter(item => {
-                            return item !== null && typeof item === 'object' && Object.values(item).every(val => val !== undefined);
-                          })
-                        }
-
-                      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-                        deepFilter(obj[key]); // 递归处理嵌套对象
-                      }
-                    }
-                  }
-                  return obj;
+            // 只处理当前登录用户的信息,其他用户不用处理，只用获取头像即可
+            if(zoomUserId == currentUserId.value){
+                if (firebaseUid) {
+                try {
+                    await FirestoreService.updateUserZoomId(firebaseUid, zoomUserId);
+                } catch (error) {
+                    console.error("存储 Zoom userId 失败 (user-added):", error);
                 }
-
-                return deepFilter(filteredUser); // 返回过滤后的对象
-              });
-
-
-              await FirestoreService.updateMeetingHistory(
-                loginUser.uid,
-                config.meetingId,
-                { participants: filteredUsers }
-              );
-            } catch (err) {
-              console.error('更新会议信息失败 (user-added, host):', err);
+                }
             }
-          }
+
+            // 如果当前用户是主持人，更新 host 的 participants 字段
+            if (isHost.value) {
+              const loginUser = store.getters.getUser;
+              if (loginUser && config.meetingId) {
+                try {
+                  // 过滤 undefined, *包括* timeline 数组中的 undefined
+                  const filteredUsers = users.value.map(userData => {
+                    const filteredUser = { ...userData }; //  浅拷贝
+
+                    // 深度过滤
+                    function deepFilter(obj) {
+                      for (const key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                          if (obj[key] === undefined) {
+                            delete obj[key]; // 删除 undefined 属性
+                          } else if (Array.isArray(obj[key])) {
+                            // 过滤数组中的 undefined 元素
+                            obj[key] = obj[key].filter(item => item !== undefined);
+                            // 如果数组是 timeline, 进一步检查
+                            if (key === 'timeline') {
+                              obj[key] = obj[key].filter(item => {
+                                return item !== null && typeof item === 'object' && Object.values(item).every(val => val !== undefined);
+                              })
+                            }
+
+                          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                            deepFilter(obj[key]); // 递归处理嵌套对象
+                          }
+                        }
+                      }
+                      return obj;
+                    }
+                    return deepFilter(filteredUser); // 返回过滤后的对象
+                  });
+                     await FirestoreService.updateMeetingHistory(
+                        loginUser.uid,
+                        config.meetingId,
+                       { participants: filteredUsers }
+                      );
+
+                } catch (err) {
+                  console.error('更新会议信息失败 (user-added, host):', err);
+                }
+              }
+            }
         }
       }
-    }
-    // 等 Vue DOM 渲染
-    await nextTick();
-    // Attach 视频/共享
-    for (const user of userList) {
-      if (user.bVideoOn) {
-        console.log('[user-added -> attachVideo]', user.userId);
-        await ZoomVideoService.attachUserVideo(user.userId, VideoQuality.VIDEO_360P);
-      }
-      if (user.sharerOn) {
-        console.log('[user-added -> attachScreenShare]', user.userId);
-        await ZoomVideoService.attachScreenShare(user.userId);
-      }
-    }
-    updateChatReceivers(); // 移到这里
+        // 等 Vue DOM 渲染
+      await nextTick();
+     // Attach 视频/共享
+     for (const user of userList) { // 遍历 userList (新加入的)
+        if (user.bVideoOn) {
+             console.log('[user-added -> attachVideo]', user.userId);
+            await ZoomVideoService.attachUserVideo(user.userId, VideoQuality.VIDEO_360P);
+        }
+        if (user.sharerOn) {
+              console.log('[user-added -> attachScreenShare]', user.userId);
+             await ZoomVideoService.attachScreenShare(user.userId);
+        }
+     }
+      updateChatReceivers();
   });
 
   client.on('user-removed', async (userList) => {
@@ -1860,29 +1943,29 @@ function subscribeEvents() {
     leaveSession();
   });
 
-  // 聊天事件 (以下部分保持不变，因为 ChatPanel 会触发父组件的相应方法)
-  client.on('chat-on-message', (payload) => {
-    handleChatMessage(payload);
-    // 增加发送者的 messagesSent，只在收到“文本消息”时增加.
-    if (!payload.file) {
-      const sender = users.value.find(u => u.userId === payload.sender.userId);
-      if (sender) {
-        sender.messagesSent += 1;
-      }
-    }
-  });
+  // // 聊天事件 (以下部分保持不变，因为 ChatPanel 会触发父组件的相应方法)
+  // client.on('chat-on-message', (payload) => {
+  //   handleChatMessage(payload);
+  //   // 增加发送者的 messagesSent，只在收到“文本消息”时增加.
+  //   if (!payload.file) {
+  //     const sender = users.value.find(u => u.userId === payload.sender.userId);
+  //     if (sender) {
+  //       sender.messagesSent += 1;
+  //     }
+  //   }
+  // });
 
-  ZoomVideoService.getChatHistory().then((history) => {
-    handleChatHistory(history);
-    // 增加历史消息中每个发送者的消息数
-    history.forEach(msg => {
-      const sender = users.value.find(u => u.userId === msg.sender.userId);
-      if (sender) {
-        sender.messagesSent += 1;
-      }
-    })
-  });
-  ZoomVideoService.setMessageSentCallback(handleMessageSent);
+  // ZoomVideoService.getChatHistory().then((history) => {
+  //   handleChatHistory(history);
+  //   // 增加历史消息中每个发送者的消息数
+  //   history.forEach(msg => {
+  //     const sender = users.value.find(u => u.userId === msg.sender.userId);
+  //     if (sender) {
+  //       sender.messagesSent += 1;
+  //     }
+  //   })
+  // });
+  // ZoomVideoService.setMessageSentCallback(handleMessageSent);
 
   /**
 * 文件上传进度事件

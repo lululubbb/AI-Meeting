@@ -24,7 +24,8 @@
       <div v-for="(msg,index) in chatMessagesList" :key="index" :class="['message-bubble', { 'is-me': msg.isMe, 'file-message': msg.file }]">
         <div class="message-meta">
           <div class="user-avatar">
-            <img :src="msg.avatar || defaultAvatar" alt="用户头像"  @error="onAvatarError(msg)" />          </div>
+            <img :src="msg.avatar || defaultAvatar" alt="用户头像"  @error="onAvatarError(msg)" />  
+                  </div>
           <div class="message-info">
             <span class="username">{{ msg.senderName }}</span>
             <span class="timestamp">{{ formatTime(msg.timestamp) }}</span>
@@ -86,6 +87,7 @@ import {
   defineExpose,
   watch
 } from 'vue';
+import { useStore } from 'vuex'; // 导入 useStore
 import defaultAvatar from '../assets/柴犬.png';
 // 定义 props
 const props = defineProps({
@@ -105,10 +107,16 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  defaultAvatar: {
+        type: String,
+        required: true
+    }
 });
+const store = useStore(); 
+
 
 const onAvatarError = (msg) => {
-  msg.avatar = defaultAvatar; // 回退到默认头像
+  msg.avatar = props.defaultAvatar; // 回退到默认头像
 };
 
 const internalSelectedReceiverId = ref(props.selectedReceiverId);

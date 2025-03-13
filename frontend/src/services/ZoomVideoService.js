@@ -2,9 +2,8 @@
 import ZoomVideo from '@zoom/videosdk';
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js';
-import { nextTick } from 'vue'; // 导入 nextTick
 import store from '../store'
-
+import { nextTick, inject } from 'vue';
 export const VideoQuality = {
   VIDEO_180P: 1,
   VIDEO_360P: 2,
@@ -36,7 +35,6 @@ class ZoomVideoService {
 
     // 聊天
     this.chatClient = null;
-    this.onMessageSent = null;
   }
   getIsHost() {
     return this.isHost;
@@ -94,18 +92,24 @@ class ZoomVideoService {
     }
   }
 
-  async initChat() {
-    try {
-      this.chatClient = this.client.getChatClient();
-      console.log('File transfer enabled?: ', this.chatClient.isFileTransferEnabled());
-      if (!this.chatClient) {
-        throw new Error('无法获取聊天客户端');
-      }
-    } catch (e) {
-      showSnackBar('初始化聊天失败');
-      console.error(e);
+async initChat(onMessageReceived) { //  增加 onMessageReceived 回调
+  try {
+    this.chatClient = this.client.getChatClient();
+    console.log('File transfer enabled?:', this.chatClient.isFileTransferEnabled());
+    if (!this.chatClient) {
+      throw new Error('无法获取聊天客户端');
     }
+    // *关键*:  设置 chat-on-message 的回调
+    if (onMessageReceived && typeof onMessageReceived === 'function') {
+        this.client.on('chat-on-message', (payload) => {
+          onMessageReceived(payload); // 调用回调
+        });
+      }
+  } catch (e) {
+      showSnackBar('初始化聊天失败');
+       console.error(e);
   }
+}
 
   // --- 新增 START ---
 
@@ -116,27 +120,29 @@ class ZoomVideoService {
   }
 
 /** 私聊给 userId 发送文本消息 */
-async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
+async sendMessageToUser(text, userId, timestamp) {
   if (!this.chatClient) {
-      showSnackBar('聊天客户端未初始化');
-      return;
-   }
- try {
+    showSnackBar('聊天客户端未初始化');
+    return;
+  }
+  try {
     const result = await this.chatClient.send(text, userId);
-    if (result && result.id && this.onMessageSent) {
-       const curUser = this.client.getCurrentUserInfo();
-        this.onMessageSent({
-              ...result,
-              sender: { userId: curUser.userId, name: curUser.displayName, avatar:store.state.user.avatarUrl || curUser.avatarl }, // 同时发送 userId
-              message: text,
-              receiver: { userId },
-              timestamp: timestamp.getTime() // 传递时间戳的数值
-          });
-    }
- } catch (error) {
-     showSnackBar('发送私聊消息失败' );
+    if (result && result.id) {
+      const curUser = this.client.getCurrentUserInfo();
+       // *关键*:  不再需要手动构造 payload,  已经在 chat-on-message 里处理了
+      // const payload = {
+      //     id: result.id,
+      //      message: text,
+      //      sender: { userId: curUser.userId, name: curUser.displayName, avatar: store.state.user.avatarUrl },
+      //       receiver: { userId },
+      //       timestamp: timestamp.getTime()
+      //     };
+      //     this.handleChatMessage(payload);
+     }
+}catch (error) {
+    showSnackBar('发送私聊消息失败');
     console.error(error);
-}
+  }
 }
 
    /** 文件发送: 发给所有人 */
@@ -246,26 +252,27 @@ async sendMessageToUser(text, userId, timestamp) {  // 增加 timestamp 参数
     }
     try {
       const result = await this.chatClient.sendToAll(message);
-       // 使用 SDK 的返回值 (不再需要自己构造 onMessageSent)
-        if (result && result.id && this.onMessageSent) {
-          const curUser = this.client.getCurrentUserInfo();
-          this.onMessageSent({
-            ...result,  // 直接使用SDK返回的消息对象
-            sender: { userId: curUser.userId, name: curUser.displayName, avatar:store.state.user.avatarUrl || curUser.avatar },
-            receiver: { userId: '0' }, //  '0' 表示群发
-            message, //  message
-            timestamp: timestamp.getTime()
-        });
-      }
+      if (result && result.id) {
+        const curUser = this.client.getCurrentUserInfo();
+         // *关键*:  不再需要手动构造 payload
+        // const payload = {
+        //     id: result.id,
+        //     message: message,
+        //     sender: { userId: curUser.userId, name: curUser.displayName, avatar: store.state.user.avatarUrl }, // 使用 store.state.user
+        //     receiver: { userId: '0' }, //  '0' 表示群发
+        //     timestamp: timestamp.getTime()
+        //    };
+        //    this.handleChatMessage(payload);
+       }
     } catch (error) {
       showSnackBar('发送聊天消息失败' );
       console.error(error);
     }
   }
 
-  setMessageSentCallback(cb) {
-    this.onMessageSent = cb;
-  }
+  // setMessageSentCallback(cb) {
+  //   this.onMessageSent = cb;
+  // }
   // 辅助函数：检查消息是否已存在
   isMessageAlreadyAdded(msgId) {
     if(!this.messageIds){
