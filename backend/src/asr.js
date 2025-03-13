@@ -8,7 +8,7 @@ const Nls = require('alibabacloud-nls');
 const CONFIG = {
     URL: "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1",
     APPKEY: "wvpwo9lGGSkfMHfn",
-    TOKEN: "bf79ce161b5548ebbb1368cf43098032"
+    TOKEN: "28ca8a40ff404be6b549d15a9017464b"
   };
 
 const wss = new WebSocketServer({ port: 4399 });
@@ -57,7 +57,7 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(msg);
       if (data?.payload?.result) {
-        // console.log(`[Server] 用户 ${userId} 收到中间结果: ${data.payload.result}`); // 打印中间结果
+        console.log(`[Server] 用户 ${userId} 收到中间结果: ${data.payload.result}`); // 打印中间结果
         broadcastTranscription(userId, userName, data.payload.result, 'interim');
       } else {
         console.error(`[Server] 用户 ${userId} 的无效中间结果:`, data);

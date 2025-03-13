@@ -62,7 +62,7 @@
         <h3>📋 会议详情</h3>
         <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
-        <p><strong>👤 发起人:</strong> {{ selectedMeeting.host }}</p>
+        <p><strong>👤 发起人:</strong> {{ selectedMeeting.hostName }}</p>
         <p><strong>🕒 开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
         <p><strong>⏰ 结束时间:</strong>  {{ formatDate(selectedMeeting.endTime) }}</p>
         
@@ -1157,6 +1157,8 @@ const analyzeParticipation = async () => {
       }
     }, 1000);
 
+
+  
     // 发送 POST 请求到后端 API
     const response = await axios.post('http://localhost:5000/analyze-participation', {
       participants: participantsData,

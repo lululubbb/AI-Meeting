@@ -26,6 +26,7 @@ export default createStore({
     meetingConfig: { //新增
     },
     isMaximized: true,
+    usersInMeeting: [], // 新增：存储会议中的用户
   },
   mutations: {
     SET_USER(state, user) {
@@ -67,7 +68,20 @@ export default createStore({
     SET_MEETINGS(state, meetings) {
       state.meetings = meetings;
     },
-  },
+    SET_USERS_IN_MEETING(state, users) {
+      state.usersInMeeting = users;
+   },
+   UPDATE_USER_AVATAR_IN_MEETING(state, { userId, avatarUrl }) {
+    const userIndex = state.usersInMeeting.findIndex(u => u.userId === userId);
+    if (userIndex > -1) {
+        // 使用 splice 来确保 Vue 能够检测到数组变化, 并触发响应式更新
+        state.usersInMeeting.splice(userIndex, 1, {
+            ...state.usersInMeeting[userIndex],
+            avatarUrl
+        });
+    }
+},
+},
   actions: {
 
   initAuth({ commit, dispatch }) {
@@ -276,8 +290,14 @@ export default createStore({
           console.error('更新活动失败:', error);
           ElMessage.error('更新活动失败');
       }
-  }
-},
+  },
+  initializeUsersInMeeting({ commit }, users) {
+    commit('SET_USERS_IN_MEETING', users);
+    },
+      updateUserAvatarInMeeting({ commit }, { userId, avatarUrl }) {
+          commit('UPDATE_USER_AVATAR_IN_MEETING', { userId, avatarUrl });
+    }
+  },
     getters: {
     isLoggedIn: (state) => !!state.user,
     getUser: (state) => state.user,

@@ -194,13 +194,21 @@ const saveChanges = async () => {
     // 调用 UserService 来更新用户信息到 Firebase Firestore
     await AuthService.updateUserStatus(userDataToUpdate);
 
-    // 更新本地 store 或者直接更新 user 信息
-    user.value = { ...editableUser.value };
+    // 更新 Vuex store 中的 user (重要)
+    store.commit('SET_USER', userDataToUpdate);
+      user.value = { ...editableUser.value };
+      
+      // 新增：调用 action 更新会议中的用户头像
+    //  *重要*:  userId 需要是 Zoom 的 userId (数值), 而不是 Firebase 的 uid (字符串)
+     store.dispatch('updateUserAvatarInMeeting', {
+       userId: store.state.user.zoomUserId, // *** 关键 ***
+       avatarUrl: editableUser.value.avatarUrl,
+        });    
     ElMessage.success('修改已保存');
     isEditing.value = false; // 退出编辑模式
   } catch (error) {
     ElMessage.error('保存失败');
-    console.error('保存失败');
+    console.error('保存失败:', error);
   }
 };
 // 取消编辑

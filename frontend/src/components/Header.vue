@@ -217,13 +217,13 @@ const logout = async () => {
 
 .nav-link i {
   margin-bottom: 0.3125rem; /* 图标与文字间的距离 5px */
-  font-size: 1.125rem;      /* 18px */
+  font-size: 1rem;      /* 18px */
   color: inherit;           /* 继承父元素的颜色 */
 }
 
 /* 避免中文断行成竖排, 额外在文字上也可加 white-space */
 .nav-label {
-  font-size: inherit;
+  font-size: 20px;
   white-space: nowrap; /* 防止中文换行 */
 }
 
