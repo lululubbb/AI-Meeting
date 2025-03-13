@@ -1053,9 +1053,6 @@ const sendChat = async () => {
 // 收到他人聊天消息
 function handleChatMessage(payload) {
     const { message, sender, receiver, file, timestamp, id} = payload; //  timestamp, 增加 id
-<<<<<<< HEAD
-
-=======
 //      // 3. 使用默认头像
 //   const getAvatar = () => {
 //   // 优先使用消息中的avatar
@@ -1115,7 +1112,6 @@ const getAvatar = () => {
     senderAvatar: getAvatar(),
     currentUserId: store.state.user.uid // 当前用户 ID
   });
->>>>>>> ab9cd45c1eb44a9882ff175a385f2a2440cfec74
     // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
     if (ZoomVideoService.isMessageAlreadyAdded(id)) {
         return;
