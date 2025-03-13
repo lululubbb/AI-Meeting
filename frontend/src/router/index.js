@@ -15,6 +15,8 @@ import Chat from '../views/Chat.vue';
 import Helpview from '../views/Helpview.vue';
 import Settingview from '../views/Settingview.vue';
 import IntroductionPage from '../views/IntroductionPage.vue'
+import MeetingShow from '../components/MeetingShow.vue'; // 1. 导入 MeetingShow 组件
+
 // 定义路由规则
 const routes = [
   {
@@ -86,6 +88,14 @@ const routes = [
     path: '/',
     name: 'Introduction',
     component: IntroductionPage
+  },
+    // 新增 MeetingShow 路由
+  {
+    path: '/transcription/:meetingId',  // 动态路由参数
+    name: 'Transcription',             // 路由名称
+    component: MeetingShow,              // 对应的组件
+    meta: { requiresAuth: true }      // 添加路由元信息，表示需要身份验证
+
   },
   // 处理未定义的路径
   { path: '/:pathMatch(.*)*', redirect: '/' },
