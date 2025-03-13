@@ -388,11 +388,10 @@ const updateTodo =async (todo) => {
   align-items: center;
   justify-content: center;
   width: 95%; 
-  margin: 10px; 
   margin-left: 5px;
   max-width: 100%;
   padding: 5px;
-  margin-top: 40px;
+  margin-top: 30px;
 }
 
 .calendar {
@@ -400,6 +399,7 @@ const updateTodo =async (todo) => {
 box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 border-radius: 8px; 
 width:90%;
+font-size: 14px;
 }
 
 .todo-list h2 {

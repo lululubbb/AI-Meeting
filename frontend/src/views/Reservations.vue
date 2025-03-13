@@ -17,7 +17,6 @@
       <!-- 右侧部分 -->
       <div class="right-section">
         <!-- 通讯录组件 -->
-        <img src="../assets/chat2.png" />
       </div>
     </main>
 
@@ -102,6 +101,7 @@ footer {
   align-items: center;
   justify-content: center;
   border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.08);
 }
 
 

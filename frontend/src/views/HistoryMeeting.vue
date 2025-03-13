@@ -29,15 +29,18 @@
         :class="{
           'ongoing': meeting.status === 'ongoing',
           'finished': meeting.status === 'finished',
-          'scheduled': meeting.status === 'scheduled' // 显示 scheduled 状态
+          'scheduled': meeting.status === 'scheduled'
         }"
         @click="showMeetingDetails(meeting)"
       >
+        <!-- 会议列表项内容 -->
         <strong>📅 会议名称:</strong> {{ meeting.sessionName }} <br />
-        <strong>👤 创建人员:</strong> {{ meeting.hostName }} <br /> <!-- 修改这里 -->
-        <strong>🕒 创建时间:</strong> {{ formatDate(meeting.startTime) }} <br /> <!-- startTime -->
+        <strong>👤 创建人员:</strong> {{ meeting.hostName }} <br />
+        <strong>🕒 创建时间:</strong> {{ formatDate(meeting.startTime) }} <br />
         <strong>📊 会议状态:</strong> {{ meeting.status }}<br />
         <strong>⏰ 结束时间:</strong> {{ formatDate(meeting.endTime) }}
+        <!-- 添加跳转按钮 (在会议列表项内部)-->
+         <button @click.stop="goToMeetingShow(meeting.meetingId)">📜 会议展示</button>
       </li>
     </ul>
 
@@ -62,7 +65,7 @@
         <h3>📋 会议详情</h3>
         <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
-        <p><strong>👤 发起人:</strong> {{ selectedMeeting.host }}</p>
+        <p><strong>👤 发起人:</strong> {{ selectedMeeting.hostName }}</p>
         <p><strong>🕒 开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
         <p><strong>⏰ 结束时间:</strong>  {{ formatDate(selectedMeeting.endTime) }}</p>
         
@@ -75,7 +78,6 @@
         </div>
 
 
-        <!-- 添加四个功能按钮 -->
         <div class="function-buttons">
           <button @click="showSection('record')">📝 会议记录</button>
           <button @click="showSection('keywords')">🔑 关键提取</button>
@@ -83,18 +85,19 @@
           <button @click="showSection('statistics')">📊 参会统计</button>
         </div>
 
-        <!-- 动态切换显示内容 -->
+
+        <!-- 动态内容区域：record 部分修改 -->
         <div v-if="activeSection === 'record'" class="section-content">
-          <!-- 会议记录的内容 -->
-          <!-- 判断会议状态是否为已结束 -->
           <div v-if="selectedMeeting.status === 'finished'">
-            <p>{{ meetingTranscriptions }}</p>
+            <!-- 使用 MeetingShow 组件展示会议记录 -->
+            <MeetingShow :meeting-id="selectedMeeting.meetingId" />
             <button @click="downloadMeetingRecord" class="share">📤 分享</button>
           </div>
           <div v-else class="info-message">
             🕒 会议未结束，无法查看记录。
           </div>
         </div>
+
 
         <div v-if="activeSection === 'keywords'" class="section-content">
           <!-- 关键提取的内容 -->
@@ -325,17 +328,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
+import { computed, onMounted, ref, watch,onUnmounted } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter, useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { useRouter, useRoute } from 'vue-router';  // 导入 useRouter, useRoute
+import { ElMessage } from 'element-plus';  //导入
 import FirestoreService from '../services/FirestoreService.js';
 import { showSnackBar } from '../utils/utils.js';
-import { generateSummaryAPI } from '../api/chat.js';
+import { generateSummaryAPI } from '../api/chat.js';  //导入
 import axios from 'axios'; // 导入 Axios
-import * as XLSX from 'xlsx';
-import { nextTick } from 'vue'; 
-
+import * as XLSX from 'xlsx';    //导入
+import { nextTick } from 'vue';  
+// import MeetingShow from './MeetingShow.vue'; // 导入 MeetingShow.vue
+import MeetingShow from '../components/MeetingShow.vue';
 const isLoadingSummary = ref(false);
 //参会者分析加载
 const isLoadingAnalysis = ref(false);
@@ -499,7 +503,6 @@ const generateStreamedSummary = async () => {
 
 // 获取 Vuex store
 const store = useStore();
-const router = useRouter();
 const route = useRoute();
 
 // 获取当前用户的邮箱
@@ -1157,6 +1160,8 @@ const analyzeParticipation = async () => {
       }
     }, 1000);
 
+
+  
     // 发送 POST 请求到后端 API
     const response = await axios.post('http://localhost:5000/analyze-participation', {
       participants: participantsData,
@@ -1286,6 +1291,23 @@ const downloadParticipantsAllData = () => {
   XLSX.writeFile(workbook, `${selectedMeeting.value.sessionName}-参会数据.xlsx`);
 };
 
+// ------------------------会议展示 MeetingShow.vue ------------------------
+const router = useRouter(); // 获取 router 实例
+// const goToMeetingShow = () => {
+//     if (selectedMeeting.value && selectedMeeting.value.meetingId) {
+//       router.push({ name: 'Transcription', params: { meetingId: selectedMeeting.value.meetingId } });
+//     } else {
+//         console.warn('缺少 meetingId，无法跳转'); // 或者使用 ElMessage 提示 ElMessage.warning('...')
+//     }
+//   };
+const goToMeetingShow = (meetingId) => {
+  if (meetingId) {
+    router.push({ name: 'Transcription', params: { meetingId: meetingId } });
+  } else {
+    console.warn('缺少 meetingId，无法跳转');
+  }
+};
+
 
 </script>
 <style scoped>
@@ -1353,12 +1375,13 @@ body {
   padding: 10px 10px;
   width: 95%;
   max-width: 900px;
-  max-height: 85vh;
+  max-height: 90vh;
   margin: 10px auto;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   border-radius: 15px;
   /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); */
   /* box-shadow: var(--global-box-shadow); 应用全局边框阴影 */
+  border: none;
   position: relative;
   overflow-y: auto;
   color: #000;

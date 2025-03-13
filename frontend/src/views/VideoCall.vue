@@ -96,13 +96,24 @@
               <p>当前无人共享</p>
             </div>
             <!-- 字幕容器 -->
-            <div class="subtitle">
+            <!-- <div class="subtitle">
               {{ subtitle }}
-            </div>
+            </div> -->
+            <div class="subtitle">
+  <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
+    <span class="subtitle-user">{{ sub.userName }}: </span>
+    <span class="subtitle-text">{{ sub.text }}</span>
+  </div>
+</div>
           </video-player-container>
 
           <!-- 底部控制栏 -->
           <div class="controls">
+            <button @click="toggleTranscription" :class="{ active: isTranscribing }">
+  <img v-if="isTranscribing" src="@/assets/transcription_off.png" alt="停止转录" />
+  <img v-else src="@/assets/transcription_on.png" alt="开始转录" />
+</button>
+
             <button @click="toggleVideo" :class="{ active: isVideoOn }">
               <img v-if="isVideoOn" src="@/assets/video_off.png" alt="关闭视频" />
               <img v-else src="@/assets/video_on.png" alt="开启视频" />
@@ -294,11 +305,10 @@
       </div>
     </div>
   </main>
-  <div class="transcription-float">
-        <RealtimeTranscription />  <!--  在这里真正使用 RealtimeTranscription 组件 -->
-    </div>
-
-
+  <!-- 字幕容器 -->
+<div class="subtitle">
+   {{ subtitle }}
+</div>
 
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
@@ -318,11 +328,12 @@ import CustomButton from '../components/CustomButton.vue';
 import * as echarts from 'echarts';
 import { useI18n } from 'vue-i18n';
 import defaultAvatar from '../assets/柴犬.png';
+import { format }  from 'date-fns'; // 导入 date-fns 的 format函数 
 
 const { t } = useI18n();
 
 import { ElMessage,ElMessageBox} from 'element-plus';
-import RealtimeTranscription from '../components/RealtimeTranscription.vue'; // 导入新组件
+
 
 /// Vuex / Router
 const store = useStore();
@@ -1038,10 +1049,73 @@ const sendChat = async () => {
     showSnackBar('发送消息失败');
   }
 };
+
 // 收到他人聊天消息
 function handleChatMessage(payload) {
     const { message, sender, receiver, file, timestamp, id} = payload; //  timestamp, 增加 id
+<<<<<<< HEAD
 
+=======
+//      // 3. 使用默认头像
+//   const getAvatar = () => {
+//   // 优先使用消息中的avatar
+//   if (sender.avatar) return sender.avatar;
+//   // 从store中查找用户信息
+//   const userInStore = store.state.users?.find(u => u.userId === sender.userId);
+//   return userInStore?.avatarUrl || defaultAvatar;
+// };
+// 修改getAvatar函数，优先从FirestoreService实时获取用户数据
+const getAvatar = () => {
+  // 强制类型转换关键点
+  const userId = String(sender.userId); // 将userId转为字符串
+  // 从Zoom服务获取时确保参数类型
+  const updatedUser = FirestoreService.getUserInfo(userId);
+  // 从store查询时统一比较类型
+  const storeUser = store.state.users?.find(u => 
+    String(u.userId) === userId // 统一转为字符串比较
+  );
+  return updatedUser?.avatar || storeUser?.avatarUrl || defaultAvatar;
+};
+ // 优化获取头像的函数
+//  const getAvatar = () => {
+//         // 优先使用消息中的 avatar
+//         if (sender.avatar) return sender.avatar;
+
+//         // 从 store 中查找用户信息
+//         const userInStore = store.state.users?.find(u => u.userId === sender.userId);
+//         if (userInStore?.avatarUrl) {
+//             return userInStore.avatarUrl;
+//         }
+
+//         // 尝试从 Firestore 获取用户信息
+//         try {
+//             const userData = FirestoreService.getUserInfo(sender.userId);
+//             if (userData?.avatarUrl) {
+//                 // 更新 store 中的用户信息
+//                 const userIndex = store.state.users.findIndex(u => u.userId === sender.userId);
+//                 if (userIndex !== -1) {
+//                     store.commit('UPDATE_USER_AVATAR', {
+//                         userId: sender.userId,
+//                         avatarUrl: userData.avatarUrl
+//                     });
+//                 }
+//                 return userData.avatarUrl;
+//             }
+//         } catch (error) {
+//             console.error('获取用户头像失败:', error);
+//         }
+
+//         return defaultAvatar;
+//     };
+    console.log("Received chat message:", payload); // 打印整个 payload
+    console.log('Message ID:', id);
+    console.log('Sender AvatarUrl:', sender.avatar);
+    console.log('[DEBUG] 收到消息:', {
+    senderId: payload.sender.userId,
+    senderAvatar: getAvatar(),
+    currentUserId: store.state.user.uid // 当前用户 ID
+  });
+>>>>>>> ab9cd45c1eb44a9882ff175a385f2a2440cfec74
     // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
     if (ZoomVideoService.isMessageAlreadyAdded(id)) {
         return;
@@ -1504,7 +1578,7 @@ const leaveSession = async () => { //普通用户离开会议
   }
 };
 
-  const endSession = async () => { //主持人结束会议
+const endSession = async () => { //主持人结束会议
     if (!isHost.value) {
       showSnackBar('只有主持人可以结束会议');
       return;
@@ -1588,18 +1662,34 @@ const leaveSession = async () => { //普通用户离开会议
       console.log('endSession - filteredUsers:', filteredUsers); //  检查
       console.log('endSession - filteredChatMessages:', filteredChatMessages); // 检查
       const user = store.getters.getUser; // 获取当前用户信息
-      //  更新 Firestore 中的状态和结束时间
-      if (user && config.meetingId) {
-        await FirestoreService.updateMeetingHistory(user.uid, config.meetingId, {
-          //  user.uid
-          status: 'finished',
-          endTime: now, // 直接使用 now
-          participants: filteredUsers, //  更新
-          chatMessages: filteredChatMessages, //
-        });
-      } else {
-        console.error('config.meetingId 不存在 (endSession)');
+
+      // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
+      if (isTranscribing.value) {
+          stopTranscription(); // 先停止转录 (重要!)
+
+          // 更新 Firestore
+          if (user && config.meetingId) {
+              await FirestoreService.updateMeetingHistory(user.uid, config.meetingId, {
+                  status: 'finished',
+                  endTime: now,
+                  participants: filteredUsers,
+                  chatMessages: filteredChatMessages,
+                  transcriptionHistory: transcriptionHistory.value // 新增：保存转录历史
+              });
+          }
+      } else { // 添加 else 分支
+          // 如果没有开启转录，仍然更新其他信息
+          if (user && config.meetingId) {
+              await FirestoreService.updateMeetingHistory(user.uid, config.meetingId, {
+                  status: 'finished',
+                  endTime: now,
+                  participants: filteredUsers,
+                  chatMessages: filteredChatMessages,
+                  // transcriptionHistory 不需要, 因为没有开启
+              });
+          }
       }
+
 
        ZoomVideoService.leaveSession(true); //  结束会议, 放到后面
       resetState();
@@ -1611,6 +1701,7 @@ const leaveSession = async () => { //普通用户离开会议
       showSnackBar('结束会议失败');
     }
   };
+
 
 function resetState() {
   sessionJoined.value = false;
@@ -1627,6 +1718,268 @@ function resetState() {
 /* *********************
 转录方面
    ********************* */
+// videocall.vue  <script setup> 部分
+// 新增：转录历史记录
+const transcriptionHistory = ref({});
+// 新增：当前时间段 (用于标记当前正在记录的时间段)
+let currentTimeslot = ref('');
+// 新增：计算当前时间段的函数
+const getCurrentTimeslot = () => {
+    const now = new Date();
+     const minutes = Math.floor(now.getMinutes() / 5) * 5; // 向下取整到最近的 5 分钟
+    const start = `${String(now.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const endMinutes = (minutes + 5) % 60;
+    const endHours = (minutes + 5 >= 60) ? now.getHours() + 1 : now.getHours(); // 小时+1
+    const end = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+    return `${start}-${end}`;
+};
+// 辅助函数：获取当前日期 (YYYY-MM-DD 格式)
+const getCurrentDate = () => {
+  return format(new Date(), 'yyyy-MM-dd');
+};
+
+// 新增：将转录数据添加到历史记录的函数
+const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
+   const date = getCurrentDate(); // YYYY-MM-DD
+  const timeslot = getCurrentTimeslot(); // HH:mm-HH:mm
+  const time = format(timestamp, 'HH:mm:ss'); // HH:mm:ss
+  // 确保日期存在
+  if (!transcriptionHistory.value[date]) {
+    transcriptionHistory.value[date] = {};
+  }
+
+  // 确保时间段存在
+  if (!transcriptionHistory.value[date][timeslot]) {
+    transcriptionHistory.value[date][timeslot] = [];
+  }
+
+  transcriptionHistory.value[date][timeslot].push({
+    userId,
+    userName,
+    time,
+    text
+  });
+};
+const isTranscribing = ref(false);
+const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
+const subtitle = ref(''); // (已弃用)
+const transcriptionWs = ref(null); //  转录 WebSocket
+let audioContext = null;         //  全局的 AudioContext
+let scriptNode = null;          //  全局的 ScriptProcessorNode
+let mediaStream = null;         // 全局
+
+const toggleTranscription = async () => {
+  if (isTranscribing.value) {
+    stopTranscription();
+  } else {
+    await startTranscription();
+  }
+};
+
+// const startTranscription = async () => {
+//   try {
+//     // ... (之前的代码) ...
+//     // 获取当前用户信息
+//        const curUser = ZoomVideoService.client.getCurrentUserInfo();
+//     if (!curUser || !curUser.userId) {
+//       console.error("无法获取当前用户信息");
+//       return;
+//     }
+//     // 6. 构建 WebSocket URL (带上 userId 和 userName)
+//       if (!transcriptionWs.value || transcriptionWs.value.readyState !== WebSocket.OPEN) {
+//         // 6. 构建 WebSocket URL, 带上 userId 和 userName 参数
+//         const wsUrl = `ws://localhost:4399?userId=${curUser.userId}&userName=${encodeURIComponent(curUser.displayName)}`; // 替换你的 WebSocket 地址
+//         transcriptionWs.value = new WebSocket(wsUrl);
+
+//         transcriptionWs.value.onopen = () => {
+//           console.log('[Client] 转录 WebSocket 连接已建立');
+//           isTranscribing.value = true;
+//           currentTimeslot.value = getCurrentTimeslot(); //  设置初始时间段
+
+//         };
+
+//         transcriptionWs.value.onmessage = (event) => {
+//              const data = JSON.parse(event.data);
+//           const now = new Date(); //  获取当前时间
+
+//           //  更新 subtitles 对象
+//           if (data.type === 'interim') {
+//             //   有 userId, 更新到 subtitles 对象中
+//             if (!subtitles.value[data.userId]) {
+//               subtitles.value[data.userId] = { userName: data.userName, text: '' };
+//             }
+//             subtitles.value[data.userId].text = data.text; // 更新
+//             addTranscriptionToHistory(data.userId, data.userName, data.text, now); //  添加
+//           } else if (data.type === 'final') {
+//             if (!subtitles.value[data.userId]) {
+//               subtitles.value[data.userId] = { userName: data.userName, text: '' };
+//             }
+//             subtitles.value[data.userId].text = data.text;
+//             addTranscriptionToHistory(data.userId, data.userName, data.text, now); // 添加
+//           }
+//         };
+
+//         transcriptionWs.value.onerror = (error) => {
+//           console.error('[Client] 转录 WebSocket 错误:', error);
+//             ElMessage.error("转录服务出错")
+//           isTranscribing.value = false;
+//         };
+
+//         transcriptionWs.value.onclose = () => {
+//           console.log('[Client] 转录 WebSocket 连接已关闭');
+//           isTranscribing.value = false;
+//               subtitles.value = {}; // 清空
+//         };
+//       }
+//   } catch (error) {
+//     console.error('启动转录失败:', error);
+//      ElMessage.error("启动转录失败,请检查麦克风权限")
+//   }
+// };
+
+// 停止转录 (修改)
+const startTranscription = async () => {
+  try {
+    // 1. 获取麦克风权限和音频流
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    // 2. 创建 AudioContext (如果尚未创建)
+    if (!audioContext) {
+      audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContext.onstatechange = () => {
+        console.log("AudioContext state:", audioContext.state);
+      };
+    }
+    // 3. 创建 MediaStreamSource
+        const source = audioContext.createMediaStreamSource(mediaStream);
+
+    // 4. 创建 ScriptProcessorNode (如果尚未创建)
+    if (!scriptNode) {
+      scriptNode = audioContext.createScriptProcessor(1024, 1, 1);
+
+    }
+
+
+    // 获取当前用户信息
+    const curUser = ZoomVideoService.client.getCurrentUserInfo();
+    if (!curUser || !curUser.userId) {
+      console.error("无法获取当前用户信息");
+      return;
+    }
+
+    // 5. 建立 WebSocket 连接 (如果尚未建立)
+    if (!transcriptionWs.value || transcriptionWs.value.readyState !== WebSocket.OPEN) {
+      const wsUrl = `ws://localhost:4399?userId=${curUser.userId}&userName=${encodeURIComponent(curUser.displayName)}`;
+      transcriptionWs.value = new WebSocket(wsUrl);
+
+      transcriptionWs.value.onopen = () => {
+        console.log('[Client] 转录 WebSocket 连接已建立');
+        isTranscribing.value = true;
+        currentTimeslot.value = getCurrentTimeslot();
+
+          // 6. *重要修改*: 在 onopen 中设置 onaudioprocess
+          scriptNode.onaudioprocess = (e) => {
+              // console.log('onaudioprocess triggered'); // 确认事件触发
+              const pcmData = e.inputBuffer.getChannelData(0);
+              const buffer = new Int16Array(pcmData.length);
+
+              // 转换为 16bit PCM
+              for (let i = 0; i < pcmData.length; i++) {
+                  buffer[i] = pcmData[i] * 32767;
+              }
+
+              // 检查 WebSocket 状态
+              if (transcriptionWs.value && transcriptionWs.value.readyState === WebSocket.OPEN) {
+                  // console.log('Sending audio data:', buffer.buffer)
+                  transcriptionWs.value.send(buffer.buffer);
+              } else {
+                  console.warn('[Client] WebSocket 未准备好，无法发送音频数据');
+              }
+          };
+          // *** 连接节点 (在 onopen 里，确保 WebSocket 连接建立后) ***
+          source.connect(scriptNode);
+          scriptNode.connect(audioContext.destination);
+
+      };
+
+      transcriptionWs.value.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const now = new Date();
+
+        if (data.type === 'interim') {
+          if (!subtitles.value[data.userId]) {
+            subtitles.value[data.userId] = { userName: data.userName, text: '' };
+          }
+          subtitles.value[data.userId].text = data.text;
+          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
+        } else if (data.type === 'final') {
+          if (!subtitles.value[data.userId]) {
+            subtitles.value[data.userId] = { userName: data.userName, text: '' };
+          }
+          subtitles.value[data.userId].text = data.text;
+          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
+        }
+      };
+
+      transcriptionWs.value.onerror = (error) => {
+        console.error('[Client] 转录 WebSocket 错误:', error);
+        ElMessage.error("转录服务出错");
+        isTranscribing.value = false;
+      };
+
+      transcriptionWs.value.onclose = () => {
+        console.log('[Client] 转录 WebSocket 连接已关闭');
+        isTranscribing.value = false;
+        subtitles.value = {};
+      };
+    }
+
+
+  } catch (error) {
+    console.error('启动转录失败:', error);
+    ElMessage.error("启动转录失败,请检查麦克风权限");
+  }
+};
+
+
+const stopTranscription = () => {
+    // 1. 关闭 WebSocket 连接 (如果存在)
+    if (transcriptionWs.value && (transcriptionWs.value.readyState === WebSocket.OPEN || transcriptionWs.value.readyState === WebSocket.CONNECTING)) {
+        transcriptionWs.value.close();
+    }
+    transcriptionWs.value = null;
+
+    // 2. 停止麦克风 (如果已开启)
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
+
+    // 3. 停止 ScriptProcessorNode (如果已创建), 防止内存泄漏
+    if (scriptNode) {
+        scriptNode.disconnect();
+        scriptNode = null;
+    }
+
+  // 4. 关闭 AudioContext (可选, 根据需要) 如果不需要复用, 可以在停止时关闭
+//   if (audioContext) {
+//     audioContext.close(); 
+//     audioContext = null;
+//   }
+
+  isTranscribing.value = false;
+    subtitles.value = {};
+};
+
+onUnmounted(() => {
+    // ... 其他清理
+  stopTranscription(); // 
+  //stopRecording(); 
+ZoomVideoService.client.off('chat-file-download-progress', handleFileDownloadProgress); 
+});
+
+
+
 
 
 // stopRecording(); 
@@ -2457,21 +2810,23 @@ canvas.video-element.share-video {
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
     }
 
-  .subtitle {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    max-width: 80%;
-    text-align: center;
-    font-size: 20px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
+    .subtitle {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
+  color: #fff;
+  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
+  border-radius: 8px; /* 稍微增大圆角，更美观 */
+  max-width: 90%; /* 增大最大宽度，适应更多内容 */
+  text-align: center;
+  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
+  white-space: normal; /* 自动换行，无需强制保留空白符 */
+  word-break: break-word; /* 更好的长单词断行处理 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
+  z-index: 100; /* 确保字幕在其他内容之上 */
+}
 
   #transcriptionContainer {
     width: 100%;

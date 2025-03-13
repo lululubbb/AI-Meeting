@@ -46,7 +46,12 @@ export default createStore({
     SET_TODOLIST(state, todolist) {
       state.user.todolist = todolist;
     },
-    
+    // UPDATE_USER_AVATAR(state, { userId, avatar }) {
+    //   const user = state.users.find(u => u.userId === userId);
+    //   if (user) {
+    //     user.avatarUrl = avatar;
+    //   }
+    // },
     SET_ACTIVITIES(state, activities) { // 新增：设置活动列表
       state.activities = activities;
     },

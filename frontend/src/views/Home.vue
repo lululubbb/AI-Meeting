@@ -162,6 +162,7 @@ footer {
   align-items: center;
   justify-content: center;
   border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.08);
 }
 
 @media screen and (max-width: 768px) {

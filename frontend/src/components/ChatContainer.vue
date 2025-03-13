@@ -116,7 +116,12 @@ const store = useStore();
 
 
 const onAvatarError = (msg) => {
+<<<<<<< HEAD
   msg.avatar = props.defaultAvatar; // 回退到默认头像
+=======
+  console.error(`头像加载失败:`);
+  msg.avatar = defaultAvatar; // 回退到默认头像
+>>>>>>> ab9cd45c1eb44a9882ff175a385f2a2440cfec74
 };
 
 const internalSelectedReceiverId = ref(props.selectedReceiverId);
