@@ -115,12 +115,12 @@
 </button>
 
             <button @click="toggleVideo" :class="{ active: isVideoOn }">
-              <img v-if="isVideoOn" src="@/assets/video_off.png" alt="关闭视频" />
-              <img v-else src="@/assets/video_on.png" alt="开启视频" />
+              <img v-if="isVideoOn" src="@/assets/video_on.png" alt="关闭视频" />
+              <img v-else src="@/assets/video_off.png" alt="开启视频" />
             </button>
             <button @click="toggleAudio" :class="{ active: !isAudioOn }">
-              <img v-if="isAudioOn" src="@/assets/audio_off.png" alt="静音" />
-              <img v-else src="@/assets/audio_on.png" alt="开启麦克风" />
+              <img v-if="isAudioOn" src="@/assets/audio_on.png" alt="开启麦克风" />
+              <img v-else src="@/assets/audio_off.png" alt="静音" />
             </button>
             <button @click="toggleScreenShare" :class="{ active: isSharing }">
               <img v-if="isSharing" src="@/assets/share_off.png" alt="停止共享屏幕" />
@@ -341,8 +341,10 @@ const router = useRouter();
 const isMaximized = computed(() => store.state.isMaximized);
 
 const goHome = () => {
+  console.log('正在关闭会议...');
   store.commit('SET_VIDEOCALL_MAXIMIZED', true); // 设置为最大化
-  store.commit('SET_VIDEOCALL_ACTIVE', true); // 显示
+  store.commit('SET_VIDEOCALL_ACTIVE', false); // 显示
+  router.push('/home');
 };
 
 onMounted(() => {
@@ -2132,6 +2134,12 @@ onBeforeUnmount(() => {
 
 });
 
+onUnmounted(() => {
+  if (sessionJoined.value) {
+    ZoomVideoService.leaveSession(false);
+    sessionJoined.value = false;
+  }
+});
 </script>
 
 <style scoped>
