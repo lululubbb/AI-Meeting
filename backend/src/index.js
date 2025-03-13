@@ -18,7 +18,7 @@ import {
 import multer from 'multer';
 import Tesseract from 'tesseract.js';
 import { PDFDocument } from 'pdf-lib';
-// import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import pdfPoppler from 'pdf-poppler';
 import fs from 'fs';
@@ -348,39 +348,39 @@ app.post('/api/analyze-file', async (req, res) => {
               // 执行 PDF 到图像的转换
               const outputFiles = await pdfPoppler.convert(filePath, options);
               console.log('PDF 已成功转换为图像，但 OCR 功能未启用，跳过识别');
-              // for (const outputFile of outputFiles) {
-              //     const { data: { text } } = await Tesseract.recognize(
-              //         outputFile,
-              //         'chi_sim', // 如果是中文文档，使用 'chi_sim'
-              //         {
-              //             logger: m => console.log(m)
-              //         }
-              //     );
-              //     extractedText += text;
-              // }
+              for (const outputFile of outputFiles) {
+                  const { data: { text } } = await Tesseract.recognize(
+                      outputFile,
+                      'chi_sim', // 如果是中文文档，使用 'chi_sim'
+                      {
+                          logger: m => console.log(m)
+                      }
+                  );
+                  extractedText += text;
+              }
 
-              //    // 完成 OCR 处理后，删除生成的 PNG 文件
-              // for (const outputFile of outputFiles) {
-              //   try {
-              //     fs.unlinkSync(outputFile);
-              //     console.log(`已删除临时文件: ${outputFile}`);
-              //   } catch (deleteError) {
-              //     console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
-              //   }
-              // }               
+                 // 完成 OCR 处理后，删除生成的 PNG 文件
+              for (const outputFile of outputFiles) {
+                try {
+                  fs.unlinkSync(outputFile);
+                  console.log(`已删除临时文件: ${outputFile}`);
+                } catch (deleteError) {
+                  console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
+                }
+              }               
 
               if (extractedText.length === 0) {
                   // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
                   console.log('由于 OCR 功能未启用，且 pdfjs-dist 解析已禁用，无法处理扫描件或图片型 PDF');      
                   const pdfData = new Uint8Array(dataBuffer);
-                  // const loadingTask = pdfjsLib.getDocument(pdfData);
-                  // const pdfDoc = await loadingTask.promise;
-                  // for (let i = 1; i <= pdfDoc.numPages; i++) {
-                  //     const page = await pdfDoc.getPage(i);
-                  //     const content = await page.getTextContent();
-                  //     const pageText = content.items.map(item => item.str).join(' ');
-                  //     extractedText += pageText;
-                  // }
+                  const loadingTask = pdfjsLib.getDocument(pdfData);
+                  const pdfDoc = await loadingTask.promise;
+                  for (let i = 1; i <= pdfDoc.numPages; i++) {
+                      const page = await pdfDoc.getPage(i);
+                      const content = await page.getTextContent();
+                      const pageText = content.items.map(item => item.str).join(' ');
+                      extractedText += pageText;
+                  }
               }
           }
           console.log('PDF 解析完成，提取文本长度:', extractedText.length);
@@ -798,6 +798,11 @@ app.get('/api/generate-summary', async (req, res) => {
 
   const fileExt = path.extname(fileName).toLowerCase();
   let extractedText = '';
+
+   // 创建临时目录
+  const tempDir = path.join(__dirname, 'temp', Date.now().toString());
+  fs.mkdirSync(tempDir, { recursive: true });
+  
     try { 
 
       if (fileExt === '.pdf') {
@@ -814,49 +819,49 @@ app.get('/api/generate-summary', async (req, res) => {
                 console.log('pdf-parse 解析结果为空');
 
                 // 定义转换选项
-                // const options = {
-                //     format: 'png',
-                //     out_dir: path.dirname(filePath),
-                //     out_prefix: path.basename(filePath, path.extname(filePath)),
-                //     page: null // 处理所有页面
-                // };
+                const options = {
+                    format: 'png',
+                    out_dir: tempDir,
+                    out_prefix: path.basename(filePath, path.extname(filePath)),
+                    page: null // 处理所有页面
+                };
 
-                // 执行 PDF 到图像的转换
-                //const outputFiles = await pdfPoppler.convert(filePath, options);
+               // 执行 PDF 到图像的转换
+                const outputFiles = await pdfPoppler.convert(filePath, options);
 
-                // for (const outputFile of outputFiles) {
-                //     const { data: { text } } = await Tesseract.recognize(
-                //         outputFile,
-                //         'chi_sim', // 如果是中文文档，使用 'chi_sim'
-                //         {
-                //             logger: m => console.log(m)
-                //         }
-                //     );
-                //     extractedText += text;
-                // }
+                for (const outputFile of outputFiles) {
+                    const { data: { text } } = await Tesseract.recognize(
+                        outputFile,
+                        'chi_sim', // 如果是中文文档，使用 'chi_sim'
+                        {
+                            logger: m => console.log(m)
+                        }
+                    );
+                    extractedText += text;
+                }
 
-                //    // 完成 OCR 处理后，删除生成的 PNG 文件
-                // for (const outputFile of outputFiles) {
-                //   try {
-                //     fs.unlinkSync(outputFile);
-                //     console.log(`已删除临时文件: ${outputFile}`);
-                //   } catch (deleteError) {
-                //     console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
-                //   }
-                // }               
+                   // 完成 OCR 处理后，删除生成的 PNG 文件
+                for (const outputFile of outputFiles) {
+                  try {
+                    fs.unlinkSync(outputFile);
+                    console.log(`已删除临时文件: ${outputFile}`);
+                  } catch (deleteError) {
+                    console.error(`删除临时文件 ${outputFile} 时出错:`, deleteError);
+                  }
+                }               
 
                 if (extractedText.length === 0) {
                     // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
                     console.log('pdf-parse 解析结果为空，但 OCR 功能的Tesseract依赖无法配置，跳过 OCR 步骤');
-                    // const pdfData = new Uint8Array(dataBuffer);
-                    // const loadingTask = pdfjsLib.getDocument(pdfData);
-                    // const pdfDoc = await loadingTask.promise;
-                    // for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    //     const page = await pdfDoc.getPage(i);
-                    //     const content = await page.getTextContent();
-                    //     const pageText = content.items.map(item => item.str).join(' ');
-                    //     extractedText += pageText;
-                    // }
+                    const pdfData = new Uint8Array(dataBuffer);
+                    const loadingTask = pdfjsLib.getDocument(pdfData);
+                    const pdfDoc = await loadingTask.promise;
+                    for (let i = 1; i <= pdfDoc.numPages; i++) {
+                        const page = await pdfDoc.getPage(i);
+                        const content = await page.getTextContent();
+                        const pageText = content.items.map(item => item.str).join(' ');
+                        extractedText += pageText;
+                    }
                 }
             }
             console.log('PDF 解析完成，提取文本长度:', extractedText.length);
@@ -956,6 +961,14 @@ app.get('/api/generate-summary', async (req, res) => {
     } catch (error) {
     console.error('生成摘要出错 (详细):', error.response || error);
       return res.status(500).json({ error: "生成摘要失败" });
+  }finally {
+    // 删除临时目录及其所有内容
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+      console.log(`已删除临时目录: ${tempDir}`);
+    } catch (err) {
+      console.error('删除临时目录失败:', err);
+    }
   }
 });
 

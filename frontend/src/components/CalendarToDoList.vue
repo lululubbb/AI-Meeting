@@ -137,7 +137,7 @@ const calendarOptions = computed(() => ({
   contentHeight: 'auto',
   minWidth: '300px',
   maxWidth: '1000px',
-  height: '480px',
+  height: '450px',
   contentHeight: '800px',
   buttonText: {
     today: '今天',

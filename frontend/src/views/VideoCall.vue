@@ -1062,17 +1062,17 @@ function handleChatMessage(payload) {
 //   return userInStore?.avatarUrl || defaultAvatar;
 // };
 // 修改getAvatar函数，优先从FirestoreService实时获取用户数据
-const getAvatar = () => {
-  // 强制类型转换关键点
-  const userId = String(sender.userId); // 将userId转为字符串
-  // 从Zoom服务获取时确保参数类型
-  const updatedUser = FirestoreService.getUserInfo(userId);
-  // 从store查询时统一比较类型
-  const storeUser = store.state.users?.find(u => 
-    String(u.userId) === userId // 统一转为字符串比较
-  );
-  return updatedUser?.avatar || storeUser?.avatarUrl || defaultAvatar;
-};
+// const getAvatar = () => {
+//   // 强制类型转换关键点
+//   const userId = String(sender.userId); // 将userId转为字符串
+//   // 从Zoom服务获取时确保参数类型
+//   const updatedUser = FirestoreService.getUserInfo(userId);
+//   // 从store查询时统一比较类型
+//   const storeUser = store.state.users?.find(u => 
+//     String(u.userId) === userId // 统一转为字符串比较
+//   );
+//   return updatedUser?.avatar || storeUser?.avatarUrl || defaultAvatar;
+// };
  // 优化获取头像的函数
 //  const getAvatar = () => {
 //         // 优先使用消息中的 avatar
