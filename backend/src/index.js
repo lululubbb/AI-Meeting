@@ -303,6 +303,8 @@ app.post('/api/chat/completions', async (req, res) => {
     });
   }
 });
+
+
 app.post('/api/analyze-file', async (req, res) => {
   try {
     const { fileData, fileType, type, question, conversation, stream } = req.body;
@@ -757,37 +759,6 @@ app.delete('/api/delete/:fileId', (req, res) => {
 });
 
 
-// //  文件删除 (新增)原版
-// app.delete('/api/delete/:fileId', (req, res) => {
-//   const { fileId } = req.params;
-
-//   if (!fileId) {
-//       return res.status(400).json({ error: '缺少 fileId' });
-//   }
-
-//   const uploadPath = path.join(__dirname, 'uploads');
-//   const files = fs.readdirSync(uploadPath);
-//   const matchingFiles = files.filter(file => file.startsWith(fileId));
-
-//   if (matchingFiles.length === 0) {
-//       return res.status(404).json({ error: '文件未找到' });
-//   }
-//   const fileName = matchingFiles[0];
-//   const filePath = path.join(uploadPath, fileName);
-
-//   if (!fs.existsSync(filePath)) {
-//     return res.status(404).json({ error: '文件未找到' });
-// }
-// try{
-//     fs.unlinkSync(filePath); // 删除文件
-//     res.json({ message: '文件删除成功' });
-//   }
-//   catch (error) {
-//       console.error('删除文件出错:', error);
-//       res.status(500).json({ error: '文件删除失败' }); // 统一错误消息
-//   }
-// });
-//生成摘要
 
 // 手动实现 Promise.withResolvers 以兼容旧版本 Node.js
 if (!Promise.withResolvers) {
