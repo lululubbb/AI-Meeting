@@ -1053,65 +1053,7 @@ const sendChat = async () => {
 // 收到他人聊天消息
 function handleChatMessage(payload) {
     const { message, sender, receiver, file, timestamp, id} = payload; //  timestamp, 增加 id
-//      // 3. 使用默认头像
-//   const getAvatar = () => {
-//   // 优先使用消息中的avatar
-//   if (sender.avatar) return sender.avatar;
-//   // 从store中查找用户信息
-//   const userInStore = store.state.users?.find(u => u.userId === sender.userId);
-//   return userInStore?.avatarUrl || defaultAvatar;
-// };
-// 修改getAvatar函数，优先从FirestoreService实时获取用户数据
-// const getAvatar = () => {
-//   // 强制类型转换关键点
-//   const userId = String(sender.userId); // 将userId转为字符串
-//   // 从Zoom服务获取时确保参数类型
-//   const updatedUser = FirestoreService.getUserInfo(userId);
-//   // 从store查询时统一比较类型
-//   const storeUser = store.state.users?.find(u => 
-//     String(u.userId) === userId // 统一转为字符串比较
-//   );
-//   return updatedUser?.avatar || storeUser?.avatarUrl || defaultAvatar;
-// };
- // 优化获取头像的函数
-//  const getAvatar = () => {
-//         // 优先使用消息中的 avatar
-//         if (sender.avatar) return sender.avatar;
 
-//         // 从 store 中查找用户信息
-//         const userInStore = store.state.users?.find(u => u.userId === sender.userId);
-//         if (userInStore?.avatarUrl) {
-//             return userInStore.avatarUrl;
-//         }
-
-//         // 尝试从 Firestore 获取用户信息
-//         try {
-//             const userData = FirestoreService.getUserInfo(sender.userId);
-//             if (userData?.avatarUrl) {
-//                 // 更新 store 中的用户信息
-//                 const userIndex = store.state.users.findIndex(u => u.userId === sender.userId);
-//                 if (userIndex !== -1) {
-//                     store.commit('UPDATE_USER_AVATAR', {
-//                         userId: sender.userId,
-//                         avatarUrl: userData.avatarUrl
-//                     });
-//                 }
-//                 return userData.avatarUrl;
-//             }
-//         } catch (error) {
-//             console.error('获取用户头像失败:', error);
-//         }
-
-//         return defaultAvatar;
-//     };
-    console.log("Received chat message:", payload); // 打印整个 payload
-    console.log('Message ID:', id);
-    console.log('Sender AvatarUrl:', sender.avatar);
-    console.log('[DEBUG] 收到消息:', {
-    senderId: payload.sender.userId,
-    senderAvatar: getAvatar(),
-    currentUserId: store.state.user.uid // 当前用户 ID
-  });
     // 1. 检查 msgId 是否已存在, 如果存在, 直接返回
     if (ZoomVideoService.isMessageAlreadyAdded(id)) {
         return;
