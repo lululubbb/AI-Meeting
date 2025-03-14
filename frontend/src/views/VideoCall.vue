@@ -1604,8 +1604,25 @@ const endSession = async () => { //主持人结束会议
       const user = store.getters.getUser; // 获取当前用户信息
 
       // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
-      if (isTranscribing.value) {
+   // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
+   if (isTranscribing.value) {
           stopTranscription(); // 先停止转录 (重要!)
+
+           // 格式化 transcriptionHistory (重要!)
+          let formattedTranscription = [];
+           for (const date in transcriptionHistory.value) {
+               for(const userId in transcriptionHistory.value[date]){
+                   for(const item of transcriptionHistory.value[date][userId]){
+                       formattedTranscription.push({
+                           date: date,
+                           userId: userId, //  添加到这里
+                           userName: item.userName,
+                           time: item.time,
+                           text: item.text
+                       });
+                   }
+               }
+            }
 
           // 更新 Firestore
           if (user && config.meetingId) {
@@ -1614,7 +1631,7 @@ const endSession = async () => { //主持人结束会议
                   endTime: now,
                   participants: filteredUsers,
                   chatMessages: filteredChatMessages,
-                  transcriptionHistory: transcriptionHistory.value // 新增：保存转录历史
+                  transcriptionHistory: formattedTranscription //  保存格式化后的
               });
           }
       } else { // 添加 else 分支
@@ -1629,6 +1646,7 @@ const endSession = async () => { //主持人结束会议
               });
           }
       }
+
 
 
        ZoomVideoService.leaveSession(true); //  结束会议, 放到后面
@@ -1659,6 +1677,8 @@ function resetState() {
 转录方面
    ********************* */
 // videocall.vue  <script setup> 部分
+const maxLength = ref({}); //  { userId: maxLength }
+
 // 新增：转录历史记录
 const transcriptionHistory = ref({});
 // 新增：当前时间段 (用于标记当前正在记录的时间段)
@@ -1679,27 +1699,35 @@ const getCurrentDate = () => {
 };
 
 // 新增：将转录数据添加到历史记录的函数
+// 新增：将转录数据添加到历史记录的函数 (修改后)
 const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
-   const date = getCurrentDate(); // YYYY-MM-DD
-  const timeslot = getCurrentTimeslot(); // HH:mm-HH:mm
+  const date = getCurrentDate(); // YYYY-MM-DD
+  //const timeslot = getCurrentTimeslot(); // 不需要 timeslot
   const time = format(timestamp, 'HH:mm:ss'); // HH:mm:ss
+
   // 确保日期存在
   if (!transcriptionHistory.value[date]) {
     transcriptionHistory.value[date] = {};
   }
 
-  // 确保时间段存在
-  if (!transcriptionHistory.value[date][timeslot]) {
-    transcriptionHistory.value[date][timeslot] = [];
-  }
+  // // 确保时间段存在 (不再需要)
+  // if (!transcriptionHistory.value[date][timeslot]) {
+  //   transcriptionHistory.value[date][timeslot] = [];
+  // }
 
-  transcriptionHistory.value[date][timeslot].push({
-    userId,
+    // 确保用户存在 (重要!)
+    if(!transcriptionHistory.value[date][userId]){
+        transcriptionHistory.value[date][userId] = [];
+    }
+
+  transcriptionHistory.value[date][userId].push({
+    //userId, //  userId 已经作为 key 了
     userName,
     time,
     text
   });
 };
+
 const isTranscribing = ref(false);
 const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
 const subtitle = ref(''); // (已弃用)
@@ -1843,23 +1871,36 @@ const startTranscription = async () => {
       };
 
       transcriptionWs.value.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        const now = new Date();
+  const data = JSON.parse(event.data);
+  const now = new Date();
 
-        if (data.type === 'interim') {
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = { userName: data.userName, text: '' };
-          }
-          subtitles.value[data.userId].text = data.text;
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        } else if (data.type === 'final') {
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = { userName: data.userName, text: '' };
-          }
-          subtitles.value[data.userId].text = data.text;
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        }
-      };
+  if (data.type === 'interim') {
+    if (!subtitles.value[data.userId]) {
+      subtitles.value[data.userId] = { userName: data.userName, text: '' };
+    }
+
+    const currentLength = data.text.length;
+    if (!maxLength.value[data.userId]) {
+      maxLength.value[data.userId] = 0;
+    }
+
+    if (currentLength > maxLength.value[data.userId]) {
+      //  更长了, 更新最长长度
+      maxLength.value[data.userId] = currentLength;
+      subtitles.value[data.userId].text = data.text; // 更新字幕
+    } else {
+        //  变短了, 说明上一个是完整句子 (伪 completed 事件)!
+        //  重要:  从 subtitles 中获取上一个文本
+        const previousText = subtitles.value[data.userId].text
+      addTranscriptionToHistory(data.userId, data.userName, previousText, now);
+
+      //  重置最长长度, 并更新当前文本 (新的句子开始了)
+      maxLength.value[data.userId] = currentLength;
+      subtitles.value[data.userId].text = data.text;
+    }
+  }
+};
+
 
       transcriptionWs.value.onerror = (error) => {
         console.error('[Client] 转录 WebSocket 错误:', error);
@@ -2077,51 +2118,49 @@ SDK事件订阅
 
     // 3.  (其余代码与之前版本基本相同,  确保数据一致性)
     const userIndex = users.value.findIndex(u => u.userId === user.userId);
-    if (userIndex !== -1) {
-      const userObj = users.value[userIndex];
-      userObj.leaveTime = new Date();
-      // 安全访问, 避免错误
-      userObj.hasVideo.final = userObj.hasVideo?.timeline?.[userObj.hasVideo.timeline.length - 1]?.value || false;
-      userObj.hasVideo.timeline = userObj.hasVideo.timeline || [];
-      userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
 
-      userObj.isAudioOn.final = userObj.isAudioOn?.timeline?.[userObj.isAudioOn.timeline.length - 1]?.value || false;
-      userObj.isAudioOn.timeline = userObj.isAudioOn.timeline || [];
-      userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
-      
-     userObj.isSharing.final = userObj.isSharing?.timeline?.[userObj.isSharing.timeline.length-1]?.value || false;
-        userObj.isSharing.timeline = userObj.isSharing.timeline || [];
-        userObj.isSharing.timeline.push({time: userObj.leaveTime, value:userObj.isSharing.final});
-      
-      userObj.isUpdated = true;
-      if (user.userId === currentUserId.value) {
-               const loginUser = store.getters.getUser;
-              if(loginUser && config.meetingId && !userObj.isUpdated){
-                try {
-                    // 只更新当前离开的用户的数据
-                  const updatedData = {
-                      leaveTime: new Date(),
-                    hasVideo:{
-                        final: userObj.hasVideo.final,
-                       timeline: userObj.hasVideo.timeline
-                    },
-                       isAudioOn:{
-                        final:userObj.isAudioOn.final,
-                         timeline: userObj.isAudioOn.timeline
-                       },
-                       isSharing:{
-                         final:userObj.isSharing.final,
-                           timeline: userObj.isSharing.timeline
-                       }
-                  }
+if (userIndex !== -1) {
+  // 更新内存中的用户信息
+  const userObj = users.value[userIndex];
+  userObj.leaveTime = new Date();
+  userObj.hasVideo.final = userObj.hasVideo.timeline[userObj.hasVideo.timeline.length - 1].value;
+  userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
 
-                 await FirestoreService.updateMeetingHistory( loginUser.uid, config.meetingId, updatedData);
-                 userObj.isUpdated = true; // update flag
-                } catch (err) {
-                  console.error('update firestore error', err);
-                }
-               
-              }
+  userObj.isAudioOn.final = userObj.isAudioOn.timeline[userObj.isAudioOn.timeline.length - 1].value;
+  userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
+
+  userObj.isSharing.final = userObj.isSharing.timeline[userObj.isSharing.timeline.length - 1].value;
+  userObj.isSharing.timeline.push({ time: userObj.leaveTime, value: userObj.isSharing.final });
+
+  //  user-removed 事件 *不再* 更新 Firestore 中的 participants。
+  //  *只更新当前离开用户自己的信息*。
+  if (user.userId === currentUserId.value) { // 确保是当前用户
+    const loginUser = store.getters.getUser;
+    if (loginUser && config.meetingId && !userObj.isUpdated) {  //  添加 !userObj.isUpdated 判断
+      try {
+        // 只更新当前离开的用户的数据，不需要participants这个字段了
+        const updatedData = {
+          leaveTime: new Date(),
+          hasVideo: {
+            final: userObj.hasVideo.final,
+            timeline: userObj.hasVideo.timeline
+          },
+          isAudioOn: {
+            final: userObj.isAudioOn.final,
+            timeline: userObj.isAudioOn.timeline
+          },
+          isSharing: {
+            final: userObj.isSharing.final,
+            timeline: userObj.isSharing.timeline
+          }
+        };
+
+        await FirestoreService.updateMeetingHistory(loginUser.uid, config.meetingId, updatedData);
+        userObj.isUpdated = true; // 标记为已更新
+      } catch (err) {
+        console.error('更新会议信息失败 (user-removed, self):', err);
+      }
+    }
       }
         // 从users中删除，并触发更新
       users.value.splice(userIndex, 1);
