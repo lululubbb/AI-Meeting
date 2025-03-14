@@ -14,7 +14,7 @@
       </div>
 
       <!-- 优化按钮 (全局) -->
-      <button @click="startAllOptimization" :disabled="allOptimizationStarted">
+      <button @click="startAllOptimization" :disabled="allOptimizationStarted" class="optimize-all-btn">
         一键优化
       </button>
 
@@ -22,15 +22,22 @@
       <div class="content-container">
         <div v-for="(segment, segmentIndex) in processedData" :key="segmentIndex" class="content-segment">
           <div v-for="(item, userId) in segment" :key="userId" class="user-transcription">
-            <span class="user-name">{{ item.userName }}:</span>
-            <span class="transcription-text">{{ item.text }}</span>
-
-            <!-- 优化结果显示区域 -->
-            <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
-              <div>
-                <span class="optimized-label">优化结果:</span>
-                <span class="optimized-text">{{ optimizationData[segmentIndex][userId] }}</span>
+            <div class="note" @click="toggleExpanded(segmentIndex, userId)" :class="{ expanded: expandedStates[segmentIndex]?.[userId] }">
+              <div class="note-header">
+                <span class="user-name">{{ item.userName }}</span>
+                <span class="expand-icon">{{ expandedStates[segmentIndex]?.[userId] ? '−' : '+' }}</span>
               </div>
+              <p class="transcription-text" :class="{ 'truncated': !expandedStates[segmentIndex]?.[userId] }">
+                {{ item.text }}
+              </p>
+
+              <!-- 优化结果 -->
+             <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
+                <p class="optimized-label">优化结果:</p>
+                <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }" ref="scrollWrapper">
+                    <p class="optimized-text">{{ optimizationData[segmentIndex][userId] }}</p>
+                </div>
+             </div>
             </div>
           </div>
         </div>
@@ -41,11 +48,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue';
+import { ref, onMounted, computed, reactive, watch, nextTick } from 'vue';
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { format } from 'date-fns';
+
 
 const transcriptionData = ref(null);
 const isLoading = ref(false);
@@ -53,7 +61,9 @@ const error = ref(null);
 const timeSegments = ref([]);
 const processedData = ref([]);
 const optimizationData = reactive({});
-const allOptimizationStarted = ref(false); // 全局优化是否开始
+const allOptimizationStarted = ref(false);
+const expandedStates = reactive({}); // 用于跟踪每个便签的展开状态
+const scrollWrapper = ref([]); // 用于获取滚动容器的引用
 
 const store = useStore();
 const route = useRoute();
@@ -63,8 +73,9 @@ const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
 
+// 数据获取 (与之前相同)
 async function fetchData() {
-  // ... (与之前相同，获取数据和分组，但不优化)
+// ... (与之前相同，获取数据和分组，但不优化)
     const meetingId = route.params.meetingId;
     if (!userId.value || !meetingId) {
         error.value = '缺少用户 ID 或 会议 ID';
@@ -121,36 +132,50 @@ async function fetchData() {
   }
 }
 
-// 一键优化所有
+// 一键优化所有 (与之前相同)
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
-    return; // 如果已经开始优化，则直接返回
+    return;
   }
   allOptimizationStarted.value = true;
 
-  const optimizationPromises = [];
-  for (let i = 0; i < processedData.value.length; i++) {
-    for (const userId in processedData.value[i]) {
+  // 1. 构建优化任务队列 (按时间段和用户排序)
+  const optimizationTasks = [];
+  for (let i = 0; i < processedData.value.length; i++) { // 遍历时间段
+    const segment = processedData.value[i];
+    const userIds = Object.keys(segment); // 获取当前时间段的所有 userId
+
+    // 按照 userId 在 processedData 中的顺序排序 (即垂直顺序)
+    userIds.sort((a, b) => {
+      // 找到 user a 在 processedData 对应 segment 中的索引位置.
+      const indexA = Object.keys(segment).indexOf(a);
+      const indexB = Object.keys(segment).indexOf(b);
+      return indexA - indexB;
+    });
+
+    for (const userId of userIds) { // 遍历排序后的用户
       if (!optimizationData[i]) {
-         optimizationData[i] = {}; // 初始化外层对象
+        optimizationData[i] = {};
       }
-       optimizationData[i][userId] = ''; // 初始化为字符串
-      const text = processedData.value[i][userId].text;
-      const promise = optimizeText(i, userId, text);
-      optimizationPromises.push(promise);
+      optimizationData[i][userId] = ''; // 初始化
+      const text = segment[userId].text;
+      optimizationTasks.push({ segmentIndex: i, userId, text }); // 添加任务
     }
   }
 
-  // 使用 Promise.all 并发优化
+  // 2. 顺序执行优化任务
   try {
-     await Promise.all(optimizationPromises);
-  } catch(error){
-    console.error("部分优化失败")
+      for (const task of optimizationTasks) {
+        await optimizeText(task.segmentIndex, task.userId, task.text);
+      }
+  } catch (error) {
+      console.error("部分优化失败");
+  } finally {
+    allOptimizationStarted.value = false;
   }
-    finally{
-        allOptimizationStarted.value = false; // 优化结束
-    }
 }
+
+
 // 优化文本 (和之前一样)
 async function optimizeText(segmentIndex, userId, text) {
     try {
@@ -188,23 +213,97 @@ async function optimizeText(segmentIndex, userId, text) {
         optimizationData[segmentIndex][userId] = '优化失败';
     }
 }
+
+// 切换展开/收起状态
+function toggleExpanded(segmentIndex, userId) {
+  if (!expandedStates[segmentIndex]) {
+    expandedStates[segmentIndex] = {};
+  }
+   if (expandedStates[segmentIndex][userId] === undefined) {
+      expandedStates[segmentIndex][userId] = false; // 默认状态
+  }
+  expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
+
+  // 展开或收起后，确保滚动条位置正确
+  if (expandedStates[segmentIndex][userId]) {
+    // 展开时，不需要额外操作，因为 maximized-scroll 会让滚动条消失
+  } else {
+      // 延迟滚动，确保DOM更新
+      nextTick(() => {
+          scrollToBottom(segmentIndex, userId);
+      });
+  }
+}
+
+
+// 滚动到容器底部 (优化)
+function scrollToBottom(segmentIndex, userId) {
+    const index = getScrollWrapperIndex(segmentIndex, userId);
+    if (index !== -1 && scrollWrapper.value[index]) {
+        scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
+    }
+}
+
+
+// 获取 scrollWrapper 的索引
+function getScrollWrapperIndex(segmentIndex, userId) {
+  let index = 0;
+  for (let i = 0; i < segmentIndex; i++) {
+    for (let u in processedData.value[i]) {
+      index++;
+    }
+  }
+  for (let u in processedData.value[segmentIndex]) {
+    if (u === userId) {
+      break;
+    }
+    index++;
+  }
+  return index;
+}
+
+
+// 监听 optimizationData 变化，自动滚动
+watch(optimizationData, (newVal, oldVal) => {
+  nextTick(() => { // 使用 nextTick
+    for (let segmentIndex in newVal) {
+      for (let userId in newVal[segmentIndex]) {
+        if (newVal[segmentIndex][userId] !== oldVal?.[segmentIndex]?.[userId]) {
+          if (!expandedStates[segmentIndex]?.[userId]) {
+              scrollToBottom(parseInt(segmentIndex), userId);
+          }
+        }
+      }
+    }
+  });
+}, { deep: true });
+
+
 onMounted(fetchData);
 </script>
 
 <style scoped>
-/* 样式部分 (与之前类似，添加 reasoning 相关的样式) */
 .transcription-page {
-  padding: 20px;
-  font-family: 'Arial', sans-serif;
+  padding: 30px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: #343a40;
+}
+
+h1 {
+  color: #343a40;
+  margin-bottom: 30px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .timeline-container {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
-  background-color: #f0f0f0;
-  padding: 10px;
-  border-radius: 8px;
+  margin-bottom: 30px;
+  background-color: #e9ecef;
+  padding: 15px;
+  border-radius: 12px;
 }
 
 .timeline-segment {
@@ -213,24 +312,25 @@ onMounted(fetchData);
 }
 
 .timeline-segment .emoji {
-  font-size: 20px;
-  margin-bottom: 5px;
+  font-size: 24px;
+  margin-bottom: 8px;
 }
 
 .timeline-segment .time {
   font-size: 14px;
-  color: #666;
+  color: #6c757d;
 }
 
 .content-container {
   display: flex;
   justify-content: space-between;
+  margin-top: 20px;
 }
 
 .content-segment {
   flex: 1;
-  padding: 10px;
-  border-right: 1px solid #ccc;
+  padding: 0 10px;
+  border-right: 1px solid #dee2e6;
 }
 
 .content-segment:last-child {
@@ -238,52 +338,134 @@ onMounted(fetchData);
 }
 
 .user-transcription {
-  margin-bottom: 15px;
-  padding: 10px;
+  margin-bottom: 20px;
+}
+
+/* 便签样式 */
+.note {
   background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden; /* 确保内容在折叠时被裁剪 */
+   border: 1px solid #ced4da;
+}
+
+.note:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+
+}
+
+.note-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* 垂直居中 */
+
+}
+.expand-icon{
+ font-size: 1.2em;
+  color: #007bff;
 }
 
 .user-name {
-  font-weight: bold;
-  color: #409eff;
-  margin-right: 5px;
+  font-weight: 600;
+  color: #007bff;
+    margin-right: auto; /* 将用户名推到最左边 */
 }
 
 .transcription-text {
-  white-space: pre-line;
-  word-break: break-word;
+   margin: 10px 0;
+  line-height: 1.6;
+  color: #495057;
+  max-height: 4.8em; /* 3行 x 1.6em 行高 */
+  overflow: hidden;
+  transition: max-height 0.5s ease-in-out;
+}
+
+.truncated{
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* 设置最大行数 */
+  -webkit-box-orient: vertical;  /* 垂直排列 */
+  overflow: hidden;    /* 隐藏溢出的文本 */
+}
+
+.note.expanded {
+    height: auto;
+    .transcription-text{
+         max-height: none;
+    }
+}
+
+.note-header::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background-color: #28a745; /* 或您喜欢的指示颜色 */
+  border-radius: 50%;
+  opacity: 0.8;
 }
 
 .optimized-text-container {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #f0f9ff;
-  border-left: 4px solid #409eff;
-  border-radius: 4px;
+   margin-top: 15px;
+  border-top: 1px solid #dee2e6;
+  padding-top: 15px;
 }
 
 .optimized-label {
-  font-weight: bold;
-  color: #409eff;
-  margin-right: 5px;
+  font-weight: 600;
+  color: #28a745;
+  margin-bottom: 8px;
+  display: block;
 }
 
 .optimized-text {
-    white-space: pre-line;
-  word-break: break-word;
+  color: #495057;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
 }
 
-/* 新增的推理过程样式 */
-.reasoning-label {
-  font-weight: bold;
-  color: #28a745; /* 绿色 */
-  margin-right: 5px;
+ /* 优化全部按钮样式 */
+  .optimize-all-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 20px;
+    display: block; /* 设置为块级元素 */
+    margin-left: auto; /* 自动左边距 */
+    margin-right: auto; /* 自动右边距 */
 }
 
-.reasoning-text{
-    white-space: pre-line;
-    word-break: break-word;
+.optimize-all-btn:hover {
+    background-color: #218838;
+}
+.optimize-all-btn:disabled {
+    background-color: #6c757d;  /* 禁用时为灰色 */
+    cursor: not-allowed;      /* 禁用时鼠标样式为禁止 */
+}
+
+/* 滚动容器样式 */
+.optimized-text-scroll-wrapper {
+  max-height: 4.8em;  /* 3 行的高度 */
+  overflow-y: auto; /* 垂直滚动 */
+  transition: max-height 0.3s ease; /* 平滑过渡 */
+    position: relative;
+}
+.optimized-text-scroll-wrapper.expanded-scroll {
+    max-height: none; /* 展开时无最大高度限制 */
+     overflow-y: visible;
 }
 </style>
