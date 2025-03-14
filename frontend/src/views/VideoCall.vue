@@ -2077,51 +2077,49 @@ SDK事件订阅
 
     // 3.  (其余代码与之前版本基本相同,  确保数据一致性)
     const userIndex = users.value.findIndex(u => u.userId === user.userId);
-    if (userIndex !== -1) {
-      const userObj = users.value[userIndex];
-      userObj.leaveTime = new Date();
-      // 安全访问, 避免错误
-      userObj.hasVideo.final = userObj.hasVideo?.timeline?.[userObj.hasVideo.timeline.length - 1]?.value || false;
-      userObj.hasVideo.timeline = userObj.hasVideo.timeline || [];
-      userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
 
-      userObj.isAudioOn.final = userObj.isAudioOn?.timeline?.[userObj.isAudioOn.timeline.length - 1]?.value || false;
-      userObj.isAudioOn.timeline = userObj.isAudioOn.timeline || [];
-      userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
-      
-     userObj.isSharing.final = userObj.isSharing?.timeline?.[userObj.isSharing.timeline.length-1]?.value || false;
-        userObj.isSharing.timeline = userObj.isSharing.timeline || [];
-        userObj.isSharing.timeline.push({time: userObj.leaveTime, value:userObj.isSharing.final});
-      
-      userObj.isUpdated = true;
-      if (user.userId === currentUserId.value) {
-               const loginUser = store.getters.getUser;
-              if(loginUser && config.meetingId && !userObj.isUpdated){
-                try {
-                    // 只更新当前离开的用户的数据
-                  const updatedData = {
-                      leaveTime: new Date(),
-                    hasVideo:{
-                        final: userObj.hasVideo.final,
-                       timeline: userObj.hasVideo.timeline
-                    },
-                       isAudioOn:{
-                        final:userObj.isAudioOn.final,
-                         timeline: userObj.isAudioOn.timeline
-                       },
-                       isSharing:{
-                         final:userObj.isSharing.final,
-                           timeline: userObj.isSharing.timeline
-                       }
-                  }
+if (userIndex !== -1) {
+  // 更新内存中的用户信息
+  const userObj = users.value[userIndex];
+  userObj.leaveTime = new Date();
+  userObj.hasVideo.final = userObj.hasVideo.timeline[userObj.hasVideo.timeline.length - 1].value;
+  userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
 
-                 await FirestoreService.updateMeetingHistory( loginUser.uid, config.meetingId, updatedData);
-                 userObj.isUpdated = true; // update flag
-                } catch (err) {
-                  console.error('update firestore error', err);
-                }
-               
-              }
+  userObj.isAudioOn.final = userObj.isAudioOn.timeline[userObj.isAudioOn.timeline.length - 1].value;
+  userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
+
+  userObj.isSharing.final = userObj.isSharing.timeline[userObj.isSharing.timeline.length - 1].value;
+  userObj.isSharing.timeline.push({ time: userObj.leaveTime, value: userObj.isSharing.final });
+
+  //  user-removed 事件 *不再* 更新 Firestore 中的 participants。
+  //  *只更新当前离开用户自己的信息*。
+  if (user.userId === currentUserId.value) { // 确保是当前用户
+    const loginUser = store.getters.getUser;
+    if (loginUser && config.meetingId && !userObj.isUpdated) {  //  添加 !userObj.isUpdated 判断
+      try {
+        // 只更新当前离开的用户的数据，不需要participants这个字段了
+        const updatedData = {
+          leaveTime: new Date(),
+          hasVideo: {
+            final: userObj.hasVideo.final,
+            timeline: userObj.hasVideo.timeline
+          },
+          isAudioOn: {
+            final: userObj.isAudioOn.final,
+            timeline: userObj.isAudioOn.timeline
+          },
+          isSharing: {
+            final: userObj.isSharing.final,
+            timeline: userObj.isSharing.timeline
+          }
+        };
+
+        await FirestoreService.updateMeetingHistory(loginUser.uid, config.meetingId, updatedData);
+        userObj.isUpdated = true; // 标记为已更新
+      } catch (err) {
+        console.error('更新会议信息失败 (user-removed, self):', err);
+      }
+    }
       }
         // 从users中删除，并触发更新
       users.value.splice(userIndex, 1);
