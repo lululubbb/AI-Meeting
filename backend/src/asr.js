@@ -7,17 +7,14 @@ const Nls = require('alibabacloud-nls');
 // 阿里云配置（替换为实际值）
 const CONFIG = {
     URL: "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1",
-    APPKEY: "wvpwo9lGGSkfMHfn",
-    TOKEN: "28ca8a40ff404be6b549d15a9017464b"
+    APPKEY: "wvpwo9lGGSkfMHfn", // 你的 AppKey
+    TOKEN: "a9b422e0d8894e028158c5f3c13fd107"  // 你的 Token
   };
 
 const wss = new WebSocketServer({ port: 4399 });
 
-// 存储所有已连接用户的转录实例和信息
 const transcriptionClients = new Map();
-
-// 心跳间隔 (毫秒)
-const HEARTBEAT_INTERVAL = 30000; // 30秒
+const HEARTBEAT_INTERVAL = 30000;
 
 wss.on('connection', (ws, req) => {
   const urlParams = new URLSearchParams(req.url.substring(1));
@@ -31,13 +28,20 @@ wss.on('connection', (ws, req) => {
     ws.close();
     return;
   }
-
+    // 检查是否已有同 userId 的连接
     if (transcriptionClients.has(userId)) {
         console.warn(`[Server] 用户 ${userId} 已存在活动连接，关闭旧连接`);
         const oldClient = transcriptionClients.get(userId);
+        // 异步关闭 Nls.SpeechTranscription 实例
+        oldClient.st.close().then(() => {
+            console.log(`[Server] 用户 ${userId} 的旧 NLS 连接已成功关闭`);
+        }).catch(err => {
+            console.error(`[Server] 用户 ${userId} 的旧 NLS 连接关闭失败:`, err);
+        });
+        // 关闭 WebSocket 连接
         oldClient.ws.close();
-    }
 
+    }
   const st = new Nls.SpeechTranscription({
     url: CONFIG.URL,
     appkey: CONFIG.APPKEY,
@@ -57,10 +61,8 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(msg);
       if (data?.payload?.result) {
-        console.log(`[Server] 用户 ${userId} 收到中间结果: ${data.payload.result}`); // 打印中间结果
+        console.log(`[Server] 用户 ${userId} 收到中间结果: ${data.payload.result}`);
         broadcastTranscription(userId, userName, data.payload.result, 'interim');
-      } else {
-        console.error(`[Server] 用户 ${userId} 的无效中间结果:`, data);
       }
     } catch (err) {
       console.error(`[Server] 用户 ${userId} 解析中间结果失败:`, err);
@@ -71,10 +73,8 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(msg);
       if (data?.payload?.result) {
-        // console.log(`[Server] 用户 ${userId} 收到最终结果: ${data.payload.result}`); // 打印最终结果
+        console.log(`[Server] 用户 ${userId} 收到最终结果: ${data.payload.result}`);
         broadcastTranscription(userId, userName, data.payload.result, 'final');
-      } else {
-        console.error(`[Server] 用户 ${userId} 的无效最终结果:`, data);
       }
     } catch (err) {
       console.error(`[Server] 用户 ${userId} 解析最终结果失败:`, err);
@@ -84,54 +84,60 @@ wss.on('connection', (ws, req) => {
   st.on('closed', () => {
     console.log(`[Server] 用户 ${userId} 的阿里云服务已关闭`);
     isServiceStarted = false;
-    if (transcriptionClients.has(userId)) {
-      transcriptionClients.delete(userId);
-    }
+    transcriptionClients.delete(userId);
   });
 
   st.on('failed', (err) => {
     console.error(`[Server] 用户 ${userId} 的识别失败:`, err);
     isServiceStarted = false;
-    if (transcriptionClients.has(userId)) {
-      const client = transcriptionClients.get(userId);
-      client.ws.close();
-      transcriptionClients.delete(userId);
-    }
+     if(transcriptionClients.has(userId)){
+        const client = transcriptionClients.get(userId);
+        client.ws.close();
+        transcriptionClients.delete(userId);
+     }
   });
 
+  //  startParams 设置 (根据官方文档)
   const startParams = {
-    ...st.defaultStartParams(),
+    format: 'pcm',
+    sample_rate: 16000,
     enable_intermediate_result: true,
     enable_punctuation_prediction: true,
-    enable_inverse_text_normalization: true
+    enable_inverse_text_normalization: true,
+    //  不需要 sentence_timeout, max_end_silence
   };
 
-  st.start(startParams, true, 6000)
-    .catch(err => console.error(`[Server] 用户 ${userId} 启动失败:`, err));
+  st.start(startParams, true, 6000) // 第二个参数 true, 第三个参数 6000
+    .catch(err => console.error(`[Server] 启动失败:`, err));
 
-  ws.on('message', (audioData) => {
+  ws.on('message', audioData => {
     if (isServiceStarted && audioData instanceof Buffer) {
-    //   console.log(`[Server] 收到用户 ${userId} 的音频数据, 长度: ${audioData.length}`); // 打印收到的音频数据长度
       if (!st.sendAudio(audioData)) {
-        console.error(`[Server] 用户 ${userId} 音频发送失败`);
+        console.error(`[Server] 音频发送失败`);
       }
     }
   });
 
   ws.on('close', () => {
     console.log(`[Server] 用户 ${userId} 的客户端连接已关闭`);
-    if (transcriptionClients.has(userId)) {
-      const client = transcriptionClients.get(userId);
-      client.st.close().catch(err => console.error(`[Server] 用户 ${userId} 关闭服务失败:`, err));
-      transcriptionClients.delete(userId);
-    }
+        if (transcriptionClients.has(userId)) {
+            const client = transcriptionClients.get(userId);
+            // 异步关闭 Nls.SpeechTranscription 实例
+            client.st.close().catch(err => {
+                console.error(`[Server] 用户 ${userId} 的 NLS 连接关闭失败:`, err);
+            });
+
+            // 从 Map 中移除客户端信息
+            transcriptionClients.delete(userId);
+        }
   });
 
     ws.on('pong', () => {
         if (transcriptionClients.has(userId)) {
-            const client = transcriptionClients.get(userId);
-            client.isAlive = true;
+          const client = transcriptionClients.get(userId)
+          client.isAlive = true
         }
+
     });
 });
 
@@ -142,6 +148,7 @@ setInterval(() => {
       client.ws.terminate();
       return;
     }
+
     client.isAlive = false;
     client.ws.ping();
   });
@@ -154,9 +161,8 @@ function broadcastTranscription(senderId, senderName, text, type) {
     userName: senderName,
     text
   });
-  console.log(`[Server] 广播消息: ${message}`); // 打印广播的消息内容
-
-  transcriptionClients.forEach((client) => {
+  console.log(`[Server] 广播消息: ${message}`);
+  transcriptionClients.forEach(client => {
     if (client.ws.readyState === client.ws.OPEN) {
       client.ws.send(message);
     }
