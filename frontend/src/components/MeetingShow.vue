@@ -13,12 +13,25 @@
         </div>
       </div>
 
+      <!-- 优化按钮 (全局) -->
+      <button @click="startAllOptimization" :disabled="allOptimizationStarted">
+        一键优化
+      </button>
+
       <!-- 内容区域 -->
       <div class="content-container">
-        <div v-for="(segment, index) in processedData" :key="index" class="content-segment">
+        <div v-for="(segment, segmentIndex) in processedData" :key="segmentIndex" class="content-segment">
           <div v-for="(item, userId) in segment" :key="userId" class="user-transcription">
             <span class="user-name">{{ item.userName }}:</span>
             <span class="transcription-text">{{ item.text }}</span>
+
+            <!-- 优化结果显示区域 -->
+            <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
+              <div>
+                <span class="optimized-label">优化结果:</span>
+                <span class="optimized-text">{{ optimizationData[segmentIndex][userId] }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -28,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, reactive } from 'vue';
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
@@ -39,7 +52,8 @@ const isLoading = ref(false);
 const error = ref(null);
 const timeSegments = ref([]);
 const processedData = ref([]);
-//const participants = ref([]); // 不再需要 participants
+const optimizationData = reactive({});
+const allOptimizationStarted = ref(false); // 全局优化是否开始
 
 const store = useStore();
 const route = useRoute();
@@ -49,89 +63,141 @@ const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
 
-// 不需要 getUserName 函数
-
-onMounted(async () => {
-  const meetingId = route.params.meetingId;
-
-  if (!userId.value || !meetingId) {
-    error.value = '缺少用户 ID 或 会议 ID';
-    return;
-  }
-
-  isLoading.value = true;
-  error.value = null;
+async function fetchData() {
+  // ... (与之前相同，获取数据和分组，但不优化)
+    const meetingId = route.params.meetingId;
+    if (!userId.value || !meetingId) {
+        error.value = '缺少用户 ID 或 会议 ID';
+        return;
+    }
+    isLoading.value = true;
+    error.value = null;
 
   try {
     const meetingData = await FirestoreService.getMeetingHistory(userId.value, meetingId);
     if (meetingData && meetingData.transcriptionHistory) {
       transcriptionData.value = meetingData.transcriptionHistory;
-      //participants.value = meetingData.participants || []; // 不需要
 
-      // 1. 计算时间段
-      const startTime = meetingData.startTime.toMillis(); // 转换为毫秒
+      const startTime = meetingData.startTime.toMillis();
       const endTime = meetingData.endTime.toMillis();
       const duration = endTime - startTime;
       const segmentDuration = duration / 5;
-
-      const emojis = ['😀', '😊', '😎', '🤩', '🤔']; // Emoji 列表
-
+      const emojis = ['😀', '😊', '😎', '🤩', '🤔'];
       for (let i = 0; i < 5; i++) {
-        const segmentStart = startTime + i * segmentDuration;
-        const segmentEnd = startTime + (i + 1) * segmentDuration;
-        timeSegments.value.push({
-          start: segmentStart,
-          end: segmentEnd,
-          emoji: emojis[i], // 添加 emoji
-        });
+          timeSegments.value.push({
+              start: startTime + i * segmentDuration,
+              end: startTime + (i + 1) * segmentDuration,
+              emoji: emojis[i],
+          });
       }
 
-      // 2. 数据分组
       const groupedData = [];
       for (let i = 0; i < 5; i++) {
-          groupedData.push({});  // 初始化数据结构
+        groupedData.push({});
       }
-
-        transcriptionData.value.forEach(item => {
-          const itemTime = new Date(`${item.date} ${item.time}`).getTime(); //为了方便 还是先这样
-          for (let i = 0; i < 5; i++) {
-             if (itemTime >= timeSegments.value[i].start && itemTime < timeSegments.value[i].end) {
-                 if(!groupedData[i][item.userId]){
-                        groupedData[i][item.userId] = {
-                            userName: item.userName,
-                            text: ''
-                       };
-                  }
-                  groupedData[i][item.userId].text += item.text + " ";
-                 break;
-
-              }
+      transcriptionData.value.forEach(item => {
+        const itemTime = new Date(`${item.date} ${item.time}`).getTime();
+        for (let i = 0; i < 5; i++) {
+          if (itemTime >= timeSegments.value[i].start && itemTime < timeSegments.value[i].end) {
+            if (!groupedData[i][item.userId]) {
+              groupedData[i][item.userId] = { userName: item.userName, text: '' };
+            }
+            groupedData[i][item.userId].text += item.text + " ";
+            break;
           }
+        }
       });
-
-
       processedData.value = groupedData;
+
     } else {
       transcriptionData.value = null;
       error.value = '未找到转录数据';
     }
   } catch (err) {
-    console.error('获取转录数据失败:', err);
-    error.value = '无法获取转录数据';
+    console.error('获取数据失败:', err);
+    error.value = '无法获取数据';
   } finally {
     isLoading.value = false;
   }
-});
+}
+
+// 一键优化所有
+async function startAllOptimization() {
+  if (allOptimizationStarted.value) {
+    return; // 如果已经开始优化，则直接返回
+  }
+  allOptimizationStarted.value = true;
+
+  const optimizationPromises = [];
+  for (let i = 0; i < processedData.value.length; i++) {
+    for (const userId in processedData.value[i]) {
+      if (!optimizationData[i]) {
+         optimizationData[i] = {}; // 初始化外层对象
+      }
+       optimizationData[i][userId] = ''; // 初始化为字符串
+      const text = processedData.value[i][userId].text;
+      const promise = optimizeText(i, userId, text);
+      optimizationPromises.push(promise);
+    }
+  }
+
+  // 使用 Promise.all 并发优化
+  try {
+     await Promise.all(optimizationPromises);
+  } catch(error){
+    console.error("部分优化失败")
+  }
+    finally{
+        allOptimizationStarted.value = false; // 优化结束
+    }
+}
+// 优化文本 (和之前一样)
+async function optimizeText(segmentIndex, userId, text) {
+    try {
+        const response = await fetch('http://localhost:8899/api/optimize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
+
+        while (!done) {
+            const { value, done: readDone } = await reader.read();
+            done = readDone;
+            if (value) {
+                const chunk = decoder.decode(value);
+                // 确保 optimizationData[segmentIndex] 存在
+                if (!optimizationData[segmentIndex]) {
+                    optimizationData[segmentIndex] = {};
+                }
+                optimizationData[segmentIndex][userId] += chunk;
+            }
+        }
+    } catch (err) {
+        console.error('优化文本出错:', err);
+          if (!optimizationData[segmentIndex]) {
+              optimizationData[segmentIndex] = {};
+            }
+        optimizationData[segmentIndex][userId] = '优化失败';
+    }
+}
+onMounted(fetchData);
 </script>
 
 <style scoped>
-/* 样式部分保持不变 */
+/* 样式部分 (与之前类似，添加 reasoning 相关的样式) */
 .transcription-page {
   padding: 20px;
   font-family: 'Arial', sans-serif;
 }
 
-/* 时间轴样式 */
 .timeline-container {
   display: flex;
   justify-content: space-between;
@@ -156,7 +222,6 @@ onMounted(async () => {
   color: #666;
 }
 
-/* 内容区域样式 */
 .content-container {
   display: flex;
   justify-content: space-between;
@@ -166,7 +231,6 @@ onMounted(async () => {
   flex: 1;
   padding: 10px;
   border-right: 1px solid #ccc;
-  /* background-color: #f9f9f9; */
 }
 
 .content-segment:last-child {
@@ -174,7 +238,7 @@ onMounted(async () => {
 }
 
 .user-transcription {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   padding: 10px;
   background-color: #fff;
   border-radius: 4px;
@@ -190,5 +254,36 @@ onMounted(async () => {
 .transcription-text {
   white-space: pre-line;
   word-break: break-word;
+}
+
+.optimized-text-container {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f0f9ff;
+  border-left: 4px solid #409eff;
+  border-radius: 4px;
+}
+
+.optimized-label {
+  font-weight: bold;
+  color: #409eff;
+  margin-right: 5px;
+}
+
+.optimized-text {
+    white-space: pre-line;
+  word-break: break-word;
+}
+
+/* 新增的推理过程样式 */
+.reasoning-label {
+  font-weight: bold;
+  color: #28a745; /* 绿色 */
+  margin-right: 5px;
+}
+
+.reasoning-text{
+    white-space: pre-line;
+    word-break: break-word;
 }
 </style>
