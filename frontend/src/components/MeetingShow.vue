@@ -2,13 +2,13 @@
   <div class="transcription-page">
     <h1>会议转录记录</h1>
     <div class="timeline-container">
-        <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
-          <span class="emoji">{{ segment.emoji }}</span>
-          <span class="time">{{ formatTime(segment.start) }} - {{ formatTime(segment.end) }}</span>
-        </div>
+      <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
+        <span class="emoji">{{ segment.emoji }}</span>
+        <span class="time">{{ formatTime(segment.start) }} - {{ formatTime(segment.end) }}</span>
       </div>
-       <!-- ECharts 图表 -->
-      <EChartsBar :chartData="chartData" v-if="chartData" />
+    </div>
+    <!-- ECharts 图表 -->
+    <EChartsBar :chartData="chartData" v-if="chartData" />
     <div v-if="isLoading">加载中...</div>
     <div v-else-if="error">{{ error }}</div>
     <div v-else-if="transcriptionData && transcriptionData.length > 0">
@@ -17,34 +17,32 @@
       <button @click="startAllOptimization" :disabled="allOptimizationStarted" class="optimize-all-btn">
         一键优化
       </button>
-                                    <!-- 图片区域 -->
-                                    <div class="image-row">
-                <img v-for="(imageUrl, imgIndex) in imageUrls" :key="imgIndex" :src="imageUrl" class="blurred-image" alt="Blurred Image" />
-              </div>
 
       <!-- 内容区域 -->
       <div class="content-container">
         <div v-for="(segment, segmentIndex) in processedData" :key="segmentIndex" class="content-segment">
           <div v-for="(item, userId) in segment" :key="userId" class="user-transcription">
-            <div class="note" @click="toggleExpanded(segmentIndex, userId)" :class="{ expanded: expandedStates[segmentIndex]?.[userId] }">
+            <!-- 使用函数生成唯一的 ref -->
+            <div :ref="el => setNoteRef(el, segmentIndex, userId)" class="note"
+              @click="toggleExpanded(segmentIndex, userId)">
               <div class="note-header">
                 <span class="user-name">{{ item.userName }}</span>
                 <span class="expand-icon">{{ expandedStates[segmentIndex]?.[userId] ? '−' : '+' }}</span>
               </div>
-
-
 
               <p class="transcription-text" :class="{ 'truncated': !expandedStates[segmentIndex]?.[userId] }">
                 {{ item.text }}
               </p>
 
               <!-- 优化结果 -->
-             <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
+              <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
                 <p class="optimized-label">优化结果:</p>
-                <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }" ref="scrollWrapper">
-                    <p class="optimized-text" :id="`optimized-text-${segmentIndex}-${userId}`">{{ getLatestThreeLines(optimizationData[segmentIndex][userId])}}</p>
+                <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }"
+                  ref="scrollWrapper">
+                  <p class="optimized-text" :id="`optimized-text-${segmentIndex}-${userId}`">{{
+                    getLatestThreeLines(optimizationData[segmentIndex][userId]) }}</p>
                 </div>
-             </div>
+              </div>
             </div>
           </div>
         </div>
@@ -55,21 +53,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, reactive, nextTick } from 'vue';
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { format } from 'date-fns';
-import EChartsBar from './EChartsBar.vue'; // 引入 ECharts 组件 (稍后创建)
-// 在 MeetingShow.vue 的 <script setup> 中
-import image1 from '../assets/时间段1.png';
-import image2 from '../assets/时间段2.png';
-import image3 from '../assets/时间段3.png';
-import image4 from '../assets/时间段4.png';
-import image5 from '../assets/时间段5.png';
+import EChartsBar from './EChartsBar.vue';
 
-const imageUrls = [image1, image2, image3, image4, image5];
+// import image1 from '../assets/时间段1.png';  //如果需要图片再导入
+// import image2 from '../assets/时间段2.png';
+// import image3 from '../assets/时间段3.png';
+// import image4 from '../assets/时间段4.png';
+// import image5 from '../assets/时间段5.png';
 
+// const imageUrls = [image1, image2, image3, image4, image5];
 
 const transcriptionData = ref(null);
 const isLoading = ref(false);
@@ -78,19 +75,33 @@ const timeSegments = ref([]);
 const processedData = ref([]);
 const optimizationData = reactive({});
 const allOptimizationStarted = ref(false);
-const expandedStates = reactive({}); // 用于跟踪每个便签的展开状态
-const scrollWrapper = ref([]); // 用于获取滚动容器的引用
-const chartData = ref(null); // 新增：用于存储 ECharts 图表数据
+const expandedStates = reactive({});
+const scrollWrapper = ref([]);
+const chartData = ref(null);
 
 const store = useStore();
 const route = useRoute();
 const userId = computed(() => store.state.user.uid);
 
+// 新增：用于存储便签元素的 ref
+const noteRefs = ref({});
+
+
+// 新增：设置便签元素的 ref (使用函数)
+function setNoteRef(el, segmentIndex, userId) {
+  if (el) {
+    if (!noteRefs.value[segmentIndex]) {
+      noteRefs.value[segmentIndex] = {};
+    }
+    noteRefs.value[segmentIndex][userId] = el;  //el是dom对象
+  }
+}
+
 const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
 
-// 数据获取 (修改，增加发言长度计算和 chartData 的生成)
+// 数据获取
 async function fetchData() {
   const meetingId = route.params.meetingId;
   if (!userId.value || !meetingId) {
@@ -135,10 +146,7 @@ async function fetchData() {
         }
       });
       processedData.value = groupedData;
-
-      // 计算并生成 ECharts 数据
       generateChartData();
-
     } else {
       transcriptionData.value = null;
       error.value = '未找到转录数据';
@@ -151,12 +159,11 @@ async function fetchData() {
   }
 }
 
-// 新增：生成 ECharts 所需的数据格式
+// 生成 ECharts 数据
 function generateChartData() {
   const seriesData = [];
-  const userNames = {}; // 存储用户名和颜色的映射
+  const userNames = {};
 
-  // 为每个用户生成随机、较浅且美观的颜色 (与之前相同)
   const generatePastelColor = () => {
     const h = Math.floor(Math.random() * 360);
     const s = 25 + Math.floor(Math.random() * 50);
@@ -164,7 +171,6 @@ function generateChartData() {
     return `hsl(${h}, ${s}%, ${l}%)`;
   };
 
-  // 收集所有用户及其对应的颜色 (与之前类似)
   for (let i = 0; i < processedData.value.length; i++) {
     const segment = processedData.value[i];
     for (const userId in segment) {
@@ -177,86 +183,78 @@ function generateChartData() {
     }
   }
 
-    // 为每个用户创建一条折线的数据
   for (const userId in userNames) {
-      const userData = {
-          name: userNames[userId].name,  // 用户名
-          type: 'line',                // 折线图
-          smooth: true,               // 平滑曲线
-          data: [],                    // 初始数据为空
-          itemStyle: {
-              color: userNames[userId].color  // 用户对应的颜色
-          }
-      };
+    const userData = {
+      name: userNames[userId].name,
+      type: 'line',
+      smooth: true,
+      data: [],
+      itemStyle: {
+        color: userNames[userId].color
+      }
+    };
 
-        // 遍历每个时间段, 填充数据
-        for (let i = 0; i < processedData.value.length; i++) {
-          const segment = processedData.value[i];
-          if (segment[userId]) {
-            userData.data.push(segment[userId].text.length); // 添加字数
-          } else {
-            userData.data.push(0); // 没有发言，字数为 0
-          }
-        }
-      seriesData.push(userData); // 将用户数据添加到 series
+    for (let i = 0; i < processedData.value.length; i++) {
+      const segment = processedData.value[i];
+      if (segment[userId]) {
+        userData.data.push(segment[userId].text.length);
+      } else {
+        userData.data.push(0);
+      }
+    }
+    seriesData.push(userData);
   }
 
-    const legendData = Object.values(userNames).map(user => user.name);   // 图例
-    const xAxisData = timeSegments.value.map(segment => formatTime(segment.start));  //x周
+  const legendData = Object.values(userNames).map(user => user.name);
+  const xAxisData = timeSegments.value.map(segment => formatTime(segment.start));
 
   chartData.value = {
     legendData,
     xAxisData,
     seriesData,
-    // userColors: userNames,  // 折线图不需要这个
   };
 }
 
-
-// ... 其他函数保持不变 (optimizeText, toggleExpanded, ...)
-// 一键优化所有(和之前修复后的一样)
+// 一键优化所有
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
     return;
   }
   allOptimizationStarted.value = true;
 
-  // 1. 构建优化任务队列 (按时间段和用户排序)
   const optimizationTasks = [];
-  for (let i = 0; i < processedData.value.length; i++) { // 遍历时间段
+  for (let i = 0; i < processedData.value.length; i++) {
     const segment = processedData.value[i];
-    const userIds = Object.keys(segment); // 获取当前时间段的所有 userId
+    const userIds = Object.keys(segment);
 
-    // 按照 userId 在 processedData 中的顺序排序 (即垂直顺序)
     userIds.sort((a, b) => {
-      // 找到 user a 在 processedData 对应 segment 中的索引位置.
       const indexA = Object.keys(segment).indexOf(a);
       const indexB = Object.keys(segment).indexOf(b);
       return indexA - indexB;
     });
 
-    for (const userId of userIds) { // 遍历排序后的用户
+    for (const userId of userIds) {
       if (!optimizationData[i]) {
         optimizationData[i] = {};
       }
-      optimizationData[i][userId] = ''; // 初始化
+      optimizationData[i][userId] = '';
       const text = segment[userId].text;
-      optimizationTasks.push({ segmentIndex: i, userId, text }); // 添加任务
+      optimizationTasks.push({ segmentIndex: i, userId, text });
     }
   }
 
-  // 2. 顺序执行优化任务
   try {
-      for (const task of optimizationTasks) {
-        await optimizeText(task.segmentIndex, task.userId, task.text);
-      }
+    for (const task of optimizationTasks) {
+      await optimizeText(task.segmentIndex, task.userId, task.text);
+    }
   } catch (error) {
-      console.error("部分优化失败");
+    console.error("部分优化失败");
   } finally {
     allOptimizationStarted.value = false;
   }
 }
-// 优化文本 (修改，处理流式输出)
+
+// 优化文本
 async function optimizeText(segmentIndex, userId, text) {
   try {
     const response = await fetch('http://localhost:8899/api/optimize', {
@@ -282,12 +280,11 @@ async function optimizeText(segmentIndex, userId, text) {
           optimizationData[segmentIndex] = {};
         }
         optimizationData[segmentIndex][userId] += chunk;
-         // 每次添加新块后，立即滚动 (只在未展开时)
-          if (!expandedStates[segmentIndex]?.[userId]){
-              nextTick(() => {
-                  scrollToBottom(segmentIndex, userId);
-              });
-          }
+        if (!expandedStates[segmentIndex]?.[userId]) {
+          nextTick(() => {
+            scrollToBottom(segmentIndex, userId);
+          });
+        }
       }
     }
   } catch (err) {
@@ -305,27 +302,49 @@ function toggleExpanded(segmentIndex, userId) {
         expandedStates[segmentIndex] = {};
     }
 
-     if (expandedStates[segmentIndex][userId] === undefined) {
-      expandedStates[segmentIndex][userId] = false; // 默认状态
-    }
-    expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
+    // 获取便签元素
+    const noteElement = noteRefs.value[segmentIndex]?.[userId];
+    if (!noteElement) return;
 
-    nextTick(() => {
-        // 获取对应的 <p> 元素
+
+    if (expandedStates[segmentIndex][userId] === undefined) {
+      expandedStates[segmentIndex][userId] = false; // 默认状态,
+    }
+
+   // 切换展开状态
+    const isExpanded =  expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
+
+    // 计算便签的初始位置和中心位置
+    const rect = noteElement.getBoundingClientRect(); //获取元素的位置和大小
+    const startX = rect.left;
+    const startY = rect.top;
+    const centerX = window.innerWidth / 2 - rect.width / 2;
+    const centerY = window.innerHeight / 2 - rect.height / 2;
+
+    // 计算需要移动的距离
+    const translateX = centerX - startX;
+    const translateY = centerY - startY;
+
+   // 根据展开/收起状态应用不同的 transform
+  if (isExpanded) {
+        noteElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(1.5)`;//移动和放大
+        noteElement.style.zIndex = '1000'; // 确保放大的便签在最上层
+    } else {
+        noteElement.style.transform = ''; // 恢复默认值
+        noteElement.style.zIndex = '';       //恢复默认的层级
+  }
+
+   nextTick(() => {
         const pElement = document.getElementById(`optimized-text-${segmentIndex}-${userId}`);
 
-        // 展开时，将 innerText 设置为完整文本
-        if (expandedStates[segmentIndex][userId]) {
+        if (isExpanded) {
           if(pElement){
              pElement.innerText = optimizationData[segmentIndex][userId];
           }
         } else {
-           // 收起时，将 innerText 设置为最新的三行
           if(pElement){
             pElement.innerText = getLatestThreeLines(optimizationData[segmentIndex][userId]);
           }
-
-          // 滚动到底部
           scrollToBottom(segmentIndex,userId);
 
         }
@@ -335,21 +354,21 @@ function toggleExpanded(segmentIndex, userId) {
 
 // 获取最新的三行
 function getLatestThreeLines(text) {
-    if (!text) return '';
-    const lines = text.split('\n');
-    const latestThree = lines.slice(-3); // 取最后三行
-    return latestThree.join('\n');
+  if (!text) return '';
+  const lines = text.split('\n');
+  const latestThree = lines.slice(-3);
+  return latestThree.join('\n');
 }
 
 // 滚动到容器底部
 function scrollToBottom(segmentIndex, userId) {
-    const index = getScrollWrapperIndex(segmentIndex, userId);
-    if (index !== -1 && scrollWrapper.value[index]) {
-        scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
-    }
+  const index = getScrollWrapperIndex(segmentIndex, userId);
+  if (index !== -1 && scrollWrapper.value[index]) {
+    scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
+  }
 }
 
-// 获取 scrollWrapper 的索引(和之前一样)
+// 获取 scrollWrapper 的索引
 function getScrollWrapperIndex(segmentIndex, userId) {
   let index = 0;
   for (let i = 0; i < segmentIndex; i++) {
@@ -365,7 +384,6 @@ function getScrollWrapperIndex(segmentIndex, userId) {
   }
   return index;
 }
-
 
 onMounted(fetchData);
 </script>
@@ -435,59 +453,60 @@ h1 {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  transition: transform 0.3s, box-shadow 0.3s;
+  /* 添加 transition，使 transform 变化平滑 */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0s;
   cursor: pointer;
   position: relative;
-  overflow: hidden; /* 确保内容在折叠时被裁剪 */
-   border: 1px solid #ced4da;
+  overflow: hidden;
+  border: 1px solid #ced4da;
 }
+
 
 .note:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-
 }
 
-.note-header{
-    display: flex;
-    justify-content: space-between;
-    align-items: center; /* 垂直居中 */
-
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.expand-icon{
- font-size: 1.2em;
+
+.expand-icon {
+  font-size: 1.2em;
   color: #007bff;
 }
 
 .user-name {
   font-weight: 600;
   color: #007bff;
-    margin-right: auto; /* 将用户名推到最左边 */
+  margin-right: auto;
 }
 
 .transcription-text {
-   margin: 10px 0;
+  margin: 10px 0;
   line-height: 1.6;
   color: #495057;
-  max-height: 4.8em; /* 3行 x 1.6em 行高 */
+  max-height: 4.8em;
   overflow: hidden;
   transition: max-height 0.5s ease-in-out;
 }
 
-.truncated{
+.truncated {
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* 设置最大行数 */
-  -webkit-box-orient: vertical;  /* 垂直排列 */
-  overflow: hidden;    /* 隐藏溢出的文本 */
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.note.expanded {
+/* .note.expanded {  注释掉，因为我们用 transform 来控制放大了
     height: auto;
     .transcription-text{
          max-height: none;
     }
-}
+} */
 
 .note-header::after {
   content: '';
@@ -496,13 +515,13 @@ h1 {
   right: 10px;
   width: 10px;
   height: 10px;
-  background-color: #28a745; /* 或您喜欢的指示颜色 */
+  background-color: #28a745;
   border-radius: 50%;
   opacity: 0.8;
 }
 
 .optimized-text-container {
-   margin-top: 15px;
+  margin-top: 15px;
   border-top: 1px solid #dee2e6;
   padding-top: 15px;
 }
@@ -521,57 +540,39 @@ h1 {
   white-space: pre-line;
 }
 
- /* 优化全部按钮样式 */
-  .optimize-all-btn {
-    background-color: #28a745;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-bottom: 20px;
-    display: block; /* 设置为块级元素 */
-    margin-left: auto; /* 自动左边距 */
-    margin-right: auto; /* 自动右边距 */
+.optimize-all-btn {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 20px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .optimize-all-btn:hover {
-    background-color: #218838;
+  background-color: #218838;
 }
+
 .optimize-all-btn:disabled {
-    background-color: #6c757d;  /* 禁用时为灰色 */
-    cursor: not-allowed;      /* 禁用时鼠标样式为禁止 */
+  background-color: #6c757d;
+  cursor: not-allowed;
 }
 
-/* 滚动容器样式 */
 .optimized-text-scroll-wrapper {
-  max-height: 4.8em;  /* 3 行的高度 */
-  overflow-y: auto; /* 垂直滚动 */
-  transition: max-height 0.3s ease; /* 平滑过渡 */
-    position: relative;
+  max-height: 4.8em;
+  overflow-y: auto;
+  transition: max-height 0.3s ease;
+  position: relative;
 }
+
 .optimized-text-scroll-wrapper.expanded-scroll {
-    max-height: none; /* 展开时无最大高度限制 */
-     overflow-y: visible;
+  max-height: none;
+  overflow-y: visible;
 }
-
-/* 新增图片区域样式 */
-.image-row {
-  display: flex;         /* 使用 Flexbox 布局 */
-  justify-content: space-around; /* 图片间均匀分布 */
-  margin-bottom: 200px;    /* 与下方文本的间距 */
-  height: 60px;          /* 固定高度 (根据需要调整) */
-}
-
-.blurred-image {
-  width: 400px;           /* 自动宽度 */
-  height: 200px;           /* 填充容器高度 */
-  object-fit: cover;    /* 保持宽高比并裁剪以填充 */
-  filter: blur(0.1px);    /* 模糊效果 */
-  border-radius: 5px;   /* 圆角 (可选) */
-  margin: 0 2px;        /* 图片间的小间距 (可选) */
-}
-
 </style>
