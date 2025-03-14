@@ -50,6 +50,23 @@
     </div>
     <div v-else>没有转录数据。</div>
   </div>
+  <div class="overlay" v-if="overlayVisible" @click="closeOverlay">
+    <div class="expanded-note" :style="expandedNoteStyle">
+    <div class="note-header">
+       <span class="user-name">{{ expandedNoteData.userName}}</span>
+         <span class="expand-icon" @click.stop="closeOverlay">−</span>
+     </div>
+          <p class="transcription-text"  style="max-height:none;">
+            {{ expandedNoteData.text }}
+           </p>
+
+      <!-- 优化结果 -->
+        <div class="optimized-text-container">
+           <p class="optimized-label">优化结果:</p>
+              <p class="optimized-text">{{ expandedNoteData.optimizedText}}</p>
+         </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -60,13 +77,7 @@ import { useRoute } from 'vue-router';
 import { format } from 'date-fns';
 import EChartsBar from './EChartsBar.vue';
 
-// import image1 from '../assets/时间段1.png';  //如果需要图片再导入
-// import image2 from '../assets/时间段2.png';
-// import image3 from '../assets/时间段3.png';
-// import image4 from '../assets/时间段4.png';
-// import image5 from '../assets/时间段5.png';
 
-// const imageUrls = [image1, image2, image3, image4, image5];
 
 const transcriptionData = ref(null);
 const isLoading = ref(false);
@@ -78,16 +89,19 @@ const allOptimizationStarted = ref(false);
 const expandedStates = reactive({});
 const scrollWrapper = ref([]);
 const chartData = ref(null);
-
 const store = useStore();
 const route = useRoute();
 const userId = computed(() => store.state.user.uid);
-
-// 新增：用于存储便签元素的 ref
 const noteRefs = ref({});
+//添加overlay
+const overlayVisible = ref(false);
+const expandedNoteStyle = ref({});
+const expandedNoteData = reactive({
+   userName: '',
+   text: '',
+   optimizedText: ''
+});
 
-
-// 新增：设置便签元素的 ref (使用函数)
 function setNoteRef(el, segmentIndex, userId) {
   if (el) {
     if (!noteRefs.value[segmentIndex]) {
@@ -101,7 +115,6 @@ const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
 
-// 数据获取
 async function fetchData() {
   const meetingId = route.params.meetingId;
   if (!userId.value || !meetingId) {
@@ -159,7 +172,6 @@ async function fetchData() {
   }
 }
 
-// 生成 ECharts 数据
 function generateChartData() {
   const seriesData = [];
   const userNames = {};
@@ -215,7 +227,6 @@ function generateChartData() {
   };
 }
 
-// 一键优化所有
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
     return;
@@ -254,7 +265,6 @@ async function startAllOptimization() {
   }
 }
 
-// 优化文本
 async function optimizeText(segmentIndex, userId, text) {
   try {
     const response = await fetch('http://localhost:8899/api/optimize', {
@@ -280,11 +290,9 @@ async function optimizeText(segmentIndex, userId, text) {
           optimizationData[segmentIndex] = {};
         }
         optimizationData[segmentIndex][userId] += chunk;
-        if (!expandedStates[segmentIndex]?.[userId]) {
           nextTick(() => {
             scrollToBottom(segmentIndex, userId);
           });
-        }
       }
     }
   } catch (err) {
@@ -296,63 +304,6 @@ async function optimizeText(segmentIndex, userId, text) {
   }
 }
 
-// 切换展开/收起状态 (修改)
-function toggleExpanded(segmentIndex, userId) {
-    if (!expandedStates[segmentIndex]) {
-        expandedStates[segmentIndex] = {};
-    }
-
-    // 获取便签元素
-    const noteElement = noteRefs.value[segmentIndex]?.[userId];
-    if (!noteElement) return;
-
-
-    if (expandedStates[segmentIndex][userId] === undefined) {
-      expandedStates[segmentIndex][userId] = false; // 默认状态,
-    }
-
-   // 切换展开状态
-    const isExpanded =  expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
-
-    // 计算便签的初始位置和中心位置
-    const rect = noteElement.getBoundingClientRect(); //获取元素的位置和大小
-    const startX = rect.left;
-    const startY = rect.top;
-    const centerX = window.innerWidth / 2 - rect.width / 2;
-    const centerY = window.innerHeight / 2 - rect.height / 2;
-
-    // 计算需要移动的距离
-    const translateX = centerX - startX;
-    const translateY = centerY - startY;
-
-   // 根据展开/收起状态应用不同的 transform
-  if (isExpanded) {
-        noteElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(1.5)`;//移动和放大
-        noteElement.style.zIndex = '1000'; // 确保放大的便签在最上层
-    } else {
-        noteElement.style.transform = ''; // 恢复默认值
-        noteElement.style.zIndex = '';       //恢复默认的层级
-  }
-
-   nextTick(() => {
-        const pElement = document.getElementById(`optimized-text-${segmentIndex}-${userId}`);
-
-        if (isExpanded) {
-          if(pElement){
-             pElement.innerText = optimizationData[segmentIndex][userId];
-          }
-        } else {
-          if(pElement){
-            pElement.innerText = getLatestThreeLines(optimizationData[segmentIndex][userId]);
-          }
-          scrollToBottom(segmentIndex,userId);
-
-        }
-
-    });
-}
-
-// 获取最新的三行
 function getLatestThreeLines(text) {
   if (!text) return '';
   const lines = text.split('\n');
@@ -360,15 +311,15 @@ function getLatestThreeLines(text) {
   return latestThree.join('\n');
 }
 
-// 滚动到容器底部
 function scrollToBottom(segmentIndex, userId) {
-  const index = getScrollWrapperIndex(segmentIndex, userId);
-  if (index !== -1 && scrollWrapper.value[index]) {
-    scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
-  }
+    const index = getScrollWrapperIndex(segmentIndex, userId);
+    if(scrollWrapper.value[index]){
+        nextTick(()=>{
+            scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
+        })
+    }
 }
 
-// 获取 scrollWrapper 的索引
 function getScrollWrapperIndex(segmentIndex, userId) {
   let index = 0;
   for (let i = 0; i < segmentIndex; i++) {
@@ -383,6 +334,61 @@ function getScrollWrapperIndex(segmentIndex, userId) {
     index++;
   }
   return index;
+}
+
+// 添加展开卡片逻辑 (修改)
+function toggleExpanded(segmentIndex, userId) {
+    // 获取点击的便签元素
+    const noteElement = noteRefs.value[segmentIndex]?.[userId];
+    if (!noteElement) return;
+
+
+    // 记录原始尺寸和位置
+    const rect = noteElement.getBoundingClientRect();
+    expandedNoteStyle.value = {
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+    };
+
+     expandedNoteData.userName = processedData.value[segmentIndex][userId].userName;
+     expandedNoteData.text = processedData.value[segmentIndex][userId].text;
+     expandedNoteData.optimizedText = optimizationData[segmentIndex]?.[userId] || '';
+
+
+    // 显示遮罩层
+     overlayVisible.value = true;
+
+      nextTick(() => {
+        // 设置动画的最终状态
+        expandedNoteStyle.value = {
+          width: '80%',
+          height: '80%',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)', // 居中
+       };
+    })
+    expandedStates[segmentIndex] = expandedStates[segmentIndex] || {};
+    expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId]
+
+}
+
+
+// 关闭遮罩层
+function closeOverlay() {
+
+   overlayVisible.value = false;
+
+    for (let segmentIndex in expandedStates) {
+        for (let userId in expandedStates[segmentIndex]) {
+            expandedStates[segmentIndex][userId] = false;
+        }
+    }
+      nextTick(() => {
+       expandedNoteStyle.value = {};  //重置为空
+   });
 }
 
 onMounted(fetchData);
@@ -453,17 +459,16 @@ h1 {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  /* 添加 transition，使 transform 变化平滑 */
-  transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0s;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   border: 1px solid #ced4da;
+   transition:  box-shadow 0.3s ease;  /* 平滑过渡效果 */
 }
 
 
 .note:hover {
-  transform: translateY(-5px);
+  /* transform: translateY(-5px); */
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
@@ -500,13 +505,6 @@ h1 {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
-/* .note.expanded {  注释掉，因为我们用 transform 来控制放大了
-    height: auto;
-    .transcription-text{
-         max-height: none;
-    }
-} */
 
 .note-header::after {
   content: '';
@@ -574,5 +572,34 @@ h1 {
 .optimized-text-scroll-wrapper.expanded-scroll {
   max-height: none;
   overflow-y: visible;
+}
+/*遮罩层以及放大内容*/
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center; /* 水平居中 */
+    align-items: center;     /* 垂直居中 */
+    z-index: 2000; /* 确保在最上层 */
+    transition: opacity 0.4s ease;
+
+}
+
+.expanded-note {
+   position: absolute;
+   /* top: 50%;
+  left: 50%; */
+  /* transform: translate(-50%, -50%); */
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+   z-index: 2001;/*比overlay高*/
+  transition: all 0.4s ease; /* 添加过渡效果 */
+
 }
 </style>
