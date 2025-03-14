@@ -51,7 +51,7 @@
     <div v-else>没有转录数据。</div>
   </div>
   <div class="overlay" v-if="overlayVisible" @click="closeOverlay">
-    <div class="expanded-note" :style="expandedNoteStyle">
+    <div class="expanded-note" :style="expandedNoteStyle" ref="expandedNote">  <!-- Add ref here -->
     <div class="note-header">
        <span class="user-name">{{ expandedNoteData.userName}}</span>
          <span class="expand-icon" @click.stop="closeOverlay">−</span>
@@ -70,14 +70,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive, nextTick } from 'vue';
+import { ref, onMounted, computed, reactive, nextTick, watch } from 'vue';  // Import watch
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { format } from 'date-fns';
 import EChartsBar from './EChartsBar.vue';
-
-
 
 const transcriptionData = ref(null);
 const isLoading = ref(false);
@@ -92,8 +90,9 @@ const chartData = ref(null);
 const store = useStore();
 const route = useRoute();
 const userId = computed(() => store.state.user.uid);
-const noteRefs = ref({});
-//添加overlay
+const noteRefs = ref({});  // Original note refs
+
+// Overlay and Expanded Note
 const overlayVisible = ref(false);
 const expandedNoteStyle = ref({});
 const expandedNoteData = reactive({
@@ -101,13 +100,25 @@ const expandedNoteData = reactive({
    text: '',
    optimizedText: ''
 });
+const expandedNote = ref(null); // Ref for the expanded note element
+
+// Watcher for overlay visibility
+watch(overlayVisible, (newVal) => {
+  if (!newVal) {
+      // When overlay closes, reset styles with a slight delay for animation
+      setTimeout(() => {
+          expandedNoteStyle.value = {};  // Clear styles
+      }, 400); // Match the CSS transition duration (0.4s) added below
+  }
+});
+
 
 function setNoteRef(el, segmentIndex, userId) {
   if (el) {
     if (!noteRefs.value[segmentIndex]) {
       noteRefs.value[segmentIndex] = {};
     }
-    noteRefs.value[segmentIndex][userId] = el;  //el是dom对象
+    noteRefs.value[segmentIndex][userId] = el;
   }
 }
 
@@ -226,7 +237,6 @@ function generateChartData() {
     seriesData,
   };
 }
-
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
     return;
@@ -303,7 +313,6 @@ async function optimizeText(segmentIndex, userId, text) {
     optimizationData[segmentIndex][userId] = '优化失败';
   }
 }
-
 function getLatestThreeLines(text) {
   if (!text) return '';
   const lines = text.split('\n');
@@ -312,8 +321,8 @@ function getLatestThreeLines(text) {
 }
 
 function scrollToBottom(segmentIndex, userId) {
-    const index = getScrollWrapperIndex(segmentIndex, userId);
-    if(scrollWrapper.value[index]){
+  const index = getScrollWrapperIndex(segmentIndex, userId);
+  if (index !== -1 && scrollWrapper.value[index]) {
         nextTick(()=>{
             scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
         })
@@ -336,65 +345,92 @@ function getScrollWrapperIndex(segmentIndex, userId) {
   return index;
 }
 
-// 添加展开卡片逻辑 (修改)
+// Revised toggleExpanded for slide-in/out
 function toggleExpanded(segmentIndex, userId) {
-    // 获取点击的便签元素
-    const noteElement = noteRefs.value[segmentIndex]?.[userId];
-    if (!noteElement) return;
+  const noteElement = noteRefs.value[segmentIndex]?.[userId];
+  if (!noteElement) return;
+
+  const rect = noteElement.getBoundingClientRect();
+
+  expandedNoteStyle.value = {
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    transform: 'scale(1)',  // Start with original size
+    transition: 'none', // No transition initially
+    opacity:0
+  };
+
+  expandedNoteData.userName = processedData.value[segmentIndex][userId].userName;
+  expandedNoteData.text = processedData.value[segmentIndex][userId].text;
+  expandedNoteData.optimizedText = optimizationData[segmentIndex]?.[userId] || '';
+  overlayVisible.value = true; //show first
 
 
-    // 记录原始尺寸和位置
-    const rect = noteElement.getBoundingClientRect();
+  nextTick(() => {
+    if (expandedNote.value) {
+        expandedNoteStyle.value = {
+          ...expandedNoteStyle.value, // Keep initial position/size
+          top: '50%',
+          left: '50%',
+          width: '80%',
+          height: '80%',
+          transform: 'translate(-50%, -50%) scale(1)',  // Center and maintain aspect ratio
+
+          transition: 'all 0.4s ease', // Add transition *after* initial styles are set
+          opacity: 1
+        };
+       expandedStates[segmentIndex] = expandedStates[segmentIndex] || {};
+       expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId]
+    }
+  });
+}
+
+function closeOverlay() {
+   if (!expandedNote.value) return;
+
+    const originalNote = noteRefs.value[getSegmentAndUserIdFromExpanded().segmentIndex]?.[getSegmentAndUserIdFromExpanded().userId];
+
+    if(!originalNote) return;
+
+    const rect = originalNote.getBoundingClientRect();
+
     expandedNoteStyle.value = {
+      ...expandedNoteStyle.value, // Current expanded styles
       width: `${rect.width}px`,
       height: `${rect.height}px`,
       top: `${rect.top}px`,
       left: `${rect.left}px`,
+      transform: 'scale(1)',
+      opacity: 0,  // Fade out
+      transition: 'all 0.4s ease', // Smooth transition back
     };
-
-     expandedNoteData.userName = processedData.value[segmentIndex][userId].userName;
-     expandedNoteData.text = processedData.value[segmentIndex][userId].text;
-     expandedNoteData.optimizedText = optimizationData[segmentIndex]?.[userId] || '';
-
-
-    // 显示遮罩层
-     overlayVisible.value = true;
-
-      nextTick(() => {
-        // 设置动画的最终状态
-        expandedNoteStyle.value = {
-          width: '80%',
-          height: '80%',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)', // 居中
-       };
-    })
-    expandedStates[segmentIndex] = expandedStates[segmentIndex] || {};
-    expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId]
-
-}
-
-
-// 关闭遮罩层
-function closeOverlay() {
-
-   overlayVisible.value = false;
 
     for (let segmentIndex in expandedStates) {
         for (let userId in expandedStates[segmentIndex]) {
             expandedStates[segmentIndex][userId] = false;
         }
     }
-      nextTick(() => {
-       expandedNoteStyle.value = {};  //重置为空
-   });
+    overlayVisible.value = false; // Hide
+}
+
+function getSegmentAndUserIdFromExpanded(){
+    for (let segmentIndex in expandedStates) {
+        for (let userId in expandedStates[segmentIndex]) {
+            if(expandedStates[segmentIndex][userId] === true){
+                return {segmentIndex: segmentIndex, userId: userId}
+            }
+        }
+    }
+    return {segmentIndex: null, userId: null};
 }
 
 onMounted(fetchData);
 </script>
 
 <style scoped>
+/* ... (rest of your styles, unchanged) ... */
 .transcription-page {
   padding: 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -573,7 +609,7 @@ h1 {
   max-height: none;
   overflow-y: visible;
 }
-/*遮罩层以及放大内容*/
+
 .overlay {
     position: fixed;
     top: 0;
@@ -582,24 +618,20 @@ h1 {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
-    justify-content: center; /* 水平居中 */
-    align-items: center;     /* 垂直居中 */
-    z-index: 2000; /* 确保在最上层 */
-    transition: opacity 0.4s ease;
-
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    transition: opacity 0.4s ease; /* Add transition for opacity */
 }
 
 .expanded-note {
    position: absolute;
-   /* top: 50%;
-  left: 50%; */
-  /* transform: translate(-50%, -50%); */
-  background-color: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-   z-index: 2001;/*比overlay高*/
-  transition: all 0.4s ease; /* 添加过渡效果 */
+   background-color: white;
+   padding: 20px;
+   border-radius: 12px;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+   z-index: 2001;
+  transition: all 0.4s ease;
 
 }
 </style>
