@@ -23,8 +23,10 @@
 
       <!-- 右侧部分 -->
       <div class="right-section">
+        <DataSummary/> 
         <RecentActivity />
-        <DataSummary/>  
+        
+        
       </div>
     </main>
 

@@ -82,14 +82,14 @@ import logo from '../assets/logo.png';
 import teamlogo from '../assets/team2.png';
 import heroImage from '../assets/feature/usage_scene1.png';
  // 产品截图数据
-import chat1 from '../assets/chat1.png';
-import chat2 from '../assets/chat1.png';
+import chat1 from '../assets/chart4.gif';
+import chat2 from '../assets/chart4.gif';
 import aiIcon from '@/assets/AI2.gif';
 import summaryIcon from '@/assets/summary2.gif';
 import startIcon from '@/assets/audio3.gif';
-import feature1ShowImage1 from '../assets/chat1.png';
-import feature1ShowImage2 from '../assets/chat1.png';
-import feature1ShowImage3 from '../assets/chat1.png';
+import feature1ShowImage1 from '../assets/chart1.gif';
+import feature1ShowImage2 from '../assets/chart3.gif';
+import feature1ShowImage3 from '../assets/chart2.gif';
 
 
 const router = useRouter();  
