@@ -79,14 +79,14 @@
           <!-- 参与者缩略图行 -->
           <div class="participants-row">
             <video-player-container v-for="user in users" :key="user.userId" class="participant-tile"
-              :id="`user-${user.userId}`">
-              <div class="video-content">
-                <div v-if="!user.hasVideo.final" class="placeholder">
-                  {{ user.userName }}
-                </div>
-              </div>
-              <div class="username-label">{{ user.userName }}</div>
-            </video-player-container>
+ :id="`user-${user.userId}`">
+  <div class="video-content">
+    <div v-show="!user.hasVideo.final" class="placeholder">  <!--这里改为v-show-->
+    {{ user.userName }}
+    </div>
+  </div>
+ <div class="username-label">{{ user.userName }}</div>
+</video-player-container>
           </div>
 
           <!-- 演讲者/共享 大区域 -->
@@ -2062,64 +2062,77 @@ SDK事件订阅
   });
 
   client.on('user-removed', async (userList) => {
-    if (!Array.isArray(userList)) return;
+  if (!Array.isArray(userList)) return;
 
-    for (const user of userList) {
-      console.log('[user-removed]', user.userId);
-      const userIndex = users.value.findIndex(u => u.userId === user.userId);
+  for (const user of userList) {
+    console.log('[user-removed]', user.userId);
 
-      if (userIndex !== -1) {
-        // 更新内存中的用户信息
-        const userObj = users.value[userIndex];
-        userObj.leaveTime = new Date();
-        userObj.hasVideo.final = userObj.hasVideo.timeline[userObj.hasVideo.timeline.length - 1].value;
-        userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
+    // 1. 找到对应的 DOM 元素
+    const container = document.getElementById(`user-${user.userId}`);
 
-        userObj.isAudioOn.final = userObj.isAudioOn.timeline[userObj.isAudioOn.timeline.length - 1].value;
-        userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
-
-        userObj.isSharing.final = userObj.isSharing.timeline[userObj.isSharing.timeline.length - 1].value;
-        userObj.isSharing.timeline.push({ time: userObj.leaveTime, value: userObj.isSharing.final });
-
-        //  user-removed 事件 *不再* 更新 Firestore 中的 participants。
-        //  *只更新当前离开用户自己的信息*。
-        if (user.userId === currentUserId.value) { // 确保是当前用户
-          const loginUser = store.getters.getUser;
-          if (loginUser && config.meetingId && !userObj.isUpdated) {  //  添加 !userObj.isUpdated 判断
-            try {
-              // 只更新当前离开的用户的数据，不需要participants这个字段了
-              const updatedData = {
-                leaveTime: new Date(),
-                hasVideo: {
-                  final: userObj.hasVideo.final,
-                  timeline: userObj.hasVideo.timeline
-                },
-                isAudioOn: {
-                  final: userObj.isAudioOn.final,
-                  timeline: userObj.isAudioOn.timeline
-                },
-                isSharing: {
-                  final: userObj.isSharing.final,
-                  timeline: userObj.isSharing.timeline
-                }
-              };
-
-              await FirestoreService.updateMeetingHistory(loginUser.uid, config.meetingId, updatedData);
-              userObj.isUpdated = true; // 标记为已更新
-            } catch (err) {
-              console.error('更新会议信息失败 (user-removed, self):', err);
-            }
-          }
-        }
-
-        users.value.splice(userIndex, 1);  // 从 users 数组中移除
-      }
-
-      ZoomVideoService.detachUserVideo(user.userId);
-      ZoomVideoService.detachScreenShare(user.userId);
-      updateChatReceivers(); // 移到这里
+    // 2. 直接从 DOM 中移除该元素 (最关键的修改)
+    if (container) {
+      container.remove();
     }
-  });
+
+    // 3.  (其余代码与之前版本基本相同,  确保数据一致性)
+    const userIndex = users.value.findIndex(u => u.userId === user.userId);
+    if (userIndex !== -1) {
+      const userObj = users.value[userIndex];
+      userObj.leaveTime = new Date();
+      // 安全访问, 避免错误
+      userObj.hasVideo.final = userObj.hasVideo?.timeline?.[userObj.hasVideo.timeline.length - 1]?.value || false;
+      userObj.hasVideo.timeline = userObj.hasVideo.timeline || [];
+      userObj.hasVideo.timeline.push({ time: userObj.leaveTime, value: userObj.hasVideo.final });
+
+      userObj.isAudioOn.final = userObj.isAudioOn?.timeline?.[userObj.isAudioOn.timeline.length - 1]?.value || false;
+      userObj.isAudioOn.timeline = userObj.isAudioOn.timeline || [];
+      userObj.isAudioOn.timeline.push({ time: userObj.leaveTime, value: userObj.isAudioOn.final });
+      
+     userObj.isSharing.final = userObj.isSharing?.timeline?.[userObj.isSharing.timeline.length-1]?.value || false;
+        userObj.isSharing.timeline = userObj.isSharing.timeline || [];
+        userObj.isSharing.timeline.push({time: userObj.leaveTime, value:userObj.isSharing.final});
+      
+      userObj.isUpdated = true;
+      if (user.userId === currentUserId.value) {
+               const loginUser = store.getters.getUser;
+              if(loginUser && config.meetingId && !userObj.isUpdated){
+                try {
+                    // 只更新当前离开的用户的数据
+                  const updatedData = {
+                      leaveTime: new Date(),
+                    hasVideo:{
+                        final: userObj.hasVideo.final,
+                       timeline: userObj.hasVideo.timeline
+                    },
+                       isAudioOn:{
+                        final:userObj.isAudioOn.final,
+                         timeline: userObj.isAudioOn.timeline
+                       },
+                       isSharing:{
+                         final:userObj.isSharing.final,
+                           timeline: userObj.isSharing.timeline
+                       }
+                  }
+
+                 await FirestoreService.updateMeetingHistory( loginUser.uid, config.meetingId, updatedData);
+                 userObj.isUpdated = true; // update flag
+                } catch (err) {
+                  console.error('update firestore error', err);
+                }
+               
+              }
+      }
+        // 从users中删除，并触发更新
+      users.value.splice(userIndex, 1);
+      usersRefreshKey.value += 1;
+
+    }
+ZoomVideoService.detachUserVideo(user.userId);
+      ZoomVideoService.detachScreenShare(user.userId);
+      updateChatReceivers();
+  }   
+});
 
 
   client.on('peer-video-state-change', async ({ action, userId }) => {
