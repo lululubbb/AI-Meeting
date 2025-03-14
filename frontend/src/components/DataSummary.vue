@@ -255,7 +255,7 @@ function formatDateForComparison(date) {
       },
       legend: {
         orient: 'vertical',
-        right: '8%',
+        right: '2%',
         textStyle: { color: '#555', fontSize: 12 }, // 使用全局变量/CSS变量更好
         icon: 'circle',
       },
@@ -274,14 +274,15 @@ function formatDateForComparison(date) {
           avoidLabelOverlap: false,
           label: {
           show: true,
+          formatter: '{b}: {d}%',
           // 使用富文本设置行高
-          formatter: function (params) {
-            return `{name|${params.name}}\n{percent|${params.percent}%}`;
-          },
-          rich: {
-            name: { lineHeight: 20 }, // 第一行高度
-            percent: { lineHeight: 20 } // 第二行高度
-          },
+          // formatter: function (params) {
+          //   return `{name|${params.name}}\n{percent|${params.percent}%}`;
+          // },
+          // rich: {
+          //   name: { lineHeight: 20 }, // 第一行高度
+          //   percent: { lineHeight: 20 } // 第二行高度
+          // },
           position: 'outside',
           fontSize: 12,
           color: '#333',
@@ -296,26 +297,26 @@ function formatDateForComparison(date) {
             shadowOffsetY: 2
           },
           emphasis: {
-            // label: { show: true, fontSize: '14', fontWeight: 'bold' },
-            label: {
-            show: true,
-            // 重新定义悬浮时的 rich 样式
-            formatter: function (params) {
-              return `{name|${params.name}}\n{percent|${params.percent}%}`;
-            },
-            rich: {
-              name: { 
-                lineHeight: 20, 
-                fontSize: 15, 
-                fontWeight: 'bold' 
-              }, // 悬浮时字体变大
-              percent: { 
-                lineHeight: 20, 
-                fontSize: 15, 
-                fontWeight: 'bold' 
-              }
-            }
-          },
+          label: { show: true, fontSize: '14', fontWeight: 'bold' },
+          //   label: {
+          //   show: true,
+          //   // 重新定义悬浮时的 rich 样式
+          //   formatter: function (params) {
+          //     return `{name|${params.name}}\n{percent|${params.percent}%}`;
+          //   },
+          //   rich: {
+          //     name: { 
+          //       lineHeight: 20, 
+          //       fontSize: 15, 
+          //       fontWeight: 'bold' 
+          //     }, // 悬浮时字体变大
+          //     percent: { 
+          //       lineHeight: 20, 
+          //       fontSize: 15, 
+          //       fontWeight: 'bold' 
+          //     }
+          //   }
+          // },
             itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
           },
           data: seriesData
