@@ -23,7 +23,9 @@ import mammoth from 'mammoth';
 import pdfPoppler from 'pdf-poppler';
 import fs from 'fs';
 import path from 'path';
+
 import { fileURLToPath } from 'url';
+
 import pdfParse from 'pdf-parse';
 
 
@@ -303,6 +305,8 @@ app.post('/api/chat/completions', async (req, res) => {
     });
   }
 });
+
+
 app.post('/api/analyze-file', async (req, res) => {
   try {
     const { fileData, fileType, type, question, conversation, stream } = req.body;
@@ -343,7 +347,7 @@ app.post('/api/analyze-file', async (req, res) => {
 
               // 执行 PDF 到图像的转换
               const outputFiles = await pdfPoppler.convert(filePath, options);
-
+              console.log('PDF 已成功转换为图像，但 OCR 功能未启用，跳过识别');
               for (const outputFile of outputFiles) {
                   const { data: { text } } = await Tesseract.recognize(
                       outputFile,
@@ -367,7 +371,7 @@ app.post('/api/analyze-file', async (req, res) => {
 
               if (extractedText.length === 0) {
                   // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
-                  console.log('OCR 处理结果为空，尝试使用 pdfjs-dist 解析...');
+                  console.log('由于 OCR 功能未启用，且 pdfjs-dist 解析已禁用，无法处理扫描件或图片型 PDF');      
                   const pdfData = new Uint8Array(dataBuffer);
                   const loadingTask = pdfjsLib.getDocument(pdfData);
                   const pdfDoc = await loadingTask.promise;
@@ -757,37 +761,6 @@ app.delete('/api/delete/:fileId', (req, res) => {
 });
 
 
-// //  文件删除 (新增)原版
-// app.delete('/api/delete/:fileId', (req, res) => {
-//   const { fileId } = req.params;
-
-//   if (!fileId) {
-//       return res.status(400).json({ error: '缺少 fileId' });
-//   }
-
-//   const uploadPath = path.join(__dirname, 'uploads');
-//   const files = fs.readdirSync(uploadPath);
-//   const matchingFiles = files.filter(file => file.startsWith(fileId));
-
-//   if (matchingFiles.length === 0) {
-//       return res.status(404).json({ error: '文件未找到' });
-//   }
-//   const fileName = matchingFiles[0];
-//   const filePath = path.join(uploadPath, fileName);
-
-//   if (!fs.existsSync(filePath)) {
-//     return res.status(404).json({ error: '文件未找到' });
-// }
-// try{
-//     fs.unlinkSync(filePath); // 删除文件
-//     res.json({ message: '文件删除成功' });
-//   }
-//   catch (error) {
-//       console.error('删除文件出错:', error);
-//       res.status(500).json({ error: '文件删除失败' }); // 统一错误消息
-//   }
-// });
-//生成摘要
 
 // 手动实现 Promise.withResolvers 以兼容旧版本 Node.js
 if (!Promise.withResolvers) {
@@ -825,6 +798,11 @@ app.get('/api/generate-summary', async (req, res) => {
 
   const fileExt = path.extname(fileName).toLowerCase();
   let extractedText = '';
+
+   // 创建临时目录
+  const tempDir = path.join(__dirname, 'temp', Date.now().toString());
+  fs.mkdirSync(tempDir, { recursive: true });
+  
     try { 
 
       if (fileExt === '.pdf') {
@@ -838,17 +816,17 @@ app.get('/api/generate-summary', async (req, res) => {
 
             if (extractedText.length === 0) {
                 // 若解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理
-                console.log('pdf-parse 解析结果为空，尝试将 PDF 转换为图像并进行 OCR 处理...');
+                console.log('pdf-parse 解析结果为空');
 
                 // 定义转换选项
                 const options = {
                     format: 'png',
-                    out_dir: path.dirname(filePath),
+                    out_dir: tempDir,
                     out_prefix: path.basename(filePath, path.extname(filePath)),
                     page: null // 处理所有页面
                 };
 
-                // 执行 PDF 到图像的转换
+               // 执行 PDF 到图像的转换
                 const outputFiles = await pdfPoppler.convert(filePath, options);
 
                 for (const outputFile of outputFiles) {
@@ -874,7 +852,7 @@ app.get('/api/generate-summary', async (req, res) => {
 
                 if (extractedText.length === 0) {
                     // 若 OCR 处理后仍为空，尝试使用 pdfjs-dist 解析
-                    console.log('OCR 处理结果为空，尝试使用 pdfjs-dist 解析...');
+                    console.log('pdf-parse 解析结果为空，但 OCR 功能的Tesseract依赖无法配置，跳过 OCR 步骤');
                     const pdfData = new Uint8Array(dataBuffer);
                     const loadingTask = pdfjsLib.getDocument(pdfData);
                     const pdfDoc = await loadingTask.promise;
@@ -983,6 +961,14 @@ app.get('/api/generate-summary', async (req, res) => {
     } catch (error) {
     console.error('生成摘要出错 (详细):', error.response || error);
       return res.status(500).json({ error: "生成摘要失败" });
+  }finally {
+    // 删除临时目录及其所有内容
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+      console.log(`已删除临时目录: ${tempDir}`);
+    } catch (err) {
+      console.error('删除临时目录失败:', err);
+    }
   }
 });
 
