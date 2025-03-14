@@ -1,22 +1,26 @@
 <template>
   <div class="transcription-page">
     <h1>会议转录记录</h1>
-
-    <div v-if="isLoading">加载中...</div>
-    <div v-else-if="error">{{ error }}</div>
-    <div v-else-if="transcriptionData && transcriptionData.length > 0">
-      <!-- 时间轴 -->
-      <div class="timeline-container">
+    <div class="timeline-container">
         <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
           <span class="emoji">{{ segment.emoji }}</span>
           <span class="time">{{ formatTime(segment.start) }} - {{ formatTime(segment.end) }}</span>
         </div>
       </div>
+       <!-- ECharts 图表 -->
+      <EChartsBar :chartData="chartData" v-if="chartData" />
+    <div v-if="isLoading">加载中...</div>
+    <div v-else-if="error">{{ error }}</div>
+    <div v-else-if="transcriptionData && transcriptionData.length > 0">
 
       <!-- 优化按钮 (全局) -->
       <button @click="startAllOptimization" :disabled="allOptimizationStarted" class="optimize-all-btn">
         一键优化
       </button>
+                                    <!-- 图片区域 -->
+                                    <div class="image-row">
+                <img v-for="(imageUrl, imgIndex) in imageUrls" :key="imgIndex" :src="imageUrl" class="blurred-image" alt="Blurred Image" />
+              </div>
 
       <!-- 内容区域 -->
       <div class="content-container">
@@ -27,6 +31,9 @@
                 <span class="user-name">{{ item.userName }}</span>
                 <span class="expand-icon">{{ expandedStates[segmentIndex]?.[userId] ? '−' : '+' }}</span>
               </div>
+
+
+
               <p class="transcription-text" :class="{ 'truncated': !expandedStates[segmentIndex]?.[userId] }">
                 {{ item.text }}
               </p>
@@ -53,6 +60,15 @@ import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { format } from 'date-fns';
+import EChartsBar from './EChartsBar.vue'; // 引入 ECharts 组件 (稍后创建)
+// 在 MeetingShow.vue 的 <script setup> 中
+import image1 from '../assets/时间段1.png';
+import image2 from '../assets/时间段2.png';
+import image3 from '../assets/时间段3.png';
+import image4 from '../assets/时间段4.png';
+import image5 from '../assets/时间段5.png';
+
+const imageUrls = [image1, image2, image3, image4, image5];
 
 
 const transcriptionData = ref(null);
@@ -64,6 +80,7 @@ const optimizationData = reactive({});
 const allOptimizationStarted = ref(false);
 const expandedStates = reactive({}); // 用于跟踪每个便签的展开状态
 const scrollWrapper = ref([]); // 用于获取滚动容器的引用
+const chartData = ref(null); // 新增：用于存储 ECharts 图表数据
 
 const store = useStore();
 const route = useRoute();
@@ -73,16 +90,15 @@ const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
 
-// 数据获取 (与之前相同)
+// 数据获取 (修改，增加发言长度计算和 chartData 的生成)
 async function fetchData() {
-// ... (与之前相同，获取数据和分组，但不优化)
-    const meetingId = route.params.meetingId;
-    if (!userId.value || !meetingId) {
-        error.value = '缺少用户 ID 或 会议 ID';
-        return;
-    }
-    isLoading.value = true;
-    error.value = null;
+  const meetingId = route.params.meetingId;
+  if (!userId.value || !meetingId) {
+    error.value = '缺少用户 ID 或 会议 ID';
+    return;
+  }
+  isLoading.value = true;
+  error.value = null;
 
   try {
     const meetingData = await FirestoreService.getMeetingHistory(userId.value, meetingId);
@@ -95,11 +111,11 @@ async function fetchData() {
       const segmentDuration = duration / 5;
       const emojis = ['😀', '😊', '😎', '🤩', '🤔'];
       for (let i = 0; i < 5; i++) {
-          timeSegments.value.push({
-              start: startTime + i * segmentDuration,
-              end: startTime + (i + 1) * segmentDuration,
-              emoji: emojis[i],
-          });
+        timeSegments.value.push({
+          start: startTime + i * segmentDuration,
+          end: startTime + (i + 1) * segmentDuration,
+          emoji: emojis[i],
+        });
       }
 
       const groupedData = [];
@@ -120,6 +136,9 @@ async function fetchData() {
       });
       processedData.value = groupedData;
 
+      // 计算并生成 ECharts 数据
+      generateChartData();
+
     } else {
       transcriptionData.value = null;
       error.value = '未找到转录数据';
@@ -132,6 +151,69 @@ async function fetchData() {
   }
 }
 
+// 新增：生成 ECharts 所需的数据格式
+function generateChartData() {
+  const seriesData = [];
+  const userNames = {}; // 存储用户名和颜色的映射
+
+  // 为每个用户生成随机、较浅且美观的颜色 (与之前相同)
+  const generatePastelColor = () => {
+    const h = Math.floor(Math.random() * 360);
+    const s = 25 + Math.floor(Math.random() * 50);
+    const l = 70 + Math.floor(Math.random() * 20);
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  };
+
+  // 收集所有用户及其对应的颜色 (与之前类似)
+  for (let i = 0; i < processedData.value.length; i++) {
+    const segment = processedData.value[i];
+    for (const userId in segment) {
+      if (!userNames[userId]) {
+        userNames[userId] = {
+          name: segment[userId].userName,
+          color: generatePastelColor(),
+        };
+      }
+    }
+  }
+
+    // 为每个用户创建一条折线的数据
+  for (const userId in userNames) {
+      const userData = {
+          name: userNames[userId].name,  // 用户名
+          type: 'line',                // 折线图
+          smooth: true,               // 平滑曲线
+          data: [],                    // 初始数据为空
+          itemStyle: {
+              color: userNames[userId].color  // 用户对应的颜色
+          }
+      };
+
+        // 遍历每个时间段, 填充数据
+        for (let i = 0; i < processedData.value.length; i++) {
+          const segment = processedData.value[i];
+          if (segment[userId]) {
+            userData.data.push(segment[userId].text.length); // 添加字数
+          } else {
+            userData.data.push(0); // 没有发言，字数为 0
+          }
+        }
+      seriesData.push(userData); // 将用户数据添加到 series
+  }
+
+    const legendData = Object.values(userNames).map(user => user.name);   // 图例
+    const xAxisData = timeSegments.value.map(segment => formatTime(segment.start));  //x周
+
+  chartData.value = {
+    legendData,
+    xAxisData,
+    seriesData,
+    // userColors: userNames,  // 折线图不需要这个
+  };
+}
+
+
+// ... 其他函数保持不变 (optimizeText, toggleExpanded, ...)
 // 一键优化所有(和之前修复后的一样)
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
@@ -284,9 +366,6 @@ function getScrollWrapperIndex(segmentIndex, userId) {
   return index;
 }
 
-
-// 移除 watch 监听器 (不再需要，因为滚动在 optimizeText 和 toggleExpanded 中处理)
-// watch(optimizationData, ...);
 
 onMounted(fetchData);
 </script>
@@ -477,4 +556,22 @@ h1 {
     max-height: none; /* 展开时无最大高度限制 */
      overflow-y: visible;
 }
+
+/* 新增图片区域样式 */
+.image-row {
+  display: flex;         /* 使用 Flexbox 布局 */
+  justify-content: space-around; /* 图片间均匀分布 */
+  margin-bottom: 200px;    /* 与下方文本的间距 */
+  height: 60px;          /* 固定高度 (根据需要调整) */
+}
+
+.blurred-image {
+  width: 400px;           /* 自动宽度 */
+  height: 200px;           /* 填充容器高度 */
+  object-fit: cover;    /* 保持宽高比并裁剪以填充 */
+  filter: blur(0.1px);    /* 模糊效果 */
+  border-radius: 5px;   /* 圆角 (可选) */
+  margin: 0 2px;        /* 图片间的小间距 (可选) */
+}
+
 </style>
