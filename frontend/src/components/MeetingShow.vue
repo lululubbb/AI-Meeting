@@ -35,7 +35,7 @@
              <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
                 <p class="optimized-label">优化结果:</p>
                 <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }" ref="scrollWrapper">
-                    <p class="optimized-text">{{ optimizationData[segmentIndex][userId] }}</p>
+                    <p class="optimized-text" :id="`optimized-text-${segmentIndex}-${userId}`">{{ getLatestThreeLines(optimizationData[segmentIndex][userId])}}</p>
                 </div>
              </div>
             </div>
@@ -132,7 +132,7 @@ async function fetchData() {
   }
 }
 
-// 一键优化所有 (与之前相同)
+// 一键优化所有(和之前修复后的一样)
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
     return;
@@ -174,69 +174,92 @@ async function startAllOptimization() {
     allOptimizationStarted.value = false;
   }
 }
-
-
-// 优化文本 (和之前一样)
+// 优化文本 (修改，处理流式输出)
 async function optimizeText(segmentIndex, userId, text) {
-    try {
-        const response = await fetch('http://localhost:8899/api/optimize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-        });
+  try {
+    const response = await fetch('http://localhost:8899/api/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-
-        while (!done) {
-            const { value, done: readDone } = await reader.read();
-            done = readDone;
-            if (value) {
-                const chunk = decoder.decode(value);
-                // 确保 optimizationData[segmentIndex] 存在
-                if (!optimizationData[segmentIndex]) {
-                    optimizationData[segmentIndex] = {};
-                }
-                optimizationData[segmentIndex][userId] += chunk;
-            }
-        }
-    } catch (err) {
-        console.error('优化文本出错:', err);
-          if (!optimizationData[segmentIndex]) {
-              optimizationData[segmentIndex] = {};
-            }
-        optimizationData[segmentIndex][userId] = '优化失败';
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+
+    while (!done) {
+      const { value, done: readDone } = await reader.read();
+      done = readDone;
+      if (value) {
+        const chunk = decoder.decode(value);
+        if (!optimizationData[segmentIndex]) {
+          optimizationData[segmentIndex] = {};
+        }
+        optimizationData[segmentIndex][userId] += chunk;
+         // 每次添加新块后，立即滚动 (只在未展开时)
+          if (!expandedStates[segmentIndex]?.[userId]){
+              nextTick(() => {
+                  scrollToBottom(segmentIndex, userId);
+              });
+          }
+      }
+    }
+  } catch (err) {
+    console.error('优化文本出错:', err);
+    if (!optimizationData[segmentIndex]) {
+      optimizationData[segmentIndex] = {};
+    }
+    optimizationData[segmentIndex][userId] = '优化失败';
+  }
 }
 
-// 切换展开/收起状态
+// 切换展开/收起状态 (修改)
 function toggleExpanded(segmentIndex, userId) {
-  if (!expandedStates[segmentIndex]) {
-    expandedStates[segmentIndex] = {};
-  }
-   if (expandedStates[segmentIndex][userId] === undefined) {
-      expandedStates[segmentIndex][userId] = false; // 默认状态
-  }
-  expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
+    if (!expandedStates[segmentIndex]) {
+        expandedStates[segmentIndex] = {};
+    }
 
-  // 展开或收起后，确保滚动条位置正确
-  if (expandedStates[segmentIndex][userId]) {
-    // 展开时，不需要额外操作，因为 maximized-scroll 会让滚动条消失
-  } else {
-      // 延迟滚动，确保DOM更新
-      nextTick(() => {
-          scrollToBottom(segmentIndex, userId);
-      });
-  }
+     if (expandedStates[segmentIndex][userId] === undefined) {
+      expandedStates[segmentIndex][userId] = false; // 默认状态
+    }
+    expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
+
+    nextTick(() => {
+        // 获取对应的 <p> 元素
+        const pElement = document.getElementById(`optimized-text-${segmentIndex}-${userId}`);
+
+        // 展开时，将 innerText 设置为完整文本
+        if (expandedStates[segmentIndex][userId]) {
+          if(pElement){
+             pElement.innerText = optimizationData[segmentIndex][userId];
+          }
+        } else {
+           // 收起时，将 innerText 设置为最新的三行
+          if(pElement){
+            pElement.innerText = getLatestThreeLines(optimizationData[segmentIndex][userId]);
+          }
+
+          // 滚动到底部
+          scrollToBottom(segmentIndex,userId);
+
+        }
+
+    });
 }
 
+// 获取最新的三行
+function getLatestThreeLines(text) {
+    if (!text) return '';
+    const lines = text.split('\n');
+    const latestThree = lines.slice(-3); // 取最后三行
+    return latestThree.join('\n');
+}
 
-// 滚动到容器底部 (优化)
+// 滚动到容器底部
 function scrollToBottom(segmentIndex, userId) {
     const index = getScrollWrapperIndex(segmentIndex, userId);
     if (index !== -1 && scrollWrapper.value[index]) {
@@ -244,8 +267,7 @@ function scrollToBottom(segmentIndex, userId) {
     }
 }
 
-
-// 获取 scrollWrapper 的索引
+// 获取 scrollWrapper 的索引(和之前一样)
 function getScrollWrapperIndex(segmentIndex, userId) {
   let index = 0;
   for (let i = 0; i < segmentIndex; i++) {
@@ -263,21 +285,8 @@ function getScrollWrapperIndex(segmentIndex, userId) {
 }
 
 
-// 监听 optimizationData 变化，自动滚动
-watch(optimizationData, (newVal, oldVal) => {
-  nextTick(() => { // 使用 nextTick
-    for (let segmentIndex in newVal) {
-      for (let userId in newVal[segmentIndex]) {
-        if (newVal[segmentIndex][userId] !== oldVal?.[segmentIndex]?.[userId]) {
-          if (!expandedStates[segmentIndex]?.[userId]) {
-              scrollToBottom(parseInt(segmentIndex), userId);
-          }
-        }
-      }
-    }
-  });
-}, { deep: true });
-
+// 移除 watch 监听器 (不再需要，因为滚动在 optimizeText 和 toggleExpanded 中处理)
+// watch(optimizationData, ...);
 
 onMounted(fetchData);
 </script>
