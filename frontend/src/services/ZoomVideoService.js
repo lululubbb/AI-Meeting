@@ -315,46 +315,33 @@ async sendMessageToUser(text, userId, timestamp) {
     }
   }
 
-  async attachUserVideo(userId, videoQuality) {
+  async attachUserVideo(userId, videoQuality, element) {
     if (!this.sessionJoined || !this.stream) return null;
-    try {
-      const container = document.getElementById(`user-${userId}`);
-      if (!container) {
-        const newEl = await this.stream.attachVideo(userId, videoQuality);
-        newEl.classList.add('video-element');
-        return newEl;
-      } else {
-        const existing = container.querySelector('video, video-player, canvas');
-        if (existing) existing.remove();
-        const userVideoEl = await this.stream.attachVideo(userId, videoQuality);
-        userVideoEl.classList.add('video-element');
-        container.appendChild(userVideoEl);
-        return userVideoEl;
-      }
-    } catch (error) {
-      console.error('attachUserVideo error:', error);
-      return null;
-    }
-  }
+try {
+   let elementToUse = typeof element === 'string' ? document.querySelector(element) : element;
+    if (!elementToUse) {
+        console.error('Invalid element or selector provided to attachUserVideo', element); //更详细的错误
+  return; // *不要* 抛出异常.
+   }
 
+await this.stream.attachVideo(userId, videoQuality, elementToUse); // 传入 elementToUse
+  return elementToUse;
+} catch (error) {
+        // *不要* 在这里处理 "user is not send video"，正常情况.
+          console.error('attachUserVideo error:', error, 'with element:', element);  // 更详细的日志
+         return null; //  不要抛出异常，防止阻塞其他用户
+    }
+}
+  
   async detachUserVideo(userId) {
     if (!this.sessionJoined || !this.stream) return;
     try {
-      const elements = await this.stream.detachVideo(userId);
-      if (Array.isArray(elements)) {
-        elements.forEach(el => el.remove());
-      } else if (elements) {
-        elements.remove();
-      }
-      const container = document.getElementById(`user-${userId}`);
-      if (container) {
-        const oldEl = container.querySelector('video, video-player, canvas');
-        if (oldEl) oldEl.remove();
-      }
-    } catch (error) {
-      console.error('detachUserVideo error:', error);
-    }
-  }
+       //  直接调用 SDK 的 detachVideo,  无需传入 video 元素
+       await this.stream.detachVideo(userId);
+      } catch (error) {
+          console.error('detachUserVideo error:', error);
+       }
+   }
 
   async startLocalAudio() {
     try {

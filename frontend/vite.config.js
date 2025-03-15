@@ -8,7 +8,7 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-          isCustomElement: (tag) => ['app-previewkit', 'app-uikit','video-player-container'].includes(tag),
+          isCustomElement: (tag) => ['app-previewkit', 'app-uikit','video-player-container','video-player'].includes(tag),
         }
       }
       
