@@ -17,8 +17,12 @@
     <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
-  <span class="closeBtn" @click="goHome">×</span>
-  <h1>视频会议</h1>
+      <div class="close-btn-wrapper">      
+      <button @click="goHome" class="close-btn" aria-label="关闭">
+          <img src="@/assets/exit.png" alt="退出" />
+        </button> 
+      </div>
+      <h1>视频会议</h1>
 
   <!-- 创建/加入会议表单 -->
   <div v-if="mode === 'create'" class="input-group">
@@ -78,35 +82,38 @@
         <div class="left-panel">
           <!-- 参与者缩略图行 -->
           <div class="participants-row">
-            <video-player-container v-for="user in users" :key="user.userId" class="participant-tile"
- :id="`user-${user.userId}`">
-  <div class="video-content">
-    <div v-show="!user.hasVideo.final" class="placeholder">  <!--这里改为v-show-->
-    {{ user.userName }}
-    </div>
-  </div>
- <div class="username-label">{{ user.userName }}</div>
-</video-player-container>
+        <video-player-container v-for="user in users" :key="user.userId" class="participant-tile"
+              :id="`user-${user.userId}`">
+          <div class="video-content">
+            <div v-show="!user.hasVideo.final" class="placeholder">  <!--这里改为v-show-->
+              {{ user.userName }}
+            </div>
           </div>
-
+          <div class="username-label">{{ user.userName }}</div>
+        </video-player-container>
+          </div>
+              
+   
           <!-- 演讲者/共享 大区域 -->
-          <video-player-container class="speaker-area">
+        <video-player-container class="speaker-area">
             <!-- 当没有人共享时，显示提示 -->
             <div v-if="!someoneIsSharing" class="speaker-placeholder">
               <p>当前无人共享</p>
             </div>
-            <!-- 字幕容器 -->
-            <!-- <div class="subtitle">
-              {{ subtitle }}
-            </div> -->
-            <div class="subtitle">
-  <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
-    <span class="subtitle-user">{{ sub.userName }}: </span>
-    <span class="subtitle-text">{{ sub.text }}</span>
-  </div>
-</div>
-          </video-player-container>
-
+        </video-player-container>
+      
+    <!-- 字幕容器 -->
+    <div class="subtitle-container" v-if="subtitles && subtitles.length > 0">
+      <div class="subtitle">
+        <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
+        <!-- <div class="subtitle-item"> -->
+          <span class="subtitle-user">{{ sub.userName }}: </span>
+          <span class="subtitle-text">{{ sub.text }}</span>
+          <!-- <span class="subtitle-user">发言人</span>
+          <span class="subtitle-text">字幕内容：这里是转录出来的字幕内容</span> -->
+        </div>
+      </div>
+    </div>
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleTranscription" :class="{ active: isTranscribing }">
@@ -305,10 +312,6 @@
       </div>
     </div>
   </main>
-  <!-- 字幕容器 -->
-<div class="subtitle">
-   {{ subtitle }}
-</div>
 
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
@@ -1730,7 +1733,6 @@ const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
 
 const isTranscribing = ref(false);
 const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
-const subtitle = ref(''); // (已弃用)
 const transcriptionWs = ref(null); //  转录 WebSocket
 let audioContext = null;         //  全局的 AudioContext
 let scriptNode = null;          //  全局的 ScriptProcessorNode
@@ -2377,10 +2379,11 @@ main {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f7f7f7;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   position: relative;
-  margin: 0;
+  margin-top:-50px;
 }
+
 .return-icon-button {
    position: absolute;
     bottom: 10px;
@@ -2390,6 +2393,7 @@ main {
    padding: 0;/* 移除 padding */
    border: none;
    border-radius: 50%;/* 圆形按钮 */
+   background:transparent;
     width: 45px;/* 调整大小 */
     height: 45px;
    display: flex;  /* 使用 flex 布局 */
@@ -2401,6 +2405,7 @@ main {
    z-index: 1002;
 transition: background-color 0.3s;  /* 添加过渡效果 */
 }
+
 .return-icon-button:hover .icon {
   opacity: 1; /* 鼠标悬停时完全不透明 */
 }
@@ -2415,30 +2420,45 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   opacity: 0.7; /* 设置透明度为 80% */
   transition: opacity 0.3s; /* 可选：添加平滑过渡 */
 }
-.closeBtn {
-  position: absolute;
-  top: 10px;
-  right: 20px;
-  background: none;
+
+.close-btn {
+  background-color: transparent;
   border: none;
-  font-size: 20px;
   cursor: pointer;
-  color: #666;
+  transition: transform 0.3s;
 }
 
-.closeBtn:hover {
-  color: #e53935;
+.close-btn img {
+  width: 25px;
+  height: 25px;
+}
+
+.close-btn:hover {
+  transform: rotate(90deg);
+}
+/* 关闭按钮样式 */
+.close-btn-wrapper {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 199;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s;
 }
 
 #action-flow {
-  background-color: #fff;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+  padding: 30px 40px 40px;
+  border-radius: 15px;
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   text-align: center;
-  max-width: 500px;
+  max-width: 700px;
+  max-height: 80%;
   width: 100%;
+  box-sizing: border-box;
   position: relative;
+  margin: 0;
 }
 
 #action-flow h1 {
@@ -2460,7 +2480,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
 
 .input-group input,
 .input-group select {
-  width: 100%;
+  width: 98%;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -2479,6 +2499,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   justify-content: center;
   gap: 20px;
 }
+
 .controls button {
   background-color: #333;
   color: #fff;
@@ -2631,6 +2652,14 @@ video-player-container.participant-tile {
   border-radius: 4px;
 }
 
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100vh;
+}
+
 video-player-container.speaker-area {
   flex: 1;
   background: #000;
@@ -2646,6 +2675,50 @@ video-player-container.speaker-area {
   text-align: center;
   padding: 20px;
 }
+
+/* 字幕容器 */
+.subtitle-container {
+  position: absolute;
+  bottom: 80px; /* 控制栏高度 + 间距 */
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 20px;
+}
+
+/* 字幕样式 */
+.subtitle {
+  background: rgba(241, 241, 241, 0.219);
+  color: #fff;
+  padding: 3px 20px;
+  border-radius: 12px;
+  max-width: 800px;
+  margin: 3px auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* 新增字幕项样式 */
+  .subtitle-item {
+    display: flex;
+    gap: 12px;
+    line-height: 1.6;
+  }
+
+  .subtitle-user {
+    color: #00aaff;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .subtitle-text {
+    flex: 1;
+    font-size: x;
+    color: #fff;
+  -webkit-text-stroke: 1.3px #000;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  paint-order: stroke fill;  }
+}
+
 
 /* 让共享的画面只在 .speaker-area 区域内等比例缩放 */
 video.video-element.share-video,
@@ -2666,8 +2739,6 @@ canvas.video-element.share-video {
   justify-content: center;
   gap: 12px;
 }
-
-
 
 .controls button.active {
   background-color: #1a73e8;
@@ -2808,23 +2879,7 @@ canvas.video-element.share-video {
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
     }
 
-    .subtitle {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
-  color: #fff;
-  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
-  border-radius: 8px; /* 稍微增大圆角，更美观 */
-  max-width: 90%; /* 增大最大宽度，适应更多内容 */
-  text-align: center;
-  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
-  white-space: normal; /* 自动换行，无需强制保留空白符 */
-  word-break: break-word; /* 更好的长单词断行处理 */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
-  z-index: 100; /* 确保字幕在其他内容之上 */
-}
+
 
   #transcriptionContainer {
     width: 100%;
@@ -3121,9 +3176,8 @@ canvas.video-element.share-video {
   background-color: white;
   border: 1px solid #ccc;
   z-index: 100;      /*  重要, 比其他页面高, 但比 Header, AIFloatingChat 低 */
-  overflow: hidden;          /* 确保内容不会溢出 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  overflow: hidden; 
+  border: none;         /* 确保内容不会溢出 */
   min-width: 300px;
   min-height: 200px;
   transition: all 0.3s ease; /* 平滑过渡 */

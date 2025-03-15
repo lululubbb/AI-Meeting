@@ -160,9 +160,6 @@ const saveTodo = async (selectedDate, newTodoText) => {
     console.error("添加失败：", error);
     ElMessage.error('添加失败');
   }
-
-
-
   closeDialog();
 };
 
@@ -259,27 +256,36 @@ const goHome = () => {
 <style scoped>
 /* 合并后的样式 */
 .reserve-container {
-  padding: 30px 20px;
+  padding: 20px;
   width: 95%;
   max-width: 900px;
-  max-height: 90vh;
-  margin: 20px auto;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  border-radius: 15px;
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  min-height: 80vh;
+  margin: 50px auto;
   position: relative;
   overflow-y: auto;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+}
+
+#reservation-form {
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+  padding: 30px;
+  text-align: center;
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  max-width: 90%;
+  max-height: 80%;
+  width:95%;
+  overflow: auto;
+  border-radius: 15px;
+  box-sizing: border-box;
+  position: relative;
 }
 
 /* 关闭按钮样式 */
 .close-btn-wrapper {
   position: absolute;
   top: 15px;
-  right: 15px;
+  right: 20px;
   z-index: 1;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.3s;
 }
 
 .close-btn {
@@ -287,30 +293,24 @@ const goHome = () => {
   border: none;
   cursor: pointer;
   transition: transform 0.3s;
+  padding: 8px;
 }
 
 .close-btn img {
   width: 30px;
   height: 30px;
+  display: block;
 }
 
 .close-btn:hover {
   transform: rotate(90deg);
 }
 
-#reservation-form {
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  padding: 30px;
-  text-align: center;
-  max-width: 100%;
-  width:95%;
-  overflow: auto;
-  box-sizing: border-box;
-}
+
 
 h1 {
   margin-bottom: 20px;
-  color: var(--text-color); /* 使用全局文字颜色 */
+  color: var(--text-color); /*  使用全局文字颜色 */
 }
 
 .input-group {
@@ -370,7 +370,7 @@ CustomButton {
   }
 
   #reservation-form {
-    padding: 20px;
+    padding: 30px;
   }
 
   h1 {
@@ -391,6 +391,12 @@ CustomButton {
   .input-group select {
     font-size: 14px;
     padding: 8px 10px;
+  }
+
+  .close-btn-wrapper {
+    position: fixed; /* 改为固定定位 */
+    top: 15px;
+    right: 15px;
   }
 
   .close-btn img {
@@ -441,7 +447,10 @@ CustomButton {
     font-size: 12px;
     padding: 6px 8px;
   }
-
+  .close-btn-wrapper {
+    top: 10px;
+    right: 10px;
+  }
   .close-btn img {
     width: 20px;
     height: 20px;

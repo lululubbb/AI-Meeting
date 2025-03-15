@@ -293,8 +293,8 @@
       </div>
     </div>
     
-    <div v-if="showExplanation" class="explanation-modal">
-    <div class="modal-content">
+    <div class="modal-overlay" v-if="showExplanation" @click.self="hideExplanationModal">
+    <div class="modal-content"  @click.stop>
       <button @click="hideExplanationModal" class="close-btn" aria-label="关闭">
           <img src="@/assets/exit.png" alt="退出" />
         </button>
@@ -1526,6 +1526,19 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 100;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
 .modal-content {
