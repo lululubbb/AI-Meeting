@@ -3,7 +3,7 @@ import ZoomVideo from '@zoom/videosdk';
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js';
 import store from '../store'
-import { nextTick, inject } from 'vue';
+import { nextTick, inject} from 'vue';
 export const VideoQuality = {
   VIDEO_180P: 1,
   VIDEO_360P: 2,
@@ -12,7 +12,6 @@ export const VideoQuality = {
 };
 
 const DEPENDENT_ASSETS_PATH = 'Global';
-
 
 async function initializeZoomSDK(client) {
   const sysCheck = await ZoomVideo.checkSystemRequirements();
@@ -360,8 +359,10 @@ await this.stream.attachVideo(userId, videoQuality, elementToUse); // 传入 ele
     try {
       if (isAudioOn) {
         await this.stream.startAudio();
+        await this.stream.unmuteAudio();  // 确保能够听到其他人的声音
+        this.stream.audioSettings.receiveAudio = true; // 确保可以接收音频
       } else {
-        await this.stream.stopAudio();
+        await this.stream.muteAudio(); 
       }
     } catch (error) {
       showSnackBar('切换音频失败');

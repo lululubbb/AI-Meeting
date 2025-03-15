@@ -30,12 +30,12 @@
             </template>
           </el-upload>
   
-          <el-progress
+          <!-- <el-progress
             v-if="isUploading"
             :percentage="uploadPercent"
             class="upload-progress"
             :color="customColors"
-          ></el-progress>
+          ></el-progress> -->
         </div>
   
          <el-divider class="divider" />
@@ -218,6 +218,10 @@
   formData.append('file', file);
 
   try {
+    isUploading.value = true;
+    uploadPercent.value = 0;
+    summary.value = '';
+
     const response = await axios.post(uploadUrl, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -231,6 +235,14 @@
     onSuccess(response.data);
     fetchUploadedFiles(); // 刷新文件列表
   } catch (error) {
+    console.error('上传出错:', error);
+    const serverError = error.response?.data?.error;
+    const errorMessage = serverError?.message || 
+                      serverError?.details || 
+                      error.message || 
+                      '文件上传或摘要生成失败';
+  
+  ElNotification({ title: 'error', message: '操作失败: ${errorMessage}', type: 'error' });
     onError(error);
     ElMessage.error('文件上传失败');
   }

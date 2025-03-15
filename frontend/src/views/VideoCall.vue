@@ -17,8 +17,12 @@
     <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
-  <span class="closeBtn" @click="goHome">×</span>
-  <h1>视频会议</h1>
+      <div class="close-btn-wrapper">      
+      <button @click="goHome" class="close-btn" aria-label="关闭">
+          <img src="@/assets/exit.png" alt="退出" />
+        </button> 
+      </div>
+      <h1>视频会议</h1>
 
   <!-- 创建/加入会议表单 -->
   <div v-if="mode === 'create'" class="input-group">
@@ -89,23 +93,25 @@
         </div>
 
           <!-- 演讲者/共享 大区域 -->
-          <video-player-container class="speaker-area">
+        <video-player-container class="speaker-area">
             <!-- 当没有人共享时，显示提示 -->
             <div v-if="!someoneIsSharing" class="speaker-placeholder">
               <p>当前无人共享</p>
             </div>
-            <!-- 字幕容器 -->
-            <!-- <div class="subtitle">
-              {{ subtitle }}
-            </div> -->
-            <div class="subtitle">
-  <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
-    <span class="subtitle-user">{{ sub.userName }}: </span>
-    <span class="subtitle-text">{{ sub.text }}</span>
-  </div>
-</div>
-          </video-player-container>
-
+        </video-player-container>
+      
+    <!-- 字幕容器 -->
+    <div class="subtitle-container" v-if="subtitles && subtitles.length > 0">
+      <div class="subtitle">
+        <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
+        <!-- <div class="subtitle-item"> -->
+          <span class="subtitle-user">{{ sub.userName }}: </span>
+          <span class="subtitle-text">{{ sub.text }}</span>
+          <!-- <span class="subtitle-user">发言人</span>
+          <span class="subtitle-text">字幕内容：这里是转录出来的字幕内容</span> -->
+        </div>
+      </div>
+    </div>
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleTranscription" :class="{ active: isTranscribing }">
@@ -304,10 +310,6 @@
       </div>
     </div>
   </main>
-  <!-- 字幕容器 -->
-<div class="subtitle">
-   {{ subtitle }}
-</div>
 
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
@@ -1633,8 +1635,25 @@ const endSession = async () => { //主持人结束会议
       const user = store.getters.getUser; // 获取当前用户信息
 
       // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
-      if (isTranscribing.value) {
+   // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
+   if (isTranscribing.value) {
           stopTranscription(); // 先停止转录 (重要!)
+
+           // 格式化 transcriptionHistory (重要!)
+          let formattedTranscription = [];
+           for (const date in transcriptionHistory.value) {
+               for(const userId in transcriptionHistory.value[date]){
+                   for(const item of transcriptionHistory.value[date][userId]){
+                       formattedTranscription.push({
+                           date: date,
+                           userId: userId, //  添加到这里
+                           userName: item.userName,
+                           time: item.time,
+                           text: item.text
+                       });
+                   }
+               }
+            }
 
           // 更新 Firestore
           if (user && config.meetingId) {
@@ -1643,7 +1662,7 @@ const endSession = async () => { //主持人结束会议
                   endTime: now,
                   participants: filteredUsers,
                   chatMessages: filteredChatMessages,
-                  transcriptionHistory: transcriptionHistory.value // 新增：保存转录历史
+                  transcriptionHistory: formattedTranscription //  保存格式化后的
               });
           }
       } else { // 添加 else 分支
@@ -1658,6 +1677,7 @@ const endSession = async () => { //主持人结束会议
               });
           }
       }
+
 
 
        ZoomVideoService.leaveSession(true); //  结束会议, 放到后面
@@ -1688,6 +1708,8 @@ function resetState() {
 转录方面
    ********************* */
 // videocall.vue  <script setup> 部分
+const maxLength = ref({}); //  { userId: maxLength }
+
 // 新增：转录历史记录
 const transcriptionHistory = ref({});
 // 新增：当前时间段 (用于标记当前正在记录的时间段)
@@ -1708,30 +1730,37 @@ const getCurrentDate = () => {
 };
 
 // 新增：将转录数据添加到历史记录的函数
+// 新增：将转录数据添加到历史记录的函数 (修改后)
 const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
-   const date = getCurrentDate(); // YYYY-MM-DD
-  const timeslot = getCurrentTimeslot(); // HH:mm-HH:mm
+  const date = getCurrentDate(); // YYYY-MM-DD
+  //const timeslot = getCurrentTimeslot(); // 不需要 timeslot
   const time = format(timestamp, 'HH:mm:ss'); // HH:mm:ss
+
   // 确保日期存在
   if (!transcriptionHistory.value[date]) {
     transcriptionHistory.value[date] = {};
   }
 
-  // 确保时间段存在
-  if (!transcriptionHistory.value[date][timeslot]) {
-    transcriptionHistory.value[date][timeslot] = [];
-  }
+  // // 确保时间段存在 (不再需要)
+  // if (!transcriptionHistory.value[date][timeslot]) {
+  //   transcriptionHistory.value[date][timeslot] = [];
+  // }
 
-  transcriptionHistory.value[date][timeslot].push({
-    userId,
+    // 确保用户存在 (重要!)
+    if(!transcriptionHistory.value[date][userId]){
+        transcriptionHistory.value[date][userId] = [];
+    }
+
+  transcriptionHistory.value[date][userId].push({
+    //userId, //  userId 已经作为 key 了
     userName,
     time,
     text
   });
 };
+
 const isTranscribing = ref(false);
 const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
-const subtitle = ref(''); // (已弃用)
 const transcriptionWs = ref(null); //  转录 WebSocket
 let audioContext = null;         //  全局的 AudioContext
 let scriptNode = null;          //  全局的 ScriptProcessorNode
@@ -1872,23 +1901,36 @@ const startTranscription = async () => {
       };
 
       transcriptionWs.value.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        const now = new Date();
+  const data = JSON.parse(event.data);
+  const now = new Date();
 
-        if (data.type === 'interim') {
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = { userName: data.userName, text: '' };
-          }
-          subtitles.value[data.userId].text = data.text;
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        } else if (data.type === 'final') {
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = { userName: data.userName, text: '' };
-          }
-          subtitles.value[data.userId].text = data.text;
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        }
-      };
+  if (data.type === 'interim') {
+    if (!subtitles.value[data.userId]) {
+      subtitles.value[data.userId] = { userName: data.userName, text: '' };
+    }
+
+    const currentLength = data.text.length;
+    if (!maxLength.value[data.userId]) {
+      maxLength.value[data.userId] = 0;
+    }
+
+    if (currentLength > maxLength.value[data.userId]) {
+      //  更长了, 更新最长长度
+      maxLength.value[data.userId] = currentLength;
+      subtitles.value[data.userId].text = data.text; // 更新字幕
+    } else {
+        //  变短了, 说明上一个是完整句子 (伪 completed 事件)!
+        //  重要:  从 subtitles 中获取上一个文本
+        const previousText = subtitles.value[data.userId].text
+      addTranscriptionToHistory(data.userId, data.userName, previousText, now);
+
+      //  重置最长长度, 并更新当前文本 (新的句子开始了)
+      maxLength.value[data.userId] = currentLength;
+      subtitles.value[data.userId].text = data.text;
+    }
+  }
+};
+
 
       transcriptionWs.value.onerror = (error) => {
         console.error('[Client] 转录 WebSocket 错误:', error);
@@ -2316,10 +2358,11 @@ main {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f7f7f7;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   position: relative;
-  margin: 0;
+  margin-top:-50px;
 }
+
 .return-icon-button {
    position: absolute;
     bottom: 10px;
@@ -2329,6 +2372,7 @@ main {
    padding: 0;/* 移除 padding */
    border: none;
    border-radius: 50%;/* 圆形按钮 */
+   background:transparent;
     width: 45px;/* 调整大小 */
     height: 45px;
    display: flex;  /* 使用 flex 布局 */
@@ -2340,6 +2384,7 @@ main {
    z-index: 1002;
 transition: background-color 0.3s;  /* 添加过渡效果 */
 }
+
 .return-icon-button:hover .icon {
   opacity: 1; /* 鼠标悬停时完全不透明 */
 }
@@ -2354,30 +2399,45 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   opacity: 0.7; /* 设置透明度为 80% */
   transition: opacity 0.3s; /* 可选：添加平滑过渡 */
 }
-.closeBtn {
-  position: absolute;
-  top: 10px;
-  right: 20px;
-  background: none;
+
+.close-btn {
+  background-color: transparent;
   border: none;
-  font-size: 20px;
   cursor: pointer;
-  color: #666;
+  transition: transform 0.3s;
 }
 
-.closeBtn:hover {
-  color: #e53935;
+.close-btn img {
+  width: 25px;
+  height: 25px;
+}
+
+.close-btn:hover {
+  transform: rotate(90deg);
+}
+/* 关闭按钮样式 */
+.close-btn-wrapper {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 199;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s;
 }
 
 #action-flow {
-  background-color: #fff;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  background-color: var(--background-color); /* 使用全局背景颜色 */
+  padding: 30px 40px 40px;
+  border-radius: 15px;
+  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   text-align: center;
-  max-width: 500px;
+  max-width: 700px;
+  max-height: 80%;
   width: 100%;
+  box-sizing: border-box;
   position: relative;
+  margin: 0;
 }
 
 #action-flow h1 {
@@ -2399,7 +2459,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
 
 .input-group input,
 .input-group select {
-  width: 100%;
+  width: 98%;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -2418,6 +2478,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   justify-content: center;
   gap: 20px;
 }
+
 .controls button {
   background-color: #333;
   color: #fff;
@@ -2569,6 +2630,14 @@ video-player-container.participant-tile {
   border-radius: 4px;
 }
 
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100vh;
+}
+
 video-player-container.speaker-area {
   flex: 1;
   background: #000;
@@ -2584,6 +2653,50 @@ video-player-container.speaker-area {
   text-align: center;
   padding: 20px;
 }
+
+/* 字幕容器 */
+.subtitle-container {
+  position: absolute;
+  bottom: 80px; /* 控制栏高度 + 间距 */
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 20px;
+}
+
+/* 字幕样式 */
+.subtitle {
+  background: rgba(241, 241, 241, 0.219);
+  color: #fff;
+  padding: 3px 20px;
+  border-radius: 12px;
+  max-width: 800px;
+  margin: 3px auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* 新增字幕项样式 */
+  .subtitle-item {
+    display: flex;
+    gap: 12px;
+    line-height: 1.6;
+  }
+
+  .subtitle-user {
+    color: #00aaff;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .subtitle-text {
+    flex: 1;
+    font-size: x;
+    color: #fff;
+  -webkit-text-stroke: 1.3px #000;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  paint-order: stroke fill;  }
+}
+
 
 /* 让共享的画面只在 .speaker-area 区域内等比例缩放 */
 video.video-element.share-video,
@@ -2604,8 +2717,6 @@ canvas.video-element.share-video {
   justify-content: center;
   gap: 12px;
 }
-
-
 
 .controls button.active {
   background-color: #1a73e8;
@@ -2746,23 +2857,7 @@ canvas.video-element.share-video {
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
     }
 
-    .subtitle {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
-  color: #fff;
-  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
-  border-radius: 8px; /* 稍微增大圆角，更美观 */
-  max-width: 90%; /* 增大最大宽度，适应更多内容 */
-  text-align: center;
-  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
-  white-space: normal; /* 自动换行，无需强制保留空白符 */
-  word-break: break-word; /* 更好的长单词断行处理 */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
-  z-index: 100; /* 确保字幕在其他内容之上 */
-}
+
 
   #transcriptionContainer {
     width: 100%;
@@ -3059,9 +3154,8 @@ canvas.video-element.share-video {
   background-color: white;
   border: 1px solid #ccc;
   z-index: 100;      /*  重要, 比其他页面高, 但比 Header, AIFloatingChat 低 */
-  overflow: hidden;          /* 确保内容不会溢出 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  overflow: hidden; 
+  border: none;         /* 确保内容不会溢出 */
   min-width: 300px;
   min-height: 200px;
   transition: all 0.3s ease; /* 平滑过渡 */

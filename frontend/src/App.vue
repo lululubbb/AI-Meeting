@@ -248,8 +248,6 @@ body {
   border: none;
 }
 
-
-
 a {
   color: inherit;
   text-decoration: none;
