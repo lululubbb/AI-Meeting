@@ -18,13 +18,22 @@
         一键优化
       </button>
 
+      <!-- 新增：一键生成摘要和关键词的按钮 -->
+      <div class="global-buttons">
+        <button @click="getAllSummaries" :disabled="summaryLoading" class="summary-all-btn">
+          {{ summaryLoading ? '生成中...' : '一键生成摘要' }}
+        </button>
+        <button @click="getAllKeywords" :disabled="keywordLoading" class="keyword-all-btn">
+          {{ keywordLoading ? '生成中...' : '一键生成关键词' }}
+        </button>
+      </div>
+
       <!-- 内容区域 -->
       <div class="content-container">
         <div v-for="(segment, segmentIndex) in processedData" :key="segmentIndex" class="content-segment">
           <div v-for="(item, userId) in segment" :key="userId" class="user-transcription">
             <!-- 使用函数生成唯一的 ref -->
-            <div :ref="el => setNoteRef(el, segmentIndex, userId)" class="note"
-              @click="toggleExpanded(segmentIndex, userId)">
+            <div :ref="el => setNoteRef(el, segmentIndex, userId)" class="note" @click="toggleExpanded(segmentIndex, userId)">
               <div class="note-header">
                 <span class="user-name">{{ item.userName }}</span>
                 <span class="expand-icon">{{ expandedStates[segmentIndex]?.[userId] ? '−' : '+' }}</span>
@@ -37,13 +46,23 @@
               <!-- 优化结果 -->
               <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
                 <p class="optimized-label">优化结果:</p>
-                <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }"
-                  ref="scrollWrapper">
-                  <p class="optimized-text" :id="`optimized-text-${segmentIndex}-${userId}`">{{
-                    getLatestThreeLines(optimizationData[segmentIndex][userId]) }}</p>
+                <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }" ref="scrollWrapper">
+                  <p class="optimized-text" :id="`optimized-text-${segmentIndex}-${userId}`" v-html="processedOptimizationData[segmentIndex]?.[userId]"></p>
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- 摘要卡片 -->
+          <div v-if="summaries[segmentIndex]" class="summary-card">
+            <p class="card-label">摘要:</p>
+            <p class="summary-text" v-html="processedSummaries[segmentIndex]"></p>
+          </div>
+
+          <!-- 关键词卡片 -->
+          <div v-if="keywords[segmentIndex]" class="keyword-card">
+            <p class="card-label">关键词:</p>
+            <p class="keyword-text">{{ keywords[segmentIndex] }}</p>
           </div>
         </div>
       </div>
@@ -51,31 +70,36 @@
     <div v-else>没有转录数据。</div>
   </div>
   <div class="overlay" v-if="overlayVisible" @click="closeOverlay">
-    <div class="expanded-note" :style="expandedNoteStyle" ref="expandedNote">  <!-- Add ref here -->
-    <div class="note-header">
-       <span class="user-name">{{ expandedNoteData.userName}}</span>
-         <span class="expand-icon" @click.stop="closeOverlay">−</span>
-     </div>
-          <p class="transcription-text"  style="max-height:none;">
-            {{ expandedNoteData.text }}
-           </p>
+    <div class="expanded-note" :style="expandedNoteStyle" ref="expandedNote">
+      <!-- Add ref here -->
+      <div class="note-header">
+        <span class="user-name">{{ expandedNoteData.userName }}</span>
+        <span class="expand-icon" @click.stop="closeOverlay">−</span>
+      </div>
+      <p class="transcription-text" style="max-height:none;">
+        {{ expandedNoteData.text }}
+      </p>
 
       <!-- 优化结果 -->
-        <div class="optimized-text-container">
-           <p class="optimized-label">优化结果:</p>
-              <p class="optimized-text">{{ expandedNoteData.optimizedText}}</p>
-         </div>
+      <div class="optimized-text-container">
+        <p class="optimized-label">优化结果:</p>
+        <!-- 使用 v-html 渲染 Markdown -->
+        <div class="expanded-optimized-text" v-html="marked(expandedNoteData.optimizedText)"></div>
+      </div>
     </div>
   </div>
 </template>
 
+
+
 <script setup>
-import { ref, onMounted, computed, reactive, nextTick, watch } from 'vue';  // Import watch
+import { ref, onMounted, computed, reactive, nextTick, watch } from 'vue';
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { format } from 'date-fns';
 import EChartsBar from './EChartsBar.vue';
+import { marked } from 'marked'; // 导入 marked
 
 const transcriptionData = ref(null);
 const isLoading = ref(false);
@@ -90,28 +114,57 @@ const chartData = ref(null);
 const store = useStore();
 const route = useRoute();
 const userId = computed(() => store.state.user.uid);
-const noteRefs = ref({});  // Original note refs
+const noteRefs = ref({});
+
+// 摘要和关键词
+const summaries = reactive({});
+const keywords = reactive({});
+
+// 按钮的加载状态
+const summaryLoading = ref(false);
+const keywordLoading = ref(false);
 
 // Overlay and Expanded Note
 const overlayVisible = ref(false);
 const expandedNoteStyle = ref({});
 const expandedNoteData = reactive({
-   userName: '',
-   text: '',
-   optimizedText: ''
+  userName: '',
+  text: '',
+  optimizedText: ''
 });
-const expandedNote = ref(null); // Ref for the expanded note element
+const expandedNote = ref(null);
 
-// Watcher for overlay visibility
+// 创建一个计算属性来处理 Markdown 转换
+const processedSummaries = computed(() => {
+  const result = {};
+  for (const key in summaries) {
+    if (summaries[key]) {
+      result[key] = marked(summaries[key]);
+    }
+  }
+  return result;
+});
+
+const processedOptimizationData = computed(() => {
+  const result = {};
+  for (const segmentIndex in optimizationData) {
+    result[segmentIndex] = {};
+    for (const userId in optimizationData[segmentIndex]) {
+      if (optimizationData[segmentIndex][userId]) {
+        result[segmentIndex][userId] = marked(optimizationData[segmentIndex][userId]);
+      }
+    }
+  }
+  return result;
+});
+
 watch(overlayVisible, (newVal) => {
   if (!newVal) {
-      // When overlay closes, reset styles with a slight delay for animation
-      setTimeout(() => {
-          expandedNoteStyle.value = {};  // Clear styles
-      }, 400); // Match the CSS transition duration (0.4s) added below
+    setTimeout(() => {
+      expandedNoteStyle.value = {};
+    }, 400);
   }
 });
-
 
 function setNoteRef(el, segmentIndex, userId) {
   if (el) {
@@ -194,13 +247,14 @@ function generateChartData() {
     return `hsl(${h}, ${s}%, ${l}%)`;
   };
 
+
   for (let i = 0; i < processedData.value.length; i++) {
     const segment = processedData.value[i];
     for (const userId in segment) {
       if (!userNames[userId]) {
         userNames[userId] = {
           name: segment[userId].userName,
-          color: generatePastelColor(),
+          color: generatePastelColor()
         };
       }
     }
@@ -237,6 +291,7 @@ function generateChartData() {
     seriesData,
   };
 }
+
 async function startAllOptimization() {
   if (allOptimizationStarted.value) {
     return;
@@ -300,9 +355,9 @@ async function optimizeText(segmentIndex, userId, text) {
           optimizationData[segmentIndex] = {};
         }
         optimizationData[segmentIndex][userId] += chunk;
-          nextTick(() => {
-            scrollToBottom(segmentIndex, userId);
-          });
+        nextTick(() => {
+          scrollToBottom(segmentIndex, userId);
+        });
       }
     }
   } catch (err) {
@@ -313,6 +368,7 @@ async function optimizeText(segmentIndex, userId, text) {
     optimizationData[segmentIndex][userId] = '优化失败';
   }
 }
+
 function getLatestThreeLines(text) {
   if (!text) return '';
   const lines = text.split('\n');
@@ -322,11 +378,12 @@ function getLatestThreeLines(text) {
 
 function scrollToBottom(segmentIndex, userId) {
   const index = getScrollWrapperIndex(segmentIndex, userId);
+
   if (index !== -1 && scrollWrapper.value[index]) {
-        nextTick(()=>{
-            scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
-        })
-    }
+    nextTick(() => {
+      scrollWrapper.value[index].scrollTop = scrollWrapper.value[index].scrollHeight;
+    })
+  }
 }
 
 function getScrollWrapperIndex(segmentIndex, userId) {
@@ -345,7 +402,6 @@ function getScrollWrapperIndex(segmentIndex, userId) {
   return index;
 }
 
-// Revised toggleExpanded for slide-in/out
 function toggleExpanded(segmentIndex, userId) {
   const noteElement = noteRefs.value[segmentIndex]?.[userId];
   if (!noteElement) return;
@@ -353,84 +409,216 @@ function toggleExpanded(segmentIndex, userId) {
   const rect = noteElement.getBoundingClientRect();
 
   expandedNoteStyle.value = {
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-    top: `${rect.top}px`,
-    left: `${rect.left}px`,
-    transform: 'scale(1)',  // Start with original size
-    transition: 'none', // No transition initially
-    opacity:0
+    // width: `${rect.width}px`,  // 移除
+    // height: `${rect.height}px`, // 移除
+    // top: `${rect.top}px`,    // 移除
+    // left: `${rect.left}px`,   // 移除
+    // transform: 'scale(1)',  // 移除
+    // transition: 'none',     // 移除
+    opacity: 0              // 保留
   };
 
   expandedNoteData.userName = processedData.value[segmentIndex][userId].userName;
   expandedNoteData.text = processedData.value[segmentIndex][userId].text;
   expandedNoteData.optimizedText = optimizationData[segmentIndex]?.[userId] || '';
-  overlayVisible.value = true; //show first
-
+  overlayVisible.value = true;
 
   nextTick(() => {
     if (expandedNote.value) {
-        expandedNoteStyle.value = {
-          ...expandedNoteStyle.value, // Keep initial position/size
-          top: '50%',
-          left: '50%',
-          width: '80%',
-          height: '80%',
-          transform: 'translate(-50%, -50%) scale(1)',  // Center and maintain aspect ratio
+      expandedNoteStyle.value = {
+        // ...expandedNoteStyle.value, // 移除
+        // top: '50%',              // 移除
+        // left: '50%',             // 移除
+        // width: '80%',            // 移除
+        // height: '80%',           // 移除
+        // transform: 'translate(-50%, -50%) scale(1)', // 移除
+        // transition: 'all 0.4s ease',   // 移除
 
-          transition: 'all 0.4s ease', // Add transition *after* initial styles are set
-          opacity: 1
-        };
-       expandedStates[segmentIndex] = expandedStates[segmentIndex] || {};
-       expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId]
+        opacity: 1                      // 保留
+      };
+      expandedStates[segmentIndex] = expandedStates[segmentIndex] || {};
+      expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
     }
   });
 }
 
 function closeOverlay() {
-   if (!expandedNote.value) return;
+  //   if (!expandedNote.value) return;  //注释
 
-    const originalNote = noteRefs.value[getSegmentAndUserIdFromExpanded().segmentIndex]?.[getSegmentAndUserIdFromExpanded().userId];
+  //   const originalNote = noteRefs.value[getSegmentAndUserIdFromExpanded().segmentIndex]?.[getSegmentAndUserIdFromExpanded().userId];
+  //   if (!originalNote) return;       //注释
 
-    if(!originalNote) return;
+  //   const rect = originalNote.getBoundingClientRect(); //注释
 
-    const rect = originalNote.getBoundingClientRect();
+  //   expandedNoteStyle.value = {       //注释
+  //     ...expandedNoteStyle.value,     //注释
+  //     width: `${rect.width}px`,      //注释
+  //     height: `${rect.height}px`,     //注释
+  //     top: `${rect.top}px`,          //注释
+  //     left: `${rect.left}px`,         //注释
+  //     transform: 'scale(1)',          //注释
+  //     opacity: 0,                    //注释
+  //     transition: 'all 0.4s ease',    //注释
+  //   };                                 //注释
 
-    expandedNoteStyle.value = {
-      ...expandedNoteStyle.value, // Current expanded styles
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
-      top: `${rect.top}px`,
-      left: `${rect.left}px`,
-      transform: 'scale(1)',
-      opacity: 0,  // Fade out
-      transition: 'all 0.4s ease', // Smooth transition back
-    };
-
-    for (let segmentIndex in expandedStates) {
-        for (let userId in expandedStates[segmentIndex]) {
-            expandedStates[segmentIndex][userId] = false;
-        }
+  for (let segmentIndex in expandedStates) {
+    for (let userId in expandedStates[segmentIndex]) {
+      expandedStates[segmentIndex][userId] = false;
     }
-    overlayVisible.value = false; // Hide
+  }
+  overlayVisible.value = false;
 }
 
-function getSegmentAndUserIdFromExpanded(){
-    for (let segmentIndex in expandedStates) {
-        for (let userId in expandedStates[segmentIndex]) {
-            if(expandedStates[segmentIndex][userId] === true){
-                return {segmentIndex: segmentIndex, userId: userId}
-            }
-        }
+function getSegmentAndUserIdFromExpanded() {
+  for (let segmentIndex in expandedStates) {
+    for (let userId in expandedStates[segmentIndex]) {
+      if (expandedStates[segmentIndex][userId] === true) {
+        return { segmentIndex: segmentIndex, userId: userId };
+      }
     }
-    return {segmentIndex: null, userId: null};
+  }
+  return { segmentIndex: null, userId: null };
+}
+
+async function getAllSummaries() {
+  summaryLoading.value = true;
+  const texts = processedData.value.map(segment =>
+    Object.values(segment).map(user => user.text).join(" ")
+  );
+
+  for (let i = 0; i < 5; i++) {
+    summaries[i] = '';
+  }
+
+  try {
+    const response = await fetch('http://localhost:8899/api/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+    let currentSegment = -1;
+
+    while (!done) {
+      const { value, done: readDone } = await reader.read();
+      done = readDone;
+      if (value) {
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+        for (const line of lines) {
+          let parsedLine;
+          try {
+            parsedLine = JSON.parse(line);
+          } catch (e) {
+            if (currentSegment >= 0) {
+              summaries[currentSegment] += line;
+            }
+            continue;
+          }
+
+          if (parsedLine.segment !== undefined) {
+            currentSegment = parsedLine.segment;
+          } else if (parsedLine.segment_end !== undefined) {
+            // 可以做些动画
+          } else if (parsedLine.error) {
+            summaries[currentSegment] = parsedLine.error;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('获取摘要出错:', err);
+    for (let i = 0; i < 5; i++) {
+      if (!summaries[i]) {
+        summaries[i] = '获取摘要失败';
+      }
+    }
+  } finally {
+    summaryLoading.value = false;
+  }
+}
+
+async function getAllKeywords() {
+  keywordLoading.value = true;
+  const texts = processedData.value.map(segment =>
+    Object.values(segment).map(user => user.text).join(" ")
+  );
+
+  for (let i = 0; i < 5; i++) {
+    keywords[i] = '';
+  }
+
+  try {
+    const response = await fetch('http://localhost:8899/api/extract_keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+    let currentSegment = -1;
+
+    while (!done) {
+      const { value, done: readDone } = await reader.read();
+      done = readDone;
+      if (value) {
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+        for (const line of lines) {
+          let parsedLine;
+          try {
+            parsedLine = JSON.parse(line);
+          } catch (e) {
+            if (currentSegment >= 0) {
+              keywords[currentSegment] += line;
+            }
+            continue;
+          }
+
+          if (parsedLine.segment !== undefined) {
+            currentSegment = parsedLine.segment;
+          } else if (parsedLine.segment_end !== undefined) {
+            // 可以做些动画
+          } else if (parsedLine.error) {
+            keywords[currentSegment] = parsedLine.error;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('获取关键词出错:', err);
+    for (let i = 0; i < 5; i++) {
+      if (!keywords[i]) {
+        keywords[i] = '获取失败';
+      }
+    }
+  } finally {
+    keywordLoading.value = false;
+  }
 }
 
 onMounted(fetchData);
 </script>
 
+
+
+
 <style scoped>
-/* ... (rest of your styles, unchanged) ... */
 .transcription-page {
   padding: 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -499,12 +687,10 @@ h1 {
   position: relative;
   overflow: hidden;
   border: 1px solid #ced4da;
-   transition:  box-shadow 0.3s ease;  /* 平滑过渡效果 */
+  transition: box-shadow 0.3s ease;
 }
 
-
 .note:hover {
-  /* transform: translateY(-5px); */
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
@@ -566,7 +752,7 @@ h1 {
   margin-bottom: 8px;
   display: block;
 }
-
+/*原样式保留,但默认不设置高度*/
 .optimized-text {
   color: #495057;
   line-height: 1.6;
@@ -574,64 +760,311 @@ h1 {
   white-space: pre-line;
 }
 
+/*优化md 样式*/
+.optimized-text p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.optimized-text h1 {
+font-size: 1.2em;
+margin-bottom: 0.4em;
+color: #444;
+}
+
+.optimized-text h2 {
+  font-size: 1.1em;
+  margin-bottom: 0.3em;
+  color: #555;
+}
+
+.optimized-text h3 {
+  font-size: 1em;
+  margin-bottom: 0.2em;
+  color: #666;
+}
+.optimized-text strong{
+font-weight: bold;
+}
+
+.optimized-text ul{
+list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 0;
+}
+
+.optimized-text ol {
+  list-style-type: decimal;
+  margin-left: 20px;
+  padding-left: 0;
+}
+.optimized-text  a {
+    color: #007bff;
+    text-decoration: none;
+  }
+.optimized-text  a:hover {
+      text-decoration: underline;
+}
+
+/* 行内代码 `code` */
+.optimized-text code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f8f9fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #d63384;
+}
+
 .optimize-all-btn {
-  background-color: #28a745;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin-bottom: 20px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+background-color: #28a745;
+color: white;
+padding: 10px 20px;
+border: none;
+border-radius: 8px;
+font-size: 16px;
+cursor: pointer;
+transition: background-color 0.3s ease;
+margin-bottom: 20px;
+display: block;
+margin-left: auto;
+margin-right: auto;
 }
 
 .optimize-all-btn:hover {
-  background-color: #218838;
+background-color: #218838;
 }
 
 .optimize-all-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
+background-color: #6c757d;
+cursor: not-allowed;
 }
 
 .optimized-text-scroll-wrapper {
-  max-height: 4.8em;
-  overflow-y: auto;
+  max-height: 200px; /* 设置最大高度 */
+  overflow-y: auto;  /* 超出时显示滚动条 */
   transition: max-height 0.3s ease;
   position: relative;
 }
-
-.optimized-text-scroll-wrapper.expanded-scroll {
-  max-height: none;
-  overflow-y: visible;
-}
+/*去掉原来得.expanded-scroll,不再需要*/
 
 .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    transition: opacity 0.4s ease; /* Add transition for opacity */
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 2000;
+  /* 移除transition */
 }
 
 .expanded-note {
-   position: absolute;
-   background-color: white;
-   padding: 20px;
-   border-radius: 12px;
-   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-   z-index: 2001;
-  transition: all 0.4s ease;
+position: relative; /* 改为 relative，不再需要 absolute */
+background-color: white;
+padding: 20px;
+border-radius: 12px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+z-index: 2001;
+  width: 80%; /* 或者你想要的宽度 */
+  max-width: 800px; /* 设置一个最大宽度 */
+  max-height: 80vh; /* 设置最大高度为视口高度的80% */
+  overflow-y: auto; /* 添加滚动条 */
+/* 移除 transition */
+}
+/* 优化后文本的 Markdown 样式（在展开的便签中） */
+.expanded-optimized-text {
+    /* 这里可以复制 .optimized-text 的所有样式 */
+    color: #495057;
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-line;
+    overflow-y: auto; /* 确保有滚动条 */
+    max-height: 60vh; /* 或者其他合适的高度 */
+}
 
+/*原样式保留,但默认不设置高度*/
+.expanded-optimized-text p {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+/* 调整 h1 样式 */
+/* 调整 h1 样式 */
+.expanded-optimized-text h1 {
+    font-size: 1.3em;    /* 减小字号，原为1.5em，根据你的截图，1.3em应该更合适 */
+    margin-bottom: 0.4em; /* 减小下边距，原为0.5em */
+    margin-top: 0.6em;     /* 适当增加上边距，与段落区分更清晰,原来是0.8em，现在减小一点 */
+    color: #444;
+    font-weight: bold;
+    line-height: 1.2;   /* 保持行高紧凑 */
+}
+
+/* 调整 h2 样式 */
+.expanded-optimized-text h2 {
+    font-size: 1.1em;  /* 进一步减小字号，原为1.2em */
+    margin-bottom: 0.3em; /* 减小下边距，原为0.4em */
+    margin-top: 0.5em;   /* 适当增加上边距,原来是0.6em,现在稍微减小一点*/
+    color: #555;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+/* 调整 h3 样式 */
+.expanded-optimized-text h3 {
+    font-size: 1em;   /* 字号保持不变, 原为1.1,现在改为1*/
+    margin-bottom: 0.2em; /* 原来也是0.3 保持不变*/
+    margin-top: 0.4em; /*原来也是0.5 保持不变*/
+    color: #666;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.expanded-optimized-text strong{
+    font-weight: bold;
+}
+
+.expanded-optimized-text ul{
+    list-style-type: disc;
+    margin-left: 20px;
+    padding-left: 0;
+}
+
+.expanded-optimized-text ol {
+    list-style-type: decimal;
+    margin-left: 20px;
+    padding-left: 0;
+}
+.expanded-optimized-text  a {
+        color: #007bff;
+        text-decoration: none;
+    }
+.expanded-optimized-text  a:hover {
+            text-decoration: underline;
+}
+
+/* 行内代码 `code` */
+.expanded-optimized-text code {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: #d63384;
+}
+
+
+  /* 新增：一键生成按钮的样式 */
+.global-buttons {
+  display: flex;
+  justify-content: center; /* 水平居中 */
+  margin-bottom: 20px;
+  gap: 10px; /* 按钮之间的间距 */
+}
+
+.summary-all-btn, .keyword-all-btn {
+  /* 移除之前的 float: left; */
+    padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.summary-all-btn{
+background-color: #007bff; /* 蓝色 */
+  color: white;
+}
+.keyword-all-btn{
+  background-color: #28a745; /* 绿色 */
+  color: white;
+}
+.summary-all-btn:hover{
+  background-color: #0056b3;
+}
+.keyword-all-btn:hover{
+    background-color: #218838;
+}
+
+
+/* 摘要和关键词卡片样式 */
+.summary-card, .keyword-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+    max-height: 200px; /* 添加最大高度 */
+    overflow-y: auto;  /* 添加垂直滚动 */
+}
+
+.card-label {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.summary-text, .keyword-text {
+    color: #555;
+    line-height: 1.5;
+     /*  .keyword-text，保留原来的样式 */
+}
+
+/* summary md渲染优化*/
+.summary-text p {
+    margin-top: 0;
+    margin-bottom: 1rem;
+     line-height: 1.5;
+}
+.summary-text h1 {
+  font-size: 1.2em;
+  margin-bottom: 0.4em;
+  color: #444;
+}
+
+.summary-text h2 {
+    font-size: 1.1em;
+    margin-bottom: 0.3em;
+    color: #555;
+}
+
+.summary-text h3 {
+    font-size: 1em;
+    margin-bottom: 0.2em;
+    color: #666;
+}
+.summary-text strong{
+  font-weight: bold;
+}
+
+.summary-text ul{
+  list-style-type: disc;
+    margin-left: 20px;
+    padding-left: 0;
+}
+
+.summary-text ol {
+    list-style-type: decimal;
+    margin-left: 20px;
+    padding-left: 0;
+}
+.summary-text  a {
+      color: #007bff;
+      text-decoration: none;
+    }
+.summary-text  a:hover {
+        text-decoration: underline;
+}
+
+/* 行内代码 `code` */
+.summary-text code {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: #d63384;
 }
 </style>
