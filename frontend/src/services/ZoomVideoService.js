@@ -368,8 +368,11 @@ async detachUserVideo(userId) {
     try {
       if (isAudioOn) {
         await this.stream.startAudio();
+        await this.stream.unmuteAudio();  // 确保能够听到其他人的声音
+        // this.stream.audioSettings.receiveAudio = true; // 确保可以接收音频
       } else {
-        await this.stream.stopAudio();
+        //await this.stream.stopAudio();
+        await this.stream.muteAudio(); 
       }
     } catch (error) {
       showSnackBar('切换音频失败');
@@ -381,13 +384,15 @@ async detachUserVideo(userId) {
     if (!this.sessionJoined || !this.stream) return false;
     try {
         const shareArea = document.querySelector('.speaker-area');
-        if (!shareArea) return false;
-
-        // 先清空
-        let oldVideo = document.getElementById('local-share-video');
-        let oldCanvas = document.getElementById('local-share-canvas');
-        if (oldVideo) oldVideo.remove();
-        if (oldCanvas) oldCanvas.remove();
+        if (!shareArea) {
+          console.error('Speaker area element not found');
+          return false;
+      }
+        //先清空
+        // let oldVideo = document.getElementById('local-share-video');
+        // let oldCanvas = document.getElementById('local-share-canvas');
+        // if (oldVideo) oldVideo.remove();
+        // if (oldCanvas) oldCanvas.remove();
 
         // 使用 nextTick 确保 DOM 更新
         await nextTick();
@@ -410,17 +415,19 @@ async detachUserVideo(userId) {
             shareVideo.style.width = '100%'; // 关键布局调整
             shareVideo.style.height = 'auto';
 
-            shareArea.innerHTML = ''; // 再次清空，确保安全
+            //  shareArea.innerHTML = '';// 再次清空，确保安全
+
             shareArea.appendChild(shareVideo);
             await this.stream.startShareScreen(shareVideo,shareOptions);
         } else {
             const shareCanvas = document.createElement('canvas');
             shareCanvas.id = 'local-share-canvas';
             shareCanvas.classList.add('video-element', 'share-video');
-            shareVideo.style.width = '100%'; // 关键布局调整
-            shareVideo.style.height = 'auto';
+            shareCanvas.style.width = '100%'; // 关键布局调整
+            shareCanvas.style.height = 'auto';
 
-            shareArea.innerHTML = '';// 再次清空，确保安全
+            // shareArea.innerHTML = '';// 再次清空，确保安全
+
             shareArea.appendChild(shareCanvas);
             await this.stream.startShareScreen(shareCanvas,shareOptions);
         }
@@ -436,7 +443,11 @@ async detachUserVideo(userId) {
     if (!this.sessionJoined || !this.stream) return;
     try {
       await this.stream.stopShareScreen(); // 先停止共享
-
+      // 清空共享区域
+        // const shareArea = document.querySelector('.speaker-area');
+        // if (shareArea) {
+        //     shareArea.innerHTML = ''; // 清空共享区域
+        // }
       // 再从 DOM 中移除
       const shareVideo = document.getElementById('local-share-video');
       if (shareVideo) shareVideo.remove();
@@ -454,7 +465,11 @@ async detachUserVideo(userId) {
       const shareArea = document.querySelector('.speaker-area');
       if (!shareArea) return;
       await this.stream.stopShareView();
-      shareArea.innerHTML = '';
+      // shareArea.innerHTML = '';
+      // 移除旧的共享内容
+      const oldCanvas = document.getElementById(`share-${userId}-canvas`);
+      if (oldCanvas) oldCanvas.remove();
+
       const shareCanvas = document.createElement('canvas');
       shareCanvas.id = `share-${userId}-canvas`;
       shareCanvas.classList.add('video-element', 'share-video');

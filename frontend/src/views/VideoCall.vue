@@ -109,8 +109,8 @@
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleTranscription" :class="{ active: isTranscribing }">
-  <img v-if="isTranscribing" src="@/assets/transcription_off.png" alt="停止转录" />
-  <img v-else src="@/assets/transcription_on.png" alt="开始转录" />
+  <img v-if="isTranscribing" src="@/assets/字幕_on_off.png" alt="停止转录" />
+  <img v-else src="@/assets/字幕_on.png" alt="开始转录" />
 </button>
 
             <button @click="toggleVideo" :class="{ active: isVideoOn }">
@@ -977,6 +977,15 @@ const toggleAudio = async () => {
  * - 仅本地共享，远端共享由 SDK 事件管理
  */
 const toggleScreenShare = async () => {
+   // 检查是否有人正在共享屏幕
+   if (someoneIsSharing.value && !isSharing.value) {
+    ElMessageBox.confirm('当前有人正在共享屏幕，请等待其结束后再共享。', '提示', {
+  confirmButtonText: '确定',
+  cancelButtonText: '取消',
+  type: 'warning',
+});
+    return;
+  }
   if (isSharing.value) {
     // 已在共享 => 停止共享
       await ZoomVideoService.stopLocalScreenShare();  // 先停止
