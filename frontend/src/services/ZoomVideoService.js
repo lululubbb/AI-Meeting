@@ -3,7 +3,7 @@ import ZoomVideo from '@zoom/videosdk';
 import axios from 'axios';
 import { showSnackBar } from '../utils/utils.js';
 import store from '../store'
-import { nextTick, inject} from 'vue';
+import { nextTick, inject } from 'vue';
 export const VideoQuality = {
   VIDEO_180P: 1,
   VIDEO_360P: 2,
@@ -12,6 +12,7 @@ export const VideoQuality = {
 };
 
 const DEPENDENT_ASSETS_PATH = 'Global';
+
 
 async function initializeZoomSDK(client) {
   const sysCheck = await ZoomVideo.checkSystemRequirements();
@@ -316,20 +317,28 @@ async sendMessageToUser(text, userId, timestamp) {
 
   async attachUserVideo(userId, videoQuality, element) {
     if (!this.sessionJoined || !this.stream) return null;
-try {
-   let elementToUse = typeof element === 'string' ? document.querySelector(element) : element;
-    if (!elementToUse) {
-        console.error('Invalid element or selector provided to attachUserVideo', element); //更详细的错误
-  return; // *不要* 抛出异常.
-   }
-
-await this.stream.attachVideo(userId, videoQuality, elementToUse); // 传入 elementToUse
-  return elementToUse;
-} catch (error) {
-        // *不要* 在这里处理 "user is not send video"，正常情况.
-          console.error('attachUserVideo error:', error, 'with element:', element);  // 更详细的日志
-         return null; //  不要抛出异常，防止阻塞其他用户
+    try {
+      let elementToUse = typeof element === 'string' ? document.querySelector(element) : element;
+     if (!elementToUse) {
+      console.error('Invalid element or selector provided to attachUserVideo:', element);
+    return; // 不要抛出异常，防止阻塞其他用户
     }
+      await this.stream.attachVideo(userId, videoQuality, elementToUse); // elementToUse
+     // 不需要返回 element，因为在 videocall.vue 中已经有了
+    } catch (error) {
+   // 只处理 SDK 的错误, 不要处理 "user is not send video"
+     console.error('attachUserVideo error:', error, 'with element:', element); // 更详细
+       return null; // *不要* throw, 让调用方处理
+  }
+}
+async detachUserVideo(userId) {
+  if (!this.sessionJoined || !this.stream) return;
+ try {
+   //  直接调用 SDK 的 detachVideo,  无需传入 video 元素
+  await this.stream.detachVideo(userId);
+   } catch (error) {
+   console.error('detachUserVideo error:', error);
+ }
 }
   
   async detachUserVideo(userId) {
@@ -359,10 +368,8 @@ await this.stream.attachVideo(userId, videoQuality, elementToUse); // 传入 ele
     try {
       if (isAudioOn) {
         await this.stream.startAudio();
-        await this.stream.unmuteAudio();  // 确保能够听到其他人的声音
-        this.stream.audioSettings.receiveAudio = true; // 确保可以接收音频
       } else {
-        await this.stream.muteAudio(); 
+        await this.stream.stopAudio();
       }
     } catch (error) {
       showSnackBar('切换音频失败');

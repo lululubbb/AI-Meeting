@@ -17,12 +17,8 @@
     <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
-      <div class="close-btn-wrapper">      
-      <button @click="goHome" class="close-btn" aria-label="关闭">
-          <img src="@/assets/exit.png" alt="退出" />
-        </button> 
-      </div>
-      <h1>视频会议</h1>
+  <span class="closeBtn" @click="goHome">×</span>
+  <h1>视频会议</h1>
 
   <!-- 创建/加入会议表单 -->
   <div v-if="mode === 'create'" class="input-group">
@@ -93,25 +89,23 @@
         </div>
 
           <!-- 演讲者/共享 大区域 -->
-        <video-player-container class="speaker-area">
+          <video-player-container class="speaker-area">
             <!-- 当没有人共享时，显示提示 -->
             <div v-if="!someoneIsSharing" class="speaker-placeholder">
               <p>当前无人共享</p>
             </div>
-        </video-player-container>
-      
-    <!-- 字幕容器 -->
-    <div class="subtitle-container" v-if="subtitles && subtitles.length > 0">
-      <div class="subtitle">
-        <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
-        <!-- <div class="subtitle-item"> -->
-          <span class="subtitle-user">{{ sub.userName }}: </span>
-          <span class="subtitle-text">{{ sub.text }}</span>
-          <!-- <span class="subtitle-user">发言人</span>
-          <span class="subtitle-text">字幕内容：这里是转录出来的字幕内容</span> -->
-        </div>
-      </div>
-    </div>
+            <!-- 字幕容器 -->
+            <!-- <div class="subtitle">
+              {{ subtitle }}
+            </div> -->
+            <div class="subtitle">
+  <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
+    <span class="subtitle-user">{{ sub.userName }}: </span>
+    <span class="subtitle-text">{{ sub.text }}</span>
+  </div>
+</div>
+          </video-player-container>
+
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleTranscription" :class="{ active: isTranscribing }">
@@ -310,6 +304,10 @@
       </div>
     </div>
   </main>
+  <!-- 字幕容器 -->
+<div class="subtitle">
+   {{ subtitle }}
+</div>
 
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
@@ -580,49 +578,44 @@ async function checkAndJoinFromConfig() {
 }
 
 // 视频渲染
-async function attachUserVideo(userId, videoQuality) {
-  if (!ZoomVideoService.sessionJoined || !ZoomVideoService.stream) return;
+// 视频渲染 (创建 <video-player> 元素, 交给 Zoom SDK 处理)
+  async function attachUserVideo(userId, videoQuality) {
+ if (!ZoomVideoService.sessionJoined || !ZoomVideoService.stream) return;
 
-  try {
-     // 1. 获取容器
-      const container = document.getElementById(`user-${userId}`);
-     if (!container) {
-        console.warn(`Container not found for user ${userId}`);
-         return; // 不存在, 直接返回, 不要抛出异常!
+ try {
+   // 1. 获取容器
+  const container = document.getElementById(`user-${userId}`);
+    if (!container) {
+    console.warn(`Container not found for user ${userId}`);
+        return;
      }
 
-     // 2.  清空容器 (重要!  防止重复添加)
-      container.innerHTML = '';
+      // 2. 清空容器内容
+     container.innerHTML = '';
 
-      // 3. 创建 <video-player> 元素 (Zoom SDK 需要这个)
-     const videoPlayer = document.createElement('video-player');
-    videoPlayer.classList.add('video-element');
+  // 3. 创建 <video-player> 元素, 并添加到 container 中
+  const videoPlayer = document.createElement('video-player');
+     videoPlayer.classList.add('video-element'); // 添加 CSS 类
+     container.appendChild(videoPlayer);
 
-    //  4. 添加到容器
-    container.appendChild(videoPlayer);
+   // 4. 调用 ZoomVideoService 去绑定视频流 (传入 userId, videoQuality 和 video-player的选择器)
+   await ZoomVideoService.attachUserVideo(userId, videoQuality, '.video-element');
+     } catch (error) {
+       console.error('attachUserVideo error:', error);
+    }
+   }
 
-     // 5. 调用 ZoomVideoService,  传入 videoQuality 和 video-player 的选择器.
-     await ZoomVideoService.attachUserVideo(userId, videoQuality, '.video-element');
-  } catch (error) {
-      // 这里捕获的是 video-player 相关错误, *不要* 在这里处理 "user is not send video"
-      // 那个错误是 ZoomVideoService.attachUserVideo 内部捕获的
-     console.error('attachUserVideo error:', error);
-  }
-}
-
-async function detachUserVideo(userId) {
-
-try{
-    const container = document.getElementById(`user-${userId}`);
-  if(container){
-  //  直接移除容器内的所有元素
-  container.innerHTML = '';
-  }
-await ZoomVideoService.detachUserVideo(userId); //  不再需要返回值
-}
-catch(e){
-  console.error("detachUserVideo error:", e);
-}
+   async function detachUserVideo(userId) {
+   try {
+       const container = document.getElementById(`user-${userId}`);
+    if (container) {
+       //  直接移除容器内的所有video-player元素
+      container.innerHTML = ''; //更彻底地清空, 不依赖具体的 class name 或者 id
+      }
+      await ZoomVideoService.detachUserVideo(userId); //  不需要具体的 element
+   } catch (error) {
+       console.error('detachUserVideo error:', error);
+ }
 }
 
 /* *********************
@@ -1635,25 +1628,8 @@ const endSession = async () => { //主持人结束会议
       const user = store.getters.getUser; // 获取当前用户信息
 
       // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
-   // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
-   if (isTranscribing.value) {
+      if (isTranscribing.value) {
           stopTranscription(); // 先停止转录 (重要!)
-
-           // 格式化 transcriptionHistory (重要!)
-          let formattedTranscription = [];
-           for (const date in transcriptionHistory.value) {
-               for(const userId in transcriptionHistory.value[date]){
-                   for(const item of transcriptionHistory.value[date][userId]){
-                       formattedTranscription.push({
-                           date: date,
-                           userId: userId, //  添加到这里
-                           userName: item.userName,
-                           time: item.time,
-                           text: item.text
-                       });
-                   }
-               }
-            }
 
           // 更新 Firestore
           if (user && config.meetingId) {
@@ -1662,7 +1638,7 @@ const endSession = async () => { //主持人结束会议
                   endTime: now,
                   participants: filteredUsers,
                   chatMessages: filteredChatMessages,
-                  transcriptionHistory: formattedTranscription //  保存格式化后的
+                  transcriptionHistory: transcriptionHistory.value // 新增：保存转录历史
               });
           }
       } else { // 添加 else 分支
@@ -1677,7 +1653,6 @@ const endSession = async () => { //主持人结束会议
               });
           }
       }
-
 
 
        ZoomVideoService.leaveSession(true); //  结束会议, 放到后面
@@ -1708,8 +1683,6 @@ function resetState() {
 转录方面
    ********************* */
 // videocall.vue  <script setup> 部分
-const maxLength = ref({}); //  { userId: maxLength }
-
 // 新增：转录历史记录
 const transcriptionHistory = ref({});
 // 新增：当前时间段 (用于标记当前正在记录的时间段)
@@ -1730,37 +1703,30 @@ const getCurrentDate = () => {
 };
 
 // 新增：将转录数据添加到历史记录的函数
-// 新增：将转录数据添加到历史记录的函数 (修改后)
 const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
-  const date = getCurrentDate(); // YYYY-MM-DD
-  //const timeslot = getCurrentTimeslot(); // 不需要 timeslot
+   const date = getCurrentDate(); // YYYY-MM-DD
+  const timeslot = getCurrentTimeslot(); // HH:mm-HH:mm
   const time = format(timestamp, 'HH:mm:ss'); // HH:mm:ss
-
   // 确保日期存在
   if (!transcriptionHistory.value[date]) {
     transcriptionHistory.value[date] = {};
   }
 
-  // // 确保时间段存在 (不再需要)
-  // if (!transcriptionHistory.value[date][timeslot]) {
-  //   transcriptionHistory.value[date][timeslot] = [];
-  // }
+  // 确保时间段存在
+  if (!transcriptionHistory.value[date][timeslot]) {
+    transcriptionHistory.value[date][timeslot] = [];
+  }
 
-    // 确保用户存在 (重要!)
-    if(!transcriptionHistory.value[date][userId]){
-        transcriptionHistory.value[date][userId] = [];
-    }
-
-  transcriptionHistory.value[date][userId].push({
-    //userId, //  userId 已经作为 key 了
+  transcriptionHistory.value[date][timeslot].push({
+    userId,
     userName,
     time,
     text
   });
 };
-
 const isTranscribing = ref(false);
 const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
+const subtitle = ref(''); // (已弃用)
 const transcriptionWs = ref(null); //  转录 WebSocket
 let audioContext = null;         //  全局的 AudioContext
 let scriptNode = null;          //  全局的 ScriptProcessorNode
@@ -1901,36 +1867,23 @@ const startTranscription = async () => {
       };
 
       transcriptionWs.value.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  const now = new Date();
+        const data = JSON.parse(event.data);
+        const now = new Date();
 
-  if (data.type === 'interim') {
-    if (!subtitles.value[data.userId]) {
-      subtitles.value[data.userId] = { userName: data.userName, text: '' };
-    }
-
-    const currentLength = data.text.length;
-    if (!maxLength.value[data.userId]) {
-      maxLength.value[data.userId] = 0;
-    }
-
-    if (currentLength > maxLength.value[data.userId]) {
-      //  更长了, 更新最长长度
-      maxLength.value[data.userId] = currentLength;
-      subtitles.value[data.userId].text = data.text; // 更新字幕
-    } else {
-        //  变短了, 说明上一个是完整句子 (伪 completed 事件)!
-        //  重要:  从 subtitles 中获取上一个文本
-        const previousText = subtitles.value[data.userId].text
-      addTranscriptionToHistory(data.userId, data.userName, previousText, now);
-
-      //  重置最长长度, 并更新当前文本 (新的句子开始了)
-      maxLength.value[data.userId] = currentLength;
-      subtitles.value[data.userId].text = data.text;
-    }
-  }
-};
-
+        if (data.type === 'interim') {
+          if (!subtitles.value[data.userId]) {
+            subtitles.value[data.userId] = { userName: data.userName, text: '' };
+          }
+          subtitles.value[data.userId].text = data.text;
+          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
+        } else if (data.type === 'final') {
+          if (!subtitles.value[data.userId]) {
+            subtitles.value[data.userId] = { userName: data.userName, text: '' };
+          }
+          subtitles.value[data.userId].text = data.text;
+          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
+        }
+      };
 
       transcriptionWs.value.onerror = (error) => {
         console.error('[Client] 转录 WebSocket 错误:', error);
@@ -2005,118 +1958,117 @@ SDK事件订阅
 
   // user-added 事件 (只添加/更新用户数据, 不渲染)
   client.on('user-added', async (userList) => {
-       if (!Array.isArray(userList)) return;
+      if (!Array.isArray(userList)) return;
+
         for (const user of userList) {
-           if(!users.value.find(u => u.userId === user.userId)){ //防止重复添加
+             // 防止重复添加
+             if (!users.value.find(u => u.userId === user.userId)) {
                console.log('[user-added] =>', user);
-                 // *关键修改*: 从 Firestore 获取用户信息 (包括头像)
-              let avatarUrl = defaultAvatar; // 默认头像
+                  // *关键修改*: 从 Firestore 获取用户信息 (包括头像)
+             let avatarUrl = defaultAvatar; // 默认头像
                try {
                 const userInfo = await FirestoreService.getUserInfo(user.userId); // 使用 Zoom 的 userId
-                 avatarUrl = userInfo?.avatarUrl || defaultAvatar; // 如果有, 用 Firestore 的; 否则用默认头像
+                avatarUrl = userInfo?.avatarUrl || defaultAvatar; // 如果有, 用 Firestore 的; 否则用默认头像
             } catch (error) {
-                  console.error('获取用户信息失败 (user-added):', error);
-               }
+                 console.error('获取用户信息失败 (user-added):', error);
+              }
             // *关键修改*:  在获取到 avatarUrl 之后,  再创建 newUser 对象
-             const newUser = {
-              userId: user.userId, // *** 重要 *** Zoom 的 userId (数值)
-              userName: user.displayName,
+              const newUser = {
+                userId: user.userId, // *** 重要 *** Zoom 的 userId (数值)
+               userName: user.displayName,
                role: user.isHost ? 'host' : 'participant',
-                joinTime: new Date(),
-                leaveTime: null,
-               avatarUrl: avatarUrl, //  *关键*:  使用获取到的头像 URL
-               hasVideo: {
-                  initial: user.bVideoOn,
-                  final: user.bVideoOn,  //初始状态就用final
-                   timeline: [{ time: Date.now(), value: user.bVideoOn }],
-                 },
-              isAudioOn: {
-                    initial: true,
+               joinTime: new Date(),
+               leaveTime: null,
+                avatarUrl: avatarUrl, //  *关键*:  使用获取到的头像 URL
+                hasVideo: {
+               initial: user.bVideoOn,
+               final: user.bVideoOn,
+                 timeline: [{ time: Date.now(), value: user.bVideoOn }],
+              },
+                isAudioOn: {
+                 initial: true, // 假设默认开启音频
                    final: true,
-                    timeline: [{time: Date.now(), value:true}]
-               },
-                 isSharing: {
-                    initial: user.sharerOn,
-                    final: user.sharerOn,
-                    timeline: [{time: Date.now(), value: user.sharerOn}]
-               },
-                messagesSent: 0,
-                hostId: config.hostId,  // *重要*: 所有用户都记录 hostId, 方便后续查询
+                  timeline: [{ time: Date.now(), value: true }]
+                },
+             isSharing: {
+              initial: user.sharerOn,
+               final: user.sharerOn,
+                 timeline: [{ time: Date.now(), value: user.sharerOn }]
+                 },
+          messagesSent: 0,
+           hostId: config.hostId,  // *重要*: 所有用户都记录 hostId, 方便后续查询
                 uploads: 0,   //
-                downloads: 0,  //
+               downloads: 0,  //
               };
-             // *关键*:  在获取 avatarUrl 之后,  再添加到 users 和 Vuex
-              if (!users.value.find(u => u.userId === newUser.userId)) {
-                   users.value.push(newUser);
-                    // *关键*: 更新 store.state.usersInMeeting.  在添加到 users 之后执行。
-                  store.dispatch('updateUserAvatarInMeeting', {
-                      userId: user.userId,
-                       avatarUrl: avatarUrl
-                 });
+             // *关键*: 更新 store.state.usersInMeeting.  在添加到 users 之后执行。
+            if (!users.value.find(u => u.userId === newUser.userId)) {
+               users.value.push(newUser); // *必须* 在 dispatch 之前添加.  因为 dispatch 会触发视图更新, 那时 users 必须已经是最新的
+            // *关键*:  dispatch action,  更新 Vuex 中的 usersInMeeting, user-added中会从firestore中获取信息
+               store.dispatch('updateUserAvatarInMeeting', {
+            userId: user.userId,
+               avatarUrl: avatarUrl
+               });
                }
-           // 新增 (或移动到这里):
-             const zoomUserId = user.userId;
-             const firebaseUid = store.state.user.uid; // 当前登录用户的 uid
-
-            // 只处理当前登录用户的信息,其他用户不用处理，只用获取头像即可
-            if(zoomUserId == currentUserId.value){
-               if (firebaseUid) {
-               try {
-                    await FirestoreService.updateUserZoomId(firebaseUid, zoomUserId);
-               } catch (error) {
-                   console.error("存储 Zoom userId 失败 (user-added):", error);
-                }
-               }
-               }
-
-                // 如果当前用户是主持人，更新 host 的 participants 字段
-            if (isHost.value) {
-            const loginUser = store.getters.getUser;
+               const zoomUserId = user.userId;
+               const firebaseUid = store.state.user.uid;
+              // 只处理当前登录用户的信息,其他用户不用处理，只用获取头像即可
+             if(zoomUserId == currentUserId.value){
+              if (firebaseUid) {
+                try {
+                  await FirestoreService.updateUserZoomId(firebaseUid, zoomUserId);
+                   } catch (error) {
+                  console.error("存储 Zoom userId 失败 (user-added):", error);
+                    }
+                 }
+              }
+              if (isHost.value) {
+                const loginUser = store.getters.getUser;
               if (loginUser && config.meetingId) {
-               try {
-                     // 过滤 undefined, *包括* timeline 数组中的 undefined
-                  const filteredUsers = users.value.map(userData => {
-                   const filteredUser = { ...userData }; //  浅拷贝
+                  try {
+                         // 过滤 undefined, *包括* timeline 数组中的 undefined
+                const filteredUsers = users.value.map(userData => {
+                  const filteredUser = { ...userData }; //  浅拷贝
 
                     // 深度过滤
-                   function deepFilter(obj) {
-                      for (const key in obj) {
-                        if (obj.hasOwnProperty(key)) {
-                           if (obj[key] === undefined) {
-                             delete obj[key]; // 删除 undefined 属性
-                           } else if (Array.isArray(obj[key])) {
-                             // 过滤数组中的 undefined 元素
+                    function deepFilter(obj) {
+                           for (const key in obj) {
+                         if (obj.hasOwnProperty(key)) {
+                            if (obj[key] === undefined) {
+                          delete obj[key]; // 删除 undefined 属性
+                              } else if (Array.isArray(obj[key])) {
+                            // 过滤数组中的 undefined 元素
                             obj[key] = obj[key].filter(item => item !== undefined);
-                           // 如果数组是 timeline, 进一步检查
-                             if (key === 'timeline') {
-                               obj[key] = obj[key].filter(item => {
-                                 return item !== null && typeof item === 'object' && Object.values(item).every(val => val !== undefined);
-                                })
-                             }
+                       // 如果数组是 timeline, 进一步检查
+                                if (key === 'timeline') {
+                                   obj[key] = obj[key].filter(item => {
+                                      return item !== null && typeof item === 'object' && Object.values(item).every(val => val !== undefined);
+                                       })
+                                 }
 
-                            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-                              deepFilter(obj[key]); // 递归处理嵌套对象
-                             }
-                        }
+                           } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                             deepFilter(obj[key]); // 递归处理嵌套对象
+                         }
                        }
-                       return obj;
-                   }
+                         }
+                        return obj;
+                     }
                   return deepFilter(filteredUser); // 返回过滤后的对象
                 });
-                    await FirestoreService.updateMeetingHistory(
-                         loginUser.uid,
-                       config.meetingId,
-                       { participants: filteredUsers }
-                 );
+                  await FirestoreService.updateMeetingHistory(
+                       loginUser.uid,
+                        config.meetingId,
+                         { participants: filteredUsers }
+                       );
 
               } catch (err) {
-                   console.error('更新会议信息失败 (user-added, host):', err);
-                }
+                 console.error('更新会议信息失败 (user-added, host):', err);
+                   }
+                  }
+              }
          }
-          }
-        }
-       }      
-   });
+       }
+     });
+   
   
 
    client.on('user-removed', async (userList) => {
@@ -2156,21 +2108,21 @@ SDK事件订阅
 
 
      client.on('peer-video-state-change', async ({ action, userId }) => {
-    console.log('[peer-video-state-change]', action, ' user=', userId);
-      const userObj = users.value.find(u => u.userId === userId);
-        if (!userObj) return;
-      const now = Date.now();
-    if (action === 'Start') {
-        userObj.hasVideo.final = true;
+       console.log('[peer-video-state-change]', action, ' user=', userId);
+       const userObj = users.value.find(u => u.userId === userId);
+     if (!userObj) return;
+       const now = Date.now();
+     if (action === 'Start') {
+       userObj.hasVideo.final = true; //  更新状态
         userObj.hasVideo.timeline.push({ time: now, value: true }); // 更新时间线
-         // 在这里 *不要* 调用 attach, watchEffect 会处理。
-          //重点！：只更新数据, 不执行DOM操作
+      // 在这里 *不要* 调用 attach, watchEffect 会处理。
+         //重点！：只更新数据, 不执行DOM操作
     } else if (action === 'Stop') {
-        userObj.hasVideo.final = false;
-        userObj.hasVideo.timeline.push({ time: now, value: false });// 更新时间线
-         // 在这里调用 detachUserVideo
-          detachUserVideo(userId);
-    }
+          userObj.hasVideo.final = false;   //  更新状态
+         userObj.hasVideo.timeline.push({ time: now, value: false });// 更新时间线
+       // 在这里调用 detachUserVideo
+        detachUserVideo(userId);
+     }
   });
 
   /**
@@ -2358,11 +2310,10 @@ main {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
+  background-color: #f7f7f7;
   position: relative;
-  margin-top:-50px;
+  margin: 0;
 }
-
 .return-icon-button {
    position: absolute;
     bottom: 10px;
@@ -2372,7 +2323,6 @@ main {
    padding: 0;/* 移除 padding */
    border: none;
    border-radius: 50%;/* 圆形按钮 */
-   background:transparent;
     width: 45px;/* 调整大小 */
     height: 45px;
    display: flex;  /* 使用 flex 布局 */
@@ -2384,7 +2334,6 @@ main {
    z-index: 1002;
 transition: background-color 0.3s;  /* 添加过渡效果 */
 }
-
 .return-icon-button:hover .icon {
   opacity: 1; /* 鼠标悬停时完全不透明 */
 }
@@ -2399,45 +2348,30 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   opacity: 0.7; /* 设置透明度为 80% */
   transition: opacity 0.3s; /* 可选：添加平滑过渡 */
 }
-
-.close-btn {
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.3s;
-}
-
-.close-btn img {
-  width: 25px;
-  height: 25px;
-}
-
-.close-btn:hover {
-  transform: rotate(90deg);
-}
-/* 关闭按钮样式 */
-.close-btn-wrapper {
+.closeBtn {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  z-index: 199;
+  top: 10px;
+  right: 20px;
+  background: none;
   border: none;
+  font-size: 20px;
   cursor: pointer;
-  transition: transform 0.3s;
+  color: #666;
+}
+
+.closeBtn:hover {
+  color: #e53935;
 }
 
 #action-flow {
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  padding: 30px 40px 40px;
-  border-radius: 15px;
-  box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   text-align: center;
-  max-width: 700px;
-  max-height: 80%;
+  max-width: 500px;
   width: 100%;
-  box-sizing: border-box;
   position: relative;
-  margin: 0;
 }
 
 #action-flow h1 {
@@ -2459,7 +2393,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
 
 .input-group input,
 .input-group select {
-  width: 98%;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -2478,7 +2412,6 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   justify-content: center;
   gap: 20px;
 }
-
 .controls button {
   background-color: #333;
   color: #fff;
@@ -2630,14 +2563,6 @@ video-player-container.participant-tile {
   border-radius: 4px;
 }
 
-.main-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  height: 100vh;
-}
-
 video-player-container.speaker-area {
   flex: 1;
   background: #000;
@@ -2653,50 +2578,6 @@ video-player-container.speaker-area {
   text-align: center;
   padding: 20px;
 }
-
-/* 字幕容器 */
-.subtitle-container {
-  position: absolute;
-  bottom: 80px; /* 控制栏高度 + 间距 */
-  left: 0;
-  right: 0;
-  z-index: 100;
-  padding: 0 20px;
-}
-
-/* 字幕样式 */
-.subtitle {
-  background: rgba(241, 241, 241, 0.219);
-  color: #fff;
-  padding: 3px 20px;
-  border-radius: 12px;
-  max-width: 800px;
-  margin: 3px auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  
-  /* 新增字幕项样式 */
-  .subtitle-item {
-    display: flex;
-    gap: 12px;
-    line-height: 1.6;
-  }
-
-  .subtitle-user {
-    color: #00aaff;
-    font-weight: 500;
-    flex-shrink: 0;
-  }
-
-  .subtitle-text {
-    flex: 1;
-    font-size: x;
-    color: #fff;
-  -webkit-text-stroke: 1.3px #000;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  paint-order: stroke fill;  }
-}
-
 
 /* 让共享的画面只在 .speaker-area 区域内等比例缩放 */
 video.video-element.share-video,
@@ -2717,6 +2598,8 @@ canvas.video-element.share-video {
   justify-content: center;
   gap: 12px;
 }
+
+
 
 .controls button.active {
   background-color: #1a73e8;
@@ -2857,7 +2740,23 @@ canvas.video-element.share-video {
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
     }
 
-
+    .subtitle {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
+  color: #fff;
+  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
+  border-radius: 8px; /* 稍微增大圆角，更美观 */
+  max-width: 90%; /* 增大最大宽度，适应更多内容 */
+  text-align: center;
+  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
+  white-space: normal; /* 自动换行，无需强制保留空白符 */
+  word-break: break-word; /* 更好的长单词断行处理 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
+  z-index: 100; /* 确保字幕在其他内容之上 */
+}
 
   #transcriptionContainer {
     width: 100%;
@@ -3154,8 +3053,9 @@ canvas.video-element.share-video {
   background-color: white;
   border: 1px solid #ccc;
   z-index: 100;      /*  重要, 比其他页面高, 但比 Header, AIFloatingChat 低 */
-  overflow: hidden; 
-  border: none;         /* 确保内容不会溢出 */
+  overflow: hidden;          /* 确保内容不会溢出 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
   min-width: 300px;
   min-height: 200px;
   transition: all 0.3s ease; /* 平滑过渡 */
