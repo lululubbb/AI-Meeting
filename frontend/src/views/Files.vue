@@ -497,6 +497,8 @@ onMounted(() => {
     /* background-color: #f8f9fa; */
     background-color: var(--background-color);
     min-height: 80vh; /* 增加最小高度 */
+    scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
   }
   
   /* 标题 */
@@ -572,7 +574,9 @@ onMounted(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 30px;
-    overflow: visible;;
+    overflow: visible;
+    scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
   }
   
   /* 分割线 */
@@ -591,7 +595,8 @@ onMounted(() => {
   overflow-y: auto;
   border-radius: 15px;
   position: relative;  
-  }
+  
+}
 
   .table-wrapper {
   overflow-x: auto;

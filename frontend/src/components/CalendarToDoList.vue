@@ -392,6 +392,8 @@ const updateTodo =async (todo) => {
   max-width: 100%;
   padding: 5px;
   margin-top: 30px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 .calendar {
@@ -400,6 +402,8 @@ box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 border-radius: 8px; 
 width:90%;
 font-size: 14px;
+scrollbar-width: none; /* Firefox */
+-ms-overflow-style: none; /* IE/Edge */
 }
 
 .todo-list h2 {

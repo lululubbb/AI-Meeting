@@ -165,6 +165,8 @@ export default {
   padding: 10px;
   margin:5px;
   margin-top: 10px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 .recent-activity-card {
   width: 90%;

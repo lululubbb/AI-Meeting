@@ -34,13 +34,17 @@
         @click="showMeetingDetails(meeting)"
       >
         <!-- 会议列表项内容 -->
+      <div class="meeting-info">
         <strong>📅 会议名称:</strong> {{ meeting.sessionName }} <br />
         <strong>👤 创建人员:</strong> {{ meeting.hostName }} <br />
         <strong>🕒 创建时间:</strong> {{ formatDate(meeting.startTime) }} <br />
         <strong>📊 会议状态:</strong> {{ meeting.status }}<br />
         <strong>⏰ 结束时间:</strong> {{ formatDate(meeting.endTime) }}
+      </div>
         <!-- 添加跳转按钮 (在会议列表项内部)-->
-         <button @click.stop="goToMeetingShow(meeting.meetingId)">📜 会议展示</button>
+        <button  class="meeting-show-btn" @click.stop="goToMeetingShow(meeting.meetingId)">
+          📋 会议展示
+        </button>
       </li>
     </ul>
 
@@ -56,13 +60,14 @@
 
     
     <!-- 会议详情 -->
-    <div v-if="showModal" class="meeting-detail-modal">
+    <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
+      <div class="meeting-detail-modal" @click.stop>
       <div id="meetingDetails">
         <!-- <span class="closeBtn" @click="closeModal">×</span> -->
         <button @click="closeModal" class="close-btn" aria-label="关闭">
           <img src="@/assets/exit.png" alt="退出" />
         </button>
-        <h3>📋 会议详情</h3>
+        <h2>📋 会议详情</h2>
         <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
         <p><strong>👤 发起人:</strong> {{ selectedMeeting.hostName }}</p>
@@ -76,42 +81,46 @@
             <img src="@/assets/download.png" alt="下载" />
           </button>
         </div>
-
+<!-- 
 
         <div class="function-buttons">
           <button @click="showSection('record')">📝 会议记录</button>
           <button @click="showSection('keywords')">🔑 关键提取</button>
           <button @click="showSection('sentiment')">❤️ 情感分析&词云图</button>
           <button @click="showSection('statistics')">📊 参会统计</button>
-        </div>
+        </div> -->
 
 
         <!-- 动态内容区域：record 部分修改 -->
-        <div v-if="activeSection === 'record'" class="section-content">
-          <div v-if="selectedMeeting.status === 'finished'">
+        <!-- <div v-if="activeSection === 'record'" class="section-content">
+          <div v-if="selectedMeeting.status === 'finished'"> -->
+
             <!-- 使用 MeetingShow 组件展示会议记录 -->
-            <MeetingShow :meeting-id="selectedMeeting.meetingId" />
+            <!-- <MeetingShow :meeting-id="selectedMeeting.meetingId" />
             <button @click="downloadMeetingRecord" class="share">📤 分享</button>
           </div>
           <div v-else class="info-message">
             🕒 会议未结束，无法查看记录。
           </div>
-        </div>
+        </div> -->
 
 
-        <div v-if="activeSection === 'keywords'" class="section-content">
+        <!-- <div v-if="activeSection === 'keywords'" class="section-content"> -->
+
           <!-- 关键提取的内容 -->
-           <div v-if="selectedMeeting.status === 'finished'">
+           <!-- <div v-if="selectedMeeting.status === 'finished'"> -->
+
             <!-- 表情点击触发摘要生成 -->
-            <div class="icon-container" @click="generateStreamedSummary">
+            <!-- <div class="icon-container" @click="generateStreamedSummary"> -->
+
               <!-- 显示不同状态的表情 -->
-              <span class="summary-icon">
+              <!-- <span class="summary-icon">
                 {{ isLoadingSummary ? '⏳ 生成中...' : '✨ 点击生成摘要' }}
               </span>
-            </div>
+            </div> -->
 
             <!-- 展示流式摘要 -->
-            <div v-if="summary" class="summary-output">
+            <!-- <div v-if="summary" class="summary-output">
               <p><strong>📝 摘要:</strong></p>
               <p>{{ summary }}</p>
               <button @click="downloadKeywordsSummary" class="share">📤分享</button>
@@ -120,12 +129,10 @@
           <div v-else class="info-message">
              会议未结束，无法生成摘要。
           </div>
-        </div>
+        </div> -->
 
-        <div v-if="activeSection === 'sentiment'" class="section-content">
-                <!-- 情感分析&词云图的内容 -->
+        <!-- <div v-if="activeSection === 'sentiment'" class="section-content">
           <div v-if="selectedMeeting.status === 'finished'">
-            <!-- 展示后端返回的图表 -->
             <div v-if="sentimentImages.wordcloud" class="chart-container">
               <h4>☁️ 词云图</h4>
               <img :src="sentimentImages.wordcloud" alt="词云图" />
@@ -146,9 +153,10 @@
           <div v-else class="info-message">
             🕒 会议未结束，无法查看情感分析。
           </div>
-        </div>
+        </div> -->
 
-        <div v-if="activeSection === 'statistics'" class="section-content">
+        <!-- <div v-if="activeSection === 'statistics'" class="section-content"> -->
+          <div class="section-content">
           <!-- 参会统计的内容 -->
           <div v-if="selectedMeeting.status === 'finished'">
             <!--          <p>📈 参会统计内容...</p>-->
@@ -267,7 +275,6 @@
               </button>
             </div>
             <div v-if="selectedMeeting.chatMessages && selectedMeeting.chatMessages.length > 0">
-
               <div v-for="(msg, index) in selectedMeeting.chatMessages" :key="index" class="chat-message">
                 <p>
                   <strong>{{ msg.senderName }}</strong>
@@ -284,7 +291,6 @@
             <div v-else>
                 <p>暂无聊天记录</p>
             </div>
-
           </div>
           <div v-else class="info-message">
             🕒 会议未结束，无法查看参会统计
@@ -292,7 +298,8 @@
         </div>
       </div>
     </div>
-    
+  </div>
+
     <div class="modal-overlay" v-if="showExplanation" @click.self="hideExplanationModal">
     <div class="modal-content"  @click.stop>
       <button @click="hideExplanationModal" class="close-btn" aria-label="关闭">
@@ -1385,13 +1392,15 @@ body {
   position: relative;
   overflow-y: auto;
   color: #000;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 .history-container h2 {
   text-align: center;
   color: var(--text-color);
   margin-bottom: 25px;
-  font-size: 28px;
+  font-size: 27px;
 }
 
 /* 搜索框样式 */
@@ -1465,7 +1474,40 @@ body {
   border: 1px solid #e0e0e0;
   transition: box-shadow 0.3s, border-color 0.3s;
   cursor: pointer;
+}
 
+.meeting-list li {
+  display: flex; /* 水平排列 */
+  justify-content: space-between; /* 内容靠左，按钮靠右 */
+  align-items: center; /* 垂直居中 */
+  background-color: #fdfdfd;
+  color: #000;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  transition: box-shadow 0.3s, border-color 0.3s;
+  cursor: pointer;
+}
+.meeting-show-btn {
+  background-color: #feebba; /* 浅紫色 */
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.meeting-show-btn:hover {
+  background-color: #fedc85; /* 深一点的紫色 */
+  transform: translateY(-2px);
+}
+
+.meeting-show-btn:active {
+  transform: translateY(0);
 }
 
 .meeting-list li:hover {
@@ -1477,7 +1519,14 @@ body {
    background-color: #e6f7ff; /* 浅蓝色背景 */
    border-color: #91d5ff;
  }
- .load-more-btn {
+
+.meeting-info {
+  flex: 1; /* 占据剩余空间 */
+  margin-right: 20px; /* 与按钮的间距 */
+}
+
+
+.load-more-btn {
   display: block;
   margin: 20px auto;
   padding: 10px 20px;
@@ -1572,11 +1621,18 @@ body {
   z-index: 100;
   width: 90%;
   max-width: 900px;
-  max-height: 85%;
+  max-height: 90%;
   overflow-y: auto;
   border-radius: 15px;
   animation: fadeIn 0.3s ease-in-out;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
+
+.meeting-detail-modal::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translate(-50%, -60%); }
   to { opacity: 1; transform: translate(-50%, -50%); }
@@ -1596,7 +1652,7 @@ body {
   text-align: center;
   color: #007BFF;
   margin-bottom: 20px;
-  font-size: 22px;
+  font-size: 20px;
 }
 
 #meetingDetails p {
@@ -1684,9 +1740,9 @@ body {
 
 /* 内容区域样式 */
 .section-content {
-  margin-top: 25px;
-  padding: 20px;
-  background-color: #fafafa;
+  margin-top: 10px;
+  padding:10px 20px ;
+  background-color: #fcfcfc55;
   border-radius: 10px;
   border: 1px solid #ddd; /* 添加边框 */
   transition: background-color 0.3s, border-color 0.3s;

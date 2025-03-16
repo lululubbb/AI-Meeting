@@ -100,7 +100,8 @@ const navigateToHistoryMeeting = () => {
   /* background-color: #ffffff; */
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
-  
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 .main-layout {
   display: flex;
@@ -108,6 +109,8 @@ const navigateToHistoryMeeting = () => {
   overflow: hidden;
   flex-wrap: nowrap;
   overflow: auto; 
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 .options {
@@ -141,6 +144,7 @@ const navigateToHistoryMeeting = () => {
   overflow: auto; 
   scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
   scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
+
 }
 
 /* 右侧部分 */
@@ -153,6 +157,8 @@ const navigateToHistoryMeeting = () => {
   overflow: auto; 
   scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
   scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 

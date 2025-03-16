@@ -91,7 +91,7 @@ const routes = [
   },
     // 新增 MeetingShow 路由
   {
-    path: '/transcription/:meetingId',  // 动态路由参数
+    path: '/MeetingReview/:meetingId',  // 动态路由参数
     name: 'Transcription',             // 路由名称
     component: MeetingShow,              // 对应的组件
     meta: { requiresAuth: true }      // 添加路由元信息，表示需要身份验证

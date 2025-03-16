@@ -232,6 +232,8 @@ html, #app {
   padding: 0;
   height: 100%;
   border: none;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 #app {
