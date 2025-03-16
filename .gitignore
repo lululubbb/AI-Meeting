@@ -31,6 +31,7 @@ node_modules
 
 frontend/package-lock.json
 frontend/package-lock.json
+ai-meeting-introduction/.nuxt/
 backend\src\uploads
 backend\avatar
 backend/avatar/qnJiyTTmLEZ7naW5w27kahS2Bk92/1741852797003.jpg
