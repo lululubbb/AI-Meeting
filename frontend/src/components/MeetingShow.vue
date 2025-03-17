@@ -1128,7 +1128,7 @@ margin-right: auto;
 }
 
 .optimize-all-btn:disabled {
-background-color: #6c757d;
+background-color: #bee1ff;
 cursor: not-allowed;
 }
 

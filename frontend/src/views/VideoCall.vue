@@ -109,8 +109,8 @@
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleTranscription" :class="{ active: isTranscribing }">
-  <img v-if="isTranscribing" src="@/assets/字幕_on_off.png" alt="停止转录" />
-  <img v-else src="@/assets/字幕_on.png" alt="开始转录" />
+  <img v-if="isTranscribing" src="@/assets/字幕_on.png" alt="停止转录" />
+  <img v-else src="@/assets/字幕_off.png" alt="开始转录" />
 </button>
 
             <button @click="toggleVideo" :class="{ active: isVideoOn }">
@@ -122,8 +122,8 @@
               <img v-else src="@/assets/audio_off.png" alt="静音" />
             </button>
             <button @click="toggleScreenShare" :class="{ active: isSharing }">
-              <img v-if="isSharing" src="@/assets/share_off.png" alt="停止共享屏幕" />
-              <img v-else src="@/assets/share_on.png" alt="共享屏幕" />
+              <img v-if="isSharing" src="@/assets/share_on.png" alt="停止共享屏幕" />
+              <img v-else src="@/assets/share_off.png" alt="共享屏幕" />
             </button>
             <!-- 服务质量按钮 -->
             <button @click="toggleServiceQuality" :class="{ active: showServiceQuality }">
