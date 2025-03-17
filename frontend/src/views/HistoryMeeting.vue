@@ -1639,7 +1639,7 @@ body {
 }
 
 #meetingDetails {
-  padding: 10px;
+  padding: 20px;
   background-color: #ffffff;
   border-radius: 10px;
   box-shadow: var(--global-box-shadow); 
@@ -1756,9 +1756,9 @@ body {
 
 .info-message {
   text-align: center;
-  color: #ff4d4f; /* 使用 Element Plus 的错误色 */
-  font-size: 18px;
-  margin-top: 15px;
+  color: #ff5f62; /* 使用 Element Plus 的错误色 */
+  font-size: 17px;
+  margin-top: 0；
 }
 
 /* 图表容器样式 */

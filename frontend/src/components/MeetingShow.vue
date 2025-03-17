@@ -1,22 +1,37 @@
 <template>
   <div class="transcription-page">
-    <h1>会议转录记录</h1>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+      <ul>
+        <li><a href="#overview">会议总览</a></li>
+        <li><a href="#content">会议内容记录</a></li>
+        <li><a href="#summary">会议整理</a></li>
+      </ul>
+    </nav>
+
+    <!-- 会议总览 -->
+    <section id="overview">
+    <h2>会议总览</h2>
     <div class="timeline-container">
       <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
         <span class="emoji">{{ segment.emoji }}</span>
         <span class="time">{{ formatTime(segment.start) }} - {{ formatTime(segment.end) }}</span>
       </div>
     </div>
-    
+    </section>
 
 
     <!-- ECharts 图表 -->
-    <EChartsBar :chartData="chartData" v-if="chartData" />
-
+    <div class="echart-container">
+    <EChartsBar ref="echart" :chartData="chartData" v-if="chartData"/>
+    </div>
     <div v-if="isLoading">加载中...</div>
     <div v-else-if="error">{{ error }}</div>
     <div v-else-if="transcriptionData && transcriptionData.length > 0">
 
+    <!-- 会议内容记录 -->
+    <section id="content">  
+    <h2>会议内容记录</h2>
       <!-- 优化按钮 (全局) -->
       <button @click="startAllOptimization" :disabled="allOptimizationStarted" class="optimize-all-btn">
         一键优化
@@ -40,6 +55,7 @@
             {{ wordCloudLoading ? '生成中...' : '生成词云' }}
           </button>
       </div>
+
       <!-- 内容区域 -->
       <div class="content-container">
           <!-- ... 其他内容 ... -->
@@ -79,25 +95,34 @@
             </div>
           </div>
         </div>
+    </section>  
+
+    <section id="summary">
        <!-- 会议整体摘要卡片 -->
+       <h2>会议整理</h2>
       <div v-if="overallSummary" class="overall-summary-card">
-          <p class="card-label">会议整体摘要:</p>
+        <h3>会议整体摘要</h3>
+          <!-- <p class="card-label">会议整体摘要:</p> -->
           <p class="summary-text" v-html="processedOverallSummary"></p>
       </div>
+
      <!-- 待办事项和词云的容器 -->
       <div class="todos-wordcloud-container">
         <!-- 会议待办与拓展卡片 -->
         <div v-if="todosAndExtensions" class="todos-card">
-            <p class="card-label">会议待办与拓展:</p>
+            <h3>会议待办</h3>
+            <!-- <p class="card-label">会议待办与拓展:</p> -->
             <p class="summary-text" v-html="processedTodosAndExtensions"></p>
         </div>
 
         <!-- 新增：词云显示区域 -->
         <div v-if="wordCloudData && wordCloudData.length > 0" class="wordcloud-card">
-            <p class="card-label">词云:</p>
+            <h3>会议词云</h3>
+            <!-- <p class="card-label">词云:</p> -->
             <WordCloud :wordData="wordCloudData" />
         </div>
       </div>
+    </section>
     </div>
     <div v-else>没有转录数据。</div>
   </div>
@@ -125,7 +150,7 @@
 
 
 <script setup>
-import { ref, onMounted, computed, reactive, nextTick, watch } from 'vue';
+import { ref, onMounted, computed, reactive, nextTick, watch, onUnmounted } from 'vue';
 import FirestoreService from '../services/FirestoreService.js';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
@@ -179,6 +204,18 @@ const todosLoading = ref(false);
 const wordCloudData = ref([]);
 const wordCloudLoading = ref(false);
 
+const echart = ref(null);
+
+// 监听窗口大小变化
+const handleResize = () => {
+  if (echart.value) {
+    echart.value.resize(); // 调用 ECharts 的 resize 方法
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
 
 // 创建一个计算属性来处理 Markdown 转换
 const processedSummaries = computed(() => {
@@ -776,7 +813,7 @@ async function generateWordCloud() {
         const data = await response.json();
         wordCloudData.value = data; // 更新词云数据
         console.log('词云数据 (展开):', ...wordCloudData.value); // 使用展开运算符
-console.log('词云数据 (第一个元素):', wordCloudData.value[0]); // 打印第一个元素
+        console.log('词云数据 (第一个元素):', wordCloudData.value[0]); // 打印第一个元素
 
     } catch (err) {
         console.error('生成词云出错:', err);
@@ -787,14 +824,67 @@ console.log('词云数据 (第一个元素):', wordCloudData.value[0]); // 打�
 }
 
 onMounted(fetchData);
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
 </script>
 
 <style scoped>
 .transcription-page {
   padding: 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f8f9fa;
+  background-color: var(--background-color); /* 使用全局背景颜色 */
   color: #343a40;
+  margin: 0;
+}
+
+/* 导航栏样式 */
+.navbar {
+  top: 0;
+  background-color: #ffffff;
+  padding: 10px 20px;
+  z-index: 1000;
+  font-size: 22px;
+  list-style: none;
+  height: 20px;
+}
+
+.navbar ul {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar li {
+  margin: 0 15px;
+}
+
+.navbar a {
+    text-decoration: none;
+    color: #333;
+    font-size: 22px;
+    margin-right: 20px;
+    transition: color 0.3s ease; 
+    padding: 10px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.navbar a:hover {
+  color: #000000;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+}
+
+
+#overview,
+#content,
+#summary {
+  scroll-margin-top: 100px; /* 导航栏的高度 */
+  background-color: var(--background-color);  /* 全局背景 */
 }
 
 h1 {
@@ -804,11 +894,22 @@ h1 {
   font-weight: 600;
 }
 
+
+h2 {
+  color: #343a40;
+  margin-bottom: 10px;
+  margin-top: 20px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 20px;
+}
+
+
 .timeline-container {
   display: flex;
   justify-content: space-between;
   margin-bottom: 30px;
-  background-color: #e9ecef;
+  background-color: #f5f5f5;
   padding: 15px;
   border-radius: 12px;
 }
@@ -828,16 +929,36 @@ h1 {
   color: #6c757d;
 }
 
+.echart-container {
+    max-width: 100%; /* 限制最大宽度 */
+  overflow: hidden; /* 防止内容溢出 */
+  width: 100%; /* 占据父容器的宽度 */
+}
 .content-container {
   display: flex;
   justify-content: space-between;
   margin-top: 20px;
+  border: none;
 }
 
 .content-segment {
   flex: 1;
   padding: 0 10px;
-  border-right: 1px solid #dee2e6;
+}
+
+.content-container {
+  display: flex; /* 启用 Flexbox 布局 */
+  flex-wrap: wrap; /* 允许换行 */
+  gap: 20px; /* 卡片之间的间距 */
+  justify-content: space-between; /* 均匀分布卡片 */
+  background-color: var(--background-color);  /* 全局背景 */
+}
+
+.content-segment {
+  flex: 1; /* 每个卡片自动扩展以占满可用空间 */
+  min-width: 300px; /* 设置卡片的最小宽度，避免过小 */
+  max-width: calc(33.33% - 20px); /* 每行最多显示 3 个卡片，并考虑间距 */
+  background-color: var(--background-color);  /* 全局背景 */
 }
 
 .content-segment:last-child {
@@ -850,19 +971,20 @@ h1 {
 
 /* 便签样式 */
 .note {
-  background-color: #fff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
   padding: 20px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   border: 1px solid #ced4da;
   transition: box-shadow 0.3s ease;
+    box-shadow: var(--global-box-shadow);
+  background-color: var(--background-color);  /* 全局背景 */
 }
 
 .note:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
 }
 
 .note-header {
@@ -905,7 +1027,7 @@ h1 {
   right: 10px;
   width: 10px;
   height: 10px;
-  background-color: #28a745;
+  background-color: #ffd561;
   border-radius: 50%;
   opacity: 0.8;
 }
@@ -918,9 +1040,10 @@ h1 {
 
 .optimized-label {
   font-weight: 600;
-  color: #28a745;
-  margin-bottom: 8px;
+  color: #a05bff;
+  margin-bottom: 5px;
   display: block;
+
 }
 /*原样式保留,但默认不设置高度*/
 .optimized-text {
@@ -982,16 +1105,15 @@ list-style-type: disc;
   background-color: #f8f9fa;
   padding: 2px 4px;
   border-radius: 3px;
-  color: #d63384;
 }
 
 .optimize-all-btn {
-background-color: #28a745;
-color: white;
-padding: 10px 20px;
-border: none;
-border-radius: 8px;
+background-color: #70b5ff;
+border: 1px solid #839cff;
+padding: 10px 30px;
+border-radius: 15px;
 font-size: 16px;
+font-weight:500;
 cursor: pointer;
 transition: background-color 0.3s ease;
 margin-bottom: 20px;
@@ -1001,7 +1123,8 @@ margin-right: auto;
 }
 
 .optimize-all-btn:hover {
-background-color: #218838;
+    transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
 .optimize-all-btn:disabled {
@@ -1033,17 +1156,15 @@ z-index: 2000;
 
 .expanded-note {
 position: relative; /* 改为 relative，不再需要 absolute */
-background-color: white;
 padding: 20px;
-border-radius: 12px;
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-z-index: 2001;
+border-radius: 15px;
+  background-color: var(--background-color);  /* 全局背景 */z-index: 2001;
   width: 80%; /* 或者你想要的宽度 */
   max-width: 800px; /* 设置一个最大宽度 */
   max-height: 80vh; /* 设置最大高度为视口高度的80% */
   overflow-y: auto; /* 添加滚动条 */
-/* 移除 transition */
 }
+
 /* 优化后文本的 Markdown 样式（在展开的便签中） */
 .expanded-optimized-text {
     /* 这里可以复制 .optimized-text 的所有样式 */
@@ -1120,7 +1241,7 @@ z-index: 2001;
     background-color: #f8f9fa;
     padding: 2px 4px;
     border-radius: 3px;
-    color: #d63384;
+    color: #c889ff;
 }
 
 
@@ -1128,58 +1249,53 @@ z-index: 2001;
 .global-buttons {
   display: flex;
   justify-content: center; /* 水平居中 */
-  margin-bottom: 20px;
-  gap: 10px; /* 按钮之间的间距 */
+  gap: 25px; /* 按钮之间的间距 */
+  border: none;
+  border-radius: 15px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: none;
+  box-shadow: none;
 }
 
 .summary-all-btn, .keyword-all-btn, .overall-summary-btn, .todos-btn, .wordcloud-btn  {
   /* 移除之前的 float: left; */
-    padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
+  border-radius: 15px;
   font-size: 14px;
-  cursor: pointer;
+  background-color: #bde4ff;
+  border: 1px solid #83cbff;
+    cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 /* 按钮颜色和悬停效果 */
-.summary-all-btn {
-  background-color: #007bff; /* 蓝色 */
-  color: white;
-}
 .summary-all-btn:hover {
-  background-color: #0056b3;
+    transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-.keyword-all-btn {
-  background-color: #28a745; /* 绿色 */
-  color: white;
-}
 .keyword-all-btn:hover {
-  background-color: #218838;
+    transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-.overall-summary-btn {
-  background-color: #17a2b8; /* 使用不同的颜色 */
-  color: white;
-}
 .overall-summary-btn:hover {
-  background-color: #138496; /* 悬停时颜色加深 */
+    transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-.todos-btn {
-  background-color: #ffc107; /* 黄色 */
-  color: white;
-}
 .todos-btn:hover {
-  background-color: #e0a800; /* 悬停时颜色加深 */
+    transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
-.wordcloud-btn{
-    background-color: #6f42c1;
-    color: white;
-}
+
 .wordcloud-btn:hover{
-background-color: #5a3791;
+    transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
   /* 摘要和关键词卡片样式 */
@@ -1190,13 +1306,19 @@ background-color: #5a3791;
     padding: 15px;
     margin-bottom: 15px;
     border: 1px solid #e0e0e0;
-    max-height: 200px; /* 添加最大高度 */
+    max-height: 250px; /* 添加最大高度 */
     overflow-y: auto;  /* 添加垂直滚动 */
+    box-shadow: var(--global-box-shadow);
+  background-color: var(--background-color);  /* 全局背景 */
 }
 
+.summary-card:hover, .keyword-card:hover {
+    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
+
+}
 .card-label {
     font-weight: bold;
-    color: #333;
+    color: #a05bff;
     margin-bottom: 5px;
 }
 
@@ -1210,8 +1332,9 @@ background-color: #5a3791;
 .summary-text p {
     margin-top: 0;
     margin-bottom: 1rem;
-     line-height: 1.5;
+    line-height: 1.5;
 }
+
 .summary-text h1 {
   font-size: 1.2em;
   margin-bottom: 0.4em;
@@ -1245,11 +1368,11 @@ list-style-type: disc;
     padding-left: 0;
 }
 .summary-text  a {
-      color: #007bff;
-      text-decoration: none;
-    }
+    color: #007bff;
+    text-decoration: none;
+}
 .summary-text  a:hover {
-        text-decoration: underline;
+    text-decoration: underline;
 }
 
   /* 行内代码 `code` */
@@ -1263,32 +1386,43 @@ list-style-type: disc;
 
   /* 会议整体摘要卡片样式 */
 .overall-summary-card {
-    background-color: #fff;
-    border-radius: 8px;
+    border-radius: 15px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 15px;
     margin-bottom: 15px; /* 与下方内容的间距 */
     border: 1px solid #e0e0e0;
-    max-height: 300px; /* 可以根据需要调整 */
+    max-height: 500px; /* 可以根据需要调整 */
     overflow-y: auto;
+    box-shadow: var(--global-box-shadow);
+    background-color: var(--background-color);  /* 全局背景 */
+}
+
+.overall-summary-card:hover {
+    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
 }
 
 /* 待办事项和词云的容器 */
 .todos-wordcloud-container {
   display: flex;
   justify-content: space-between; /* 两端对齐 */
-  margin-bottom: 20px; /* 与下方内容的间距，保持一致 */
+  padding: 0;
+  border-radius: 15px;
+  margin-bottom: 10px; /* 与下方内容的间距，保持一致 */
+}
+
+.todos-wordcloud-container:hover{
+    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
 }
 
 /* 待办事项卡片和词云卡片 */
 .todos-card,
 .wordcloud-card {
   background-color: #fff;
-  border-radius: 8px;
+  border-radius: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 15px;
   border: 1px solid #e0e0e0;
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
   width: calc(50% - 10px); /* 各占一半宽度，并留出间距 */
 }
@@ -1310,6 +1444,7 @@ list-style-type: disc;
   }
   .content-container{
      flex-direction: column;
+     margin-top: 120px;
   }
   .content-segment{
     border-right:none;
