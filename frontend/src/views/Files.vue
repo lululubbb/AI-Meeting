@@ -9,6 +9,16 @@
         <p class="file-manager-description">
           轻松上传、管理 PDF 和 Word 文档，智能生成摘要，提升工作效率。
         </p>
+
+            <!-- 添加搜索框和搜索按钮 -->
+      <div class="search-section">
+        <el-input
+          v-model="searchQuery"
+          placeholder="请输入文件名进行搜索"
+          class="search-input"
+        ></el-input>
+        <el-button @click="performSearch" class="search-button">搜索</el-button>
+      </div>
   
         <div class="upload-section">
           <el-upload
@@ -44,7 +54,7 @@
           <div class="file-list-section">
             <div class="table-wrapper">
             <el-table
-              :data="uploadedFiles"
+              :data="currentFiles"
               v-loading="isLoadingFiles"
               :row-class-name="tableRowClassName"
               class="file-table"
@@ -280,18 +290,20 @@
   // };
   
 //修改版
+
 const fetchUploadedFiles = async () => {
   try {
     isLoadingFiles.value = true;
     const response = await axios.get('http://localhost:4000/api/files', {
-      responseType: 'json' // 关键修改：让 Axios 自动处理 JSON 解析
+      responseType: 'json'
     });
-
     if (Array.isArray(response.data)) {
       uploadedFiles.value = response.data.map(file => ({
         ...file,
         isGeneratingSummary: false
       }));
+      // 确保初始状态显示所有文件
+      currentFiles.value = uploadedFiles.value;
     } else {
       console.error('响应数据不是数组:', response.data);
     }
@@ -466,15 +478,80 @@ const closeSummary = () => {
 // 在script setup中修改onMounted部分
 onMounted(() => {
   fetchUploadedFiles();
+  console.log('已加载的文件列表:', uploadedFiles.value);
 })
   
   const tableRowClassName = ({ row, rowIndex }) => {
     return rowIndex % 2 === 1 ? 'odd-row' : 'even-row';
   };
+
+const searchQuery = ref(''); // 用户输入的搜索关键字
+const filteredFiles = ref([]); // 存储搜索结果
+const currentFiles = ref(uploadedFiles.value); // 初始值为 uploadedFiles
+
+// 搜索操作
+const performSearch = () => {
+  if (searchQuery.value.trim() === '') {
+    // 如果搜索框为空，恢复显示所有文件
+    currentFiles.value = uploadedFiles.value;
+    return;
+  }
+  // 根据搜索关键字过滤文件
+  filteredFiles.value = uploadedFiles.value.filter(file =>
+    file.fileName.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+  // 更新当前文件列表为搜索结果
+  currentFiles.value = filteredFiles.value;
+};
   </script>
   
   
   <style scoped>
+
+ /* 搜索框和按钮的整体容器 */
+.search-section {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  align-items: center; /* 垂直居中对齐 */
+  margin: 20px 0; /* 上下间距 */
+}
+
+/* 搜索框样式 */
+.search-input {
+  width: 400px; /* 调整为更长的宽度 */
+  height: 40px; /* 固定高度 */
+  margin-right: 15px; /* 与按钮的间距 */
+  border-radius: 8px; /* 圆角 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 添加轻微阴影 */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease; /* 平滑过渡效果 */
+}
+.search-input:focus-within {
+  border-color: #3498db; /* 聚焦时边框颜色变化 */
+  box-shadow: 0 2px 12px rgba(52, 152, 219, 0.2); /* 聚焦时阴影增强 */
+}
+
+/* 搜索按钮样式 */
+.search-button {
+  padding: 8px 20px; /* 内边距 */
+  font-size: 15px; /* 字体大小 */
+  font-weight: bold; /* 加粗字体 */
+  color: white; /* 文字颜色 */
+  background-color: #3498db; /* 按钮背景色 */
+  border: none; /* 去掉边框 */
+  border-radius: 8px; /* 圆角 */
+  cursor: pointer; /* 鼠标悬停时显示手型 */
+  transition: all 0.2s ease; /* 平滑过渡效果 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 添加轻微阴影 */
+}
+.search-button:hover {
+  background-color: #2f93d6; /* 悬停时背景色加深 */
+  transform: translateY(-1px); /* 悬停时轻微上移 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 悬停时阴影增强 */
+}
+.search-button:active {
+  transform: translateY(0); /* 点击时恢复原位 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 点击时阴影减弱 */
+}
 
 .file-manager-container {
   position: relative;
