@@ -9,7 +9,7 @@
         <p class="file-manager-description">
           轻松上传、管理 PDF 和 Word 文档，智能生成摘要，提升工作效率。
         </p>
-
+  
             <!-- 添加搜索框和搜索按钮 -->
       <div class="search-section">
         <el-input
@@ -502,7 +502,7 @@ const performSearch = () => {
   );
   // 更新当前文件列表为搜索结果
   currentFiles.value = filteredFiles.value;
-};
+  };
   </script>
   
   
