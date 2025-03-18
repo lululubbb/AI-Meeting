@@ -576,7 +576,7 @@ const formatDate = (timestamp) => {
 };
 
 // 显示会议详情
-const showMeetingDetails = (meeting) => {
+const showMeetingDetails = async (meeting) => {
   selectedMeeting.value = meeting;
   console.log('All properties of selected meeting:', Object.keys(meeting));
   console.log('Selected meeting:', meeting); // 打印会议对象
@@ -587,6 +587,10 @@ const showMeetingDetails = (meeting) => {
   } else {
     console.log('Host data is missing or empty.');
   }
+  
+  // 调用参与度分析
+  await analyzeParticipation();
+  
   showModal.value = true;
   activeSection.value = ''; //  重置 activeSection
 };
