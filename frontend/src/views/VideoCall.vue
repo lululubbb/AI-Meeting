@@ -17,11 +17,8 @@
     <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
-      <div class="close-btn-wrapper">      
-      <button @click="goHome" class="close-btn" aria-label="关闭">
-          <img src="@/assets/exit.png" alt="退出" />
-        </button> 
-      </div>
+      <span class="closeBtn" @click="goHome">x</span>      
+
   <h1>视频会议</h1>
 
   <!-- 创建/加入会议表单 -->
