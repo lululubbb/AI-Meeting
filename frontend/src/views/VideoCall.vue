@@ -17,7 +17,11 @@
     <main>
     <!-- 会议信息表单：仅在 autoJoin=false 时显示 -->
     <div id="action-flow" v-if="!autoJoin">
-  <span class="closeBtn" @click="goHome">×</span>
+      <div class="close-btn-wrapper">      
+      <button @click="goHome" class="close-btn" aria-label="关闭">
+          <img src="@/assets/exit.png" alt="退出" />
+        </button> 
+      </div>
   <h1>视频会议</h1>
 
   <!-- 创建/加入会议表单 -->
@@ -94,18 +98,20 @@
             <div v-if="!someoneIsSharing" class="speaker-placeholder">
               <p>当前无人共享</p>
             </div>
+        </video-player-container>s
+      
             <!-- 字幕容器 -->
-            <!-- <div class="subtitle">
-              {{ subtitle }}
-            </div> -->
+    <div class="subtitle-container" v-if="subtitles">
             <div class="subtitle">
-  <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
-    <span class="subtitle-user">{{ sub.userName }}: </span>
-    <span class="subtitle-text">{{ sub.text }}</span>
-  </div>
-</div>
-          </video-player-container>
-
+              <div v-for="(sub, userId) in subtitles" :key="userId" class="subtitle-item">
+                <span class="subtitle-user">{{ sub.userName }}: </span>
+                <span class="subtitle-text">{{ sub.originalText }}</span>
+                <span class="subtitle-translation" v-if="sub.translatedText">
+                  ({{ sub.translatedText }})
+                </span>
+              </div>
+            </div>
+            </div>
           <!-- 底部控制栏 -->
           <div class="controls">
             <button @click="toggleTranscription" :class="{ active: isTranscribing }">
@@ -304,10 +310,6 @@
       </div>
     </div>
   </main>
-  <!-- 字幕容器 -->
-<div class="subtitle">
-   {{ subtitle }}
-</div>
 
       <!-- 引入 AIFloatingChat 组件, 并传递参数 -->
       <AIFloatingChat ref="aiChat" :file-to-analyze="fileToAnalyze" :file-msg-id="fileMsgId"/>
@@ -328,7 +330,6 @@ import * as echarts from 'echarts';
 import { useI18n } from 'vue-i18n';
 import defaultAvatar from '../assets/柴犬.png';
 import { format }  from 'date-fns'; // 导入 date-fns 的 format函数 
-
 const { t } = useI18n();
 
 import { ElMessage,ElMessageBox} from 'element-plus';
@@ -342,6 +343,35 @@ const isMaximized = computed(() => store.state.isMaximized);
 const users = computed(() => store.state.usersInMeeting);
 // *关键*:  通过 provide 暴露 handleChatMessage 给子组件
 provide('handleChatMessage', handleChatMessage);
+
+//  定义翻译函数
+async function translateText(text, sourceLang, targetLang) {
+  if (!text) return '';
+
+  try {
+    const response = await fetch('/api/translate', { //  调用后端的 /api/translate 接口
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text,
+        sourceLanguage: sourceLang,
+        targetLanguage: targetLang
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.translated; //  从后端返回的 JSON 数据中获取翻译结果
+  } catch (error) {
+    console.error('翻译请求失败:', error);
+    return 'Translation Failed';
+  }
+}
 // *新增*: 用于强制刷新 users 计算属性
 const usersRefreshKey = ref(0);
 const goHome = () => {
@@ -1876,23 +1906,41 @@ const startTranscription = async () => {
       };
 
       transcriptionWs.value.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        const now = new Date();
+  const data = JSON.parse(event.data);
+  const now = new Date();
 
-        if (data.type === 'interim') {
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = { userName: data.userName, text: '' };
-          }
-          subtitles.value[data.userId].text = data.text;
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        } else if (data.type === 'final') {
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = { userName: data.userName, text: '' };
-          }
-          subtitles.value[data.userId].text = data.text;
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        }
+  // 合并处理 interim 和 final 类型的消息
+  if (data.type === 'interim' || data.type === 'final') {
+    // 如果 subtitles 对象中没有当前 userId 对应的条目，则创建一个新的条目
+    if (!subtitles.value[data.userId]) {
+      subtitles.value[data.userId] = {
+        userName: data.userName,
+        originalText: '',   // 初始为空字符串
+        translatedText: ''  // 初始为空字符串
       };
+    }
+
+    // 将语音识别的文本赋值给 originalText
+    subtitles.value[data.userId].originalText = data.text;
+
+    // 调用翻译函数 translateText
+    // 将语音识别的文本、源语言(这里假设是中文'zh')、目标语言(这里假设是英文'en')传入
+    translateText(data.text, 'zh', 'en')
+      .then(translated => {
+        // 翻译成功，将翻译结果赋值给 translatedText
+        subtitles.value[data.userId].translatedText = translated;
+      })
+      .catch(err => {
+        // 翻译失败，处理错误
+        console.error('翻译失败:', err);
+        // 可选：将 translatedText 设置为错误提示信息
+        // subtitles.value[data.userId].translatedText = '翻译失败';
+      });
+
+    // 将语音识别结果添加到转录历史记录
+    addTranscriptionToHistory(data.userId, data.userName, data.text, now);
+  }
+};
 
       transcriptionWs.value.onerror = (error) => {
         console.error('[Client] 转录 WebSocket 错误:', error);

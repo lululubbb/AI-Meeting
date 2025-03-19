@@ -8,7 +8,7 @@ const Nls = require('alibabacloud-nls');
 const CONFIG = {
     URL: "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1",
     APPKEY: "wvpwo9lGGSkfMHfn", // 你的 AppKey
-    TOKEN: "7ca23cd474ef4517ae91cbe2af6b49a8"  // 你的 Token
+    TOKEN: "d929a175664b4129ad055c21bc6e9c04"  // 你的 Token
   };
 
 const wss = new WebSocketServer({ port: 4399 });

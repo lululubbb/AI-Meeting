@@ -23,7 +23,7 @@ import mammoth from 'mammoth';
 import pdfPoppler from 'pdf-poppler';
 import fs from 'fs';
 import path from 'path';
-
+import { Client } from './trans.js'; // 引入翻译模块 (确保路径正确)
 import { fileURLToPath } from 'url';
 
 import pdfParse from 'pdf-parse';
@@ -183,6 +183,24 @@ const avatarUpload = multer({ storage: avatarStorage });
 //     res.status(400).json({ error: 'FILE_UPLOAD_FAILED' });
 //   }
 // });
+
+// 新增: 翻译路由
+app.post('/api/translate', async (req, res) => {
+  const { text, sourceLanguage, targetLanguage } = req.body;
+
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text parameter' });
+  }
+
+  try {
+    const translatedText = await Client.translate(text, sourceLanguage, targetLanguage);
+    res.json({ translated: translatedText });
+  } catch (error) {
+    console.error('Translation error:', error);
+    res.status(500).json({ error: 'Translation failed' });
+  }
+});
+
 app.post('/api/upload-avatar', avatarUpload.single('avatar'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'UPLOAD_FAILED' });
   
