@@ -126,169 +126,186 @@ const screenshots = [chat1, chat2];
 
   </script>
   
-  <style scoped>
-  .introduction-page {
-    font-family: Arial, sans-serif;
-  }
-  
-  .header {
-    display: flex;
-    justify-content:space-between;
-    align-items: center;
-    padding: 1% 50px;
-    background-color: white;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .logo {
-    height: 80px;
-  }
-  
-  .nav-links {
-    list-style: none;
-    display: flex;
-    height: 20px;
-  }
-  
-  .nav-links li {
-    margin-right: 100px;
-  }
-  
-  .nav-links a {
-    text-decoration: none;
-    color: #333;
-    font-size: 25px;
-    margin-right: 20px;
-    transition: color 0.3s ease; 
-    padding: 20px;
-    border-radius: 20px;
-    font-weight: bold;
-  }
-  
-  .nav-links a:hover {
-    color: #409eff;
-    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
-  }
-  
-  .login-button {
-    width: 70px;
-    height: 50px;
-    font-size: 20px;
-    padding: 10px 10px;
-    background-color: #409eff;
-    color: white;
-    border: solid #3484da;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .login-button:hover {
-    background-color: #2d8cf0;
-    border-radius: 5px;
-    transform: translateY(-5px); /* 点击时上移 */
-    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
-  }
-  
-  .hero-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 180px;
-    background-color: #f4f9ff;
-  }
-  
-  .hero-content {
-    flex: 1;
-  }
-  
-  .hero-title {
-    font-size: 48px;
-    margin-bottom: 10px;
-  }
-  
-  .hero-subtitle {
-    font-size: 24px;
-    margin-bottom: 40px;
-    color: #666;
-  }
-  
-  .cta-button {
-    padding: 15px 50px;
-    background-color: #409eff;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    font-size: 18px;
-    transition: background-color 0.3s ease;
-    border: solid #286bb3;
-  }  
+<style scoped>
+.introduction-page {
+  font-family: Arial, sans-serif;
+}
 
-  .cta-button:hover {
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1% 50px;
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  height: 80px;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  height: 20px;
+}
+
+.nav-links li {
+  margin-right: 100px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-size: 25px;
+  margin-right: 20px;
+  transition: color 0.3s ease;
+  padding: 20px;
+  border-radius: 20px;
+  font-weight: bold;
+}
+
+.nav-links a:hover {
+  color: #409eff;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+}
+
+.login-button {
+  width: 70px;
+  height: 50px;
+  font-size: 20px;
+  padding: 10px 10px;
+  background-color: #409eff;
+  color: white;
+  border: solid #3484da;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+  background-color: #2d8cf0;
+  border-radius: 5px;
+  transform: translateY(-5px); /* 点击时上移 */
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+}
+
+.hero-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 180px;
+  background-color: #f4f9ff;
+}
+
+.hero-content {
+  flex: 1;
+}
+
+.hero-title {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.hero-subtitle {
+  font-size: 24px;
+  margin-bottom: 40px;
+  color: #666;
+}
+
+.cta-button {
+  padding: 15px 50px;
+  background-color: #409eff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 18px;
+  transition: background-color 0.3s ease;
+  border: solid #286bb3;
+}
+
+.cta-button:hover {
   transform: translateY(-5px); /* 点击时上移 */
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
   background-color: #2d8cf0;
 }
 
-  .logo-container {
-    display: flex;
-    align-items: center;
-  }
-  .hero-image {
-    flex: 1;
-    max-width: 550px;
-    height: auto;
-    margin-left: 20px;
-  }
-  
-  .features-section {
-    padding: 90px 50px;
-    text-align: center;
-  }
-  
-  .section-title {
-    font-size: 36px;
-    margin-bottom: 50px;
-  }
-  
-  .feature-cards-container {
-    display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-  }
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+.hero-image {
+  flex: 1;
+  max-width: 550px;
+  height: auto;
+  margin-left: 20px;
+}
 
-  .screenshots-section {
-    padding: 10px 50px;
-    text-align: center;
-  }
+.features-section {
+  padding: 90px 50px;
+  text-align: center;
+}
 
-  .about-section {
-    padding:10px 50px;
-    text-align: center;
-    background-color: #f4f9ff;
-  }
-  
-  .about-description {
-    font-size: 20px;
-    color: #666;
-    line-height: 1.8;
-  }
-  
-  .footer {
-    text-align: center;
-    padding: 3px;
-    font-size: 18px;
-    background-color: white;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .footer-text {
-    font-size: 14px;
-    color: #666;
-  }
+.section-title {
+  font-size: 36px;
+  margin-bottom: 50px;
+}
+
+.feature-cards-container {
+  display: flex;
+  justify-content: space-between; /* 均匀分布卡片 */
+  align-items: stretch; /* 确保卡片高度一致 */
+  gap: 20px; /* 卡片之间的间距 */
+  flex-wrap: nowrap; /* 禁止换行 */
+}
+
+.feature-cards-container > * {
+  flex: 1; /* 每个卡片占据相同的宽度 */
+  max-width: 30%; /* 限制最大宽度 */
+}
+
+.screenshots-section {
+  padding: 10px 50px;
+  text-align: center;
+}
+
+.about-section {
+  padding: 10px 50px;
+  text-align: center;
+  background-color: #f4f9ff;
+}
+
+.about-description {
+  font-size: 20px;
+  color: #666;
+  line-height: 1.8;
+}
+
+.footer {
+  text-align: center;
+  padding: 3px;
+  font-size: 18px;
+  background-color: white;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.footer-text {
+  font-size: 14px;
+  color: #666;
+}
 
 /* 手机端样式（屏幕宽度小于 768px） */
 @media (max-width: 768px) {
+  .feature-cards-container {
+    flex-wrap: wrap; /* 允许换行 */
+    gap: 15px; /* 减小卡片之间的间距 */
+  }
+
+  .feature-cards-container > * {
+    flex: 1 1 calc(50% - 15px); /* 每行显示两个卡片 */
+    max-width: none; /* 取消最大宽度限制 */
+  }
+
   .header {
     padding: 1% 20px;
     flex-direction: column;
@@ -435,7 +452,7 @@ const screenshots = [chat1, chat2];
 
   /* 功能卡片间距调整 */
   .feature-cards-container {
-    gap: 15px;
+    flex: 1 1 100%; /* 每行显示一个卡片 */
   }
 
   /* 保持立即体验按钮可见 */
@@ -443,7 +460,6 @@ const screenshots = [chat1, chat2];
     display: block !important;
     margin: 0 auto;
   }
-
 
   .nav-links a {
     font-size: 14px;
@@ -460,7 +476,6 @@ const screenshots = [chat1, chat2];
   .nav-links li {
     margin-right: 10px;
   }
-
 
   .hero-subtitle {
     font-size: 16px;
@@ -479,6 +494,4 @@ const screenshots = [chat1, chat2];
     font-size: 12px;
   }
 }
-
-
 </style>
