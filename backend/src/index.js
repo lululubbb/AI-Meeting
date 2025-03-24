@@ -2,6 +2,8 @@
 
 import express from 'express';
 import cors from 'cors';
+import { WebSocketServer } from 'ws'; 
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import axios from 'axios';
@@ -24,7 +26,7 @@ import pdfPoppler from 'pdf-poppler';
 import fs from 'fs';
 import path from 'path';
 import { Client } from './trans.js'; // 引入翻译模块 (确保路径正确)
-import { fileURLToPath } from 'url';
+
 
 import pdfParse from 'pdf-parse';
 
@@ -990,7 +992,67 @@ app.get('/api/generate-summary', async (req, res) => {
   }
 });
 
-// 启动服务器
-app.listen(PORT, '0.0.0.0', () => {
-  //console.log(`Server is running on http://0.0.0.0:${PORT}`);
+// --- 1. 录屏相关配置 ---
+
+// 1.1 设置保存录像的目录 (recordings 文件夹在 backend 同级目录下)
+const recordingsDir = path.join(__dirname, '..', 'recordings');  // .. 表示上级目录
+if (!fs.existsSync(recordingsDir)) {
+  fs.mkdirSync(recordingsDir, { recursive: true }); // 递归创建目录
+}
+
+// 1.2 创建 WebSocketServer (noServer: true，表示不启动独立的 HTTP 服务器)
+const wss = new WebSocketServer({ noServer: true });
+
+// 1.3 WebSocket 连接事件 (处理客户端连接)
+wss.on('connection', (ws) => {
+  console.log('客户端已连接 (WebSocket)');
+
+  // 1.3.1 生成唯一的文件名 (使用时间戳)
+  const fileName = `recording-${Date.now()}.webm`;
+  const filePath = path.join(recordingsDir, fileName);
+
+  // 1.3.2 创建文件写入流
+  const fileStream = fs.createWriteStream(filePath);
+
+  // 1.3.3 监听 message 事件 (接收来自客户端的视频数据)
+  ws.on('message', (message) => {
+    try {
+      // 将接收到的 ArrayBuffer 数据写入文件
+      fileStream.write(Buffer.from(message));
+    } catch (error) {
+      console.error('写入文件流时出错:', error);
+       if (fileStream) {
+         fileStream.end();  // 出错时，确保关闭文件流
+       }
+    }
+  });
+
+  // 1.3.4 监听 close 事件 (客户端断开连接)
+  ws.on('close', () => {
+    console.log('客户端已断开连接 (WebSocket)');
+    fileStream.end(() => {
+      console.log('录制文件已保存:', filePath);
+    });
+  });
+
+    //1.3.5 error
+    ws.on('error',(error)=>{
+        console.error('错误',error);
+        if(fileStream) fileStream.end();
+    });
+
+});
+
+// --- 2. 启动 Express 和 WebSocket 服务 ---
+
+// 2.1 启动 Express 应用 (并获取 HTTP 服务器对象)
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`服务器已启动，监听端口 ${PORT}`);
+});
+
+// 2.2 处理 upgrade 请求 (将 HTTP 连接升级为 WebSocket)
+server.on('upgrade', (request, socket, head) => {
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit('connection', ws, request);  // 触发 connection 事件
+  });
 });

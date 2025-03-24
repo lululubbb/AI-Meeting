@@ -128,6 +128,11 @@
               <img v-if="isSharing" src="@/assets/share_on.png" alt="停止共享屏幕" />
               <img v-else src="@/assets/share_off.png" alt="共享屏幕" />
             </button>
+            <button v-if="isHost" @click="toggleScreenRecording" :class="{ active: isScreenRecording }" >
+            <img v-if="isScreenRecording" src="@/assets/停止录制.png" alt="停止录制" />
+            <img v-else src="@/assets/开始录制.png" alt="开始录制" /> 
+            <span>{{ isScreenRecording ? '停止录制屏幕' : '开始录制屏幕' }}</span>
+          </button>
             <!-- 服务质量按钮 -->
             <button @click="toggleServiceQuality" :class="{ active: showServiceQuality }">
               <img src="@/assets/服务质量.png" alt="服务质量" />
@@ -341,6 +346,109 @@ const users = computed(() => store.state.usersInMeeting);
 // *关键*:  通过 provide 暴露 handleChatMessage 给子组件
 provide('handleChatMessage', handleChatMessage);
 
+// 录屏相关
+// const isHost = ref(false);
+const isScreenRecording = ref(false);
+let screenRecorder = null;
+let screenStream = null;
+let socket = null; //  WebSocket 实例
+
+const toggleScreenRecording = async () => {
+  if (isScreenRecording.value) {
+    stopScreenRecording();
+  } else {
+    await startScreenRecording();
+  }
+};
+
+const startScreenRecording = async () => {
+  try {
+    // 1. 获取屏幕共享流 (限制为浏览器标签页)
+    screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        displaySurface: 'browser', // 只录制当前浏览器标签页
+        logicalSurface: true,
+        cursor: 'always',
+      },
+      audio: true,
+      preferCurrentTab: true
+    });
+
+        // 2. 创建 MediaRecorder
+        screenRecorder = new MediaRecorder(screenStream, {
+          mimeType: 'video/webm;codecs=vp9,opus', // 推荐的 WebM 编码
+        });
+
+        // 3. 创建 WebSocket 连接
+       socket = new WebSocket('ws://localhost:4000'); // 你的后端 WebSocket 地址
+       socket.binaryType = 'arraybuffer'; // 务必设置为 arraybuffer
+
+      socket.onopen = () => {
+        console.log('WebSocket 连接已建立');
+
+        // 4. 数据处理: 通过 WebSocket 发送
+        screenRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+            socket.send(event.data); // 直接发送 Blob 数据
+          }
+        };
+
+        // 5. 录制停止事件 (简化)
+           screenRecorder.onstop = () => {
+             ElMessage.success('屏幕录制已停止');
+             isScreenRecording.value = false;
+           // 不要在这里关闭 WebSocket, 在 stopScreenRecording 中关闭
+            };
+
+          // 6. 开始录制
+           screenRecorder.start(1000); // 每 1000ms 触发一次 ondataavailable
+           isScreenRecording.value = true;
+            ElMessage.success('开始录制屏幕');
+             // 监听 ended 事件
+           screenStream.getVideoTracks()[0].onended = () => {
+                stopScreenRecording(); //  自动停止录制
+             };
+      };
+
+   socket.onerror = (error) => {
+      console.error('WebSocket 错误:', error);
+     ElMessage.error('WebSocket 连接错误');
+      isScreenRecording.value = false;  //  WebSocket 错误, 停止录制
+   };
+
+    // (可选) 可以在这里添加 socket.onclose 的处理, 但不是必须的
+
+  } catch (error) {
+    console.error('开始录制屏幕失败:', error);
+     ElMessage.error('开始录制屏幕失败，请确保已授权屏幕共享,并且没有开启画中画');
+    isScreenRecording.value = false;
+     // 清理 screenStream
+     if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+       screenStream = null;
+      }
+  }
+};
+
+const stopScreenRecording = () => {
+    // 1. 停止 MediaRecorder
+    if (screenRecorder && screenRecorder.state !== 'inactive') {
+      screenRecorder.stop();
+      console.log("录屏停止")
+    }
+
+    // 2. 停止并释放 screenStream
+   if (screenStream) {
+       screenStream.getTracks().forEach(track => track.stop());
+       screenStream = null;
+    }
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.close();
+      socket = null;
+      console.log("WebSocket已关闭");
+    }
+    isScreenRecording.value = false; // 确保状态正确
+};
 //  定义翻译函数
 async function translateText(text, sourceLang, targetLang) {
   if (!text) return '';
@@ -392,6 +500,7 @@ onMounted(() => {
   checkClipboard(); // 打开页面时检查剪贴板
   window.addEventListener("paste", handlePaste);
   checkAndJoinFromConfig();
+  isHost.value = ZoomVideoService.getIsHost(); // 从你的服务获取 isHost
   //checkRouteParams(); // 移除 checkRouteParams
     // 获取会议配置信息
    const savedConfig = store.getters.getMeetingConfig;
@@ -2345,6 +2454,7 @@ onBeforeUnmount(() => {
     ZoomVideoService.leaveSession(false);
     sessionJoined.value = false;
   }
+  stopScreenRecording();
 
 
 });
@@ -2354,6 +2464,7 @@ onUnmounted(() => {
     ZoomVideoService.leaveSession(false);
     sessionJoined.value = false;
   }
+  stopScreenRecording();
 });
 </script>
 
