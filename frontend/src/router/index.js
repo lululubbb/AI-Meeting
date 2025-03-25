@@ -20,6 +20,10 @@ import Tools from '../components/Tools.vue';
 import AIFloatingChat from '../components/AIFloatingChat.vue'
 import DataSummary from '../components/DataSummary.vue'
 import Footer from '../components/Footer.vue'
+import Map from '../components/Map.vue'
+import Forum from '../components/Forum.vue'
+import CalendarToDoList from '../components/CalendarToDoList.vue'
+import RecentActivityCard from '../components/RecentActivityCard.vue'
 
 // 定义路由规则
 const routes = [
@@ -33,6 +37,24 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: Home,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/calendarToDoList',
+    name: 'CalendarToDoList',
+    component: CalendarToDoList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/recentActivityCard',
+    name: 'RecentActivityCard',
+    component: RecentActivityCard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/forum',
+    name: 'Forum',
+    component: Forum,
     meta: { requiresAuth: true }
   },
   {
@@ -51,6 +73,12 @@ const routes = [
     path: '/footer',
     name: 'Footer',
     component: Footer,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/map',
+    name: 'Map',
+    component: Map,
     meta: { requiresAuth: true }
   },
   { path: '/meetings',

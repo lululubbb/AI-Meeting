@@ -1,8 +1,38 @@
 <template>
-    <!-- 添加图标和辅助文本 -->
+    <!-- 文件功能-->
     <button @click="navigateToFiles">
    <i class="fa-solid fa-file"></i>
    <span>文件管理</span>
+    </button>
+
+   <!-- 地图功能-->
+   <button @click="navigateToMap">
+    <i class="fa-solid fa-map-location-dot"></i>
+   <span>地图导航</span>
+    </button>
+
+    <!-- 论坛功能-->
+   <button @click="navigateToForum">
+    <i class="fa-solid fa-users"></i>
+   <span>会议论坛</span>
+    </button>
+
+    <!-- 日历功能-->
+   <button @click="navigateToCalendar">
+    <i class="fa-solid fa-calendar-days"></i>
+   <span>日历助手</span>
+    </button>
+
+    <!-- 活动功能-->
+   <button @click="navigateToActivity">
+    <i class="fa-solid fa-star"></i>
+   <span>最近活动</span>
+    </button>
+
+    <!-- 帮助功能-->
+   <button @click="navigateToHelp">
+   <i class="fa-solid fa-file"></i>
+   <span>帮助页面</span>
     </button>
     
   </template>
@@ -19,43 +49,39 @@
     // 使用命名路由更安全（需在router/index.js配置）
     router.push({ name: 'Files' })
   }
+
+  const navigateToMap = () => {
+    // 使用命名路由更安全（需在router/index.js配置）
+    router.push({ name: 'Map' })
+  }
+
+  const navigateToForum = () => {
+    // 使用命名路由更安全（需在router/index.js配置）
+    router.push({ name: 'Forum' })
+  }
+
+  const navigateToHelp = () => {
+    // 使用命名路由更安全（需在router/index.js配置）
+    router.push({ name: 'Help' })
+  }
+
+  const navigateToCalendar = () => {
+    // 使用命名路由更安全（需在router/index.js配置）
+    router.push({ name: 'CalendarToDoList' })
+  }
+
+  const navigateToActivity = () => {
+    // 使用命名路由更安全（需在router/index.js配置）
+    router.push({ name: 'RecentActivityCard' })
+  }
   </script>
   
   <style scoped>
-  /* 基础按钮样式
-  .icon-button {
-    padding: 8px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: opacity 0.2s;
-  }
-  
-  悬停效果
-  .icon-button:hover {
-    opacity: 0.8;
-  }
-  
-  图标尺寸
-  .icon {
-    width: 24px;
-    height: 24px;
-  }
-  
-  文字样式 
-  .text {
-    font-size: 14px;
-    color: #333;
-  } */
-
   button {
     background: none;
     border: none;
     font-size: 16px;
-    display: flex;
+    display: box;
     flex-direction: column;
     align-items: center;
     cursor: pointer;
