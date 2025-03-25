@@ -1,16 +1,15 @@
 <template>
-    <div class="file-manager-container">
+  <div class="file-manager-container">
+    <main class="main-content">
+      <h1 class="file-manager-title">
+        <el-icon><Document /></el-icon>
+        智能文件助手
+      </h1>
+      <p class="file-manager-description">
+        轻松上传、管理 PDF 和 Word 文档，智能生成摘要，提升工作效率。
+      </p>
 
-      <main class="main-content">
-        <h1 class="file-manager-title">
-          <el-icon><Document /></el-icon>
-          智能文件助手
-        </h1>
-        <p class="file-manager-description">
-          轻松上传、管理 PDF 和 Word 文档，智能生成摘要，提升工作效率。
-        </p>
-  
-            <!-- 添加搜索框和搜索按钮 -->
+      <!-- 搜索框和搜索按钮 -->
       <div class="search-section">
         <el-input
           v-model="searchQuery"
@@ -19,40 +18,33 @@
         ></el-input>
         <el-button @click="performSearch" class="search-button">搜索</el-button>
       </div>
-  
-        <div class="upload-section">
-          <el-upload
-            ref="uploadRef"
-            class="upload-area"
-            drag
-            :action="uploadUrl"
-            :auto-upload="true"
-            :before-upload="beforeUpload"
-            :on-change="handleFileChange"
-            :on-remove="handleRemove"
-            :http-request="customUpload"
-            :show-file-list="false"
-          >
-            <el-icon class="upload-icon"><UploadFilled /></el-icon>
-            <div class="upload-text">将文件拖拽到此处，或<em>点击上传</em></div>
-            <template #tip>
-              <div class="upload-tip">PDF, Word (.pdf, .doc, .docx), ≤ 50MB</div>
-            </template>
-          </el-upload>
-  
-          <!-- <el-progress
-            v-if="isUploading"
-            :percentage="uploadPercent"
-            class="upload-progress"
-            :color="customColors"
-          ></el-progress> -->
-        </div>
-  
-         <el-divider class="divider" />
-  
-        <div class="content-wrapper">
-          <div class="file-list-section">
-            <div class="table-wrapper">
+
+      <div class="upload-section">
+        <el-upload
+          ref="uploadRef"
+          class="upload-area"
+          drag
+          :action="uploadUrl"
+          :auto-upload="true"
+          :before-upload="beforeUpload"
+          :on-change="handleFileChange"
+          :on-remove="handleRemove"
+          :http-request="customUpload"
+          :show-file-list="false"
+        >
+          <el-icon class="upload-icon"><UploadFilled /></el-icon>
+          <div class="upload-text">将文件拖拽到此处，或<em>点击上传</em></div>
+          <template #tip>
+            <div class="upload-tip">PDF, Word (.pdf, .doc, .docx), ≤ 50MB</div>
+          </template>
+        </el-upload>
+      </div>
+
+      <el-divider class="divider" />
+
+      <div class="content-wrapper">
+        <div class="file-list-section">
+          <div class="table-wrapper">
             <el-table
               :data="currentFiles"
               v-loading="isLoadingFiles"
@@ -61,8 +53,9 @@
               stripe
               :header-cell-style="{ background: '#f5f7fa', color: '#333', fontWeight: '600' }"
             >
-              <el-table-column prop="fileName" label="文件名" sortable :show-overflow-tooltip="true" width="380"></el-table-column>
-              <el-table-column label="类型" align="center" width="120">
+              <!-- 桌面端显示所有列 -->
+              <el-table-column v-if="!isMobile" prop="fileName" label="文件名" sortable :show-overflow-tooltip="true" width="380"></el-table-column>
+              <el-table-column v-if="!isMobile" label="类型" align="center" width="120">
                 <template #default="scope">
                   <div class="file-type-cell">
                     <el-icon v-if="scope.row.fileType === 'pdf'" class="pdf-icon"><Document /></el-icon>
@@ -74,85 +67,101 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="fileSizeMB" label="大小 (MB)" sortable align="center" width="150"></el-table-column>
-              <el-table-column prop="uploadDate" label="上传日期" sortable align="center" width="180">
+              <el-table-column v-if="!isMobile" prop="fileSizeMB" label="大小 (MB)" sortable align="center" width="150"></el-table-column>
+              <el-table-column v-if="!isMobile" prop="uploadDate" label="上传日期" sortable align="center" width="180">
                 <template #default="scope">
                   <span>{{ formatDate(scope.row.uploadDate) }}</span>
                 </template>
               </el-table-column>
-            <el-table-column label="操作"  align="center">
-              <template #default="scope">
-                <div class="operations-cell">
-                  <div class="button-group">
-                      <el-button
-                      size="small"
-                      @click="handleDownload(scope.row)"
-                      class="download-button"
-                      :icon="Download"
-                      plain
-                      >
-                      下载
-                      </el-button>
-                      <el-button
-                      size="small"
-                      @click="generateSummaryForFile(scope.row)"
-                      class="summary-button"
-                      :icon="Memo"
-                      :loading="summaryLoading || scope.row.isGeneratingSummary"
-                      plain
-                      >
-                      生成摘要
-                      </el-button>
-                      <el-button
-                      size="small"
-                      @click="handleDelete(scope.row)"
-                      class="delete-button"
-                      :icon="Delete"
-                      plain
-                      >
-                      删除
-                      </el-button>
+
+              <!-- 移动端只显示一列，包含所有信息 -->
+              <el-table-column v-else  label="文件信息"  :show-overflow-tooltip="true">
+                <template #default="scope">
+                  <div class="mobile-file-info">
+                    <div class="mobile-file-name">{{ scope.row.fileName }}</div>
+                    <div class="mobile-file-details">
+                      <span class="mobile-file-type">{{ scope.row.fileType }}</span> |
+                      <span class="mobile-file-size">{{ scope.row.fileSizeMB }} MB</span> |
+                      <span class="mobile-file-date">{{ formatDate(scope.row.uploadDate) }}</span>
+                    </div>
                   </div>
-                </div>
+                </template>
+              </el-table-column>
+
+              <!-- 操作列在所有情况下都显示 -->
+              <el-table-column label="操作" align="center">
+                <template #default="scope">
+                  <div class="operations-cell">
+                    <div class="button-group">
+                      <el-button
+                        size="small"
+                        @click="handleDownload(scope.row)"
+                        class="download-button"
+                        :icon="Download"
+                        plain
+                      >
+                        下载
+                      </el-button>
+                      <el-button
+                        size="small"
+                        @click="generateSummaryForFile(scope.row)"
+                        class="summary-button"
+                        :icon="Memo"
+                        :loading="summaryLoading || scope.row.isGeneratingSummary"
+                        plain
+                      >
+                        生成摘要
+                      </el-button>
+                      <el-button
+                        size="small"
+                        @click="handleDelete(scope.row)"
+                        class="delete-button"
+                        :icon="Delete"
+                        plain
+                      >
+                        删除
+                      </el-button>
+                    </div>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
           </div>
-          </div>
-  
-          <div v-if="summary || summaryLoading" class="summary-section">
-          <!-- 文件摘要标题 -->
-            <div class="summary-header">
-            <h2 class="summary-title">文件摘要</h2>
-                <el-button
-                        size="small"
-                        @click="closeSummary"
-                        class="close-button"
-                        :icon="Close"
-                        plain
-                    >
-                </el-button>
-            </div>
-            <el-card class="summary-card">
-              <transition name="fade">
-                <div v-if="summaryLoading" class="summary-loading">
-                  <el-progress  :percentage="estimatedProgress"   :text-inside="true" :stroke-width="18"  :format="formatSummaryProgress"></el-progress>
-                </div>
-              </transition>
-  
-              <transition name="fade">
-                <p v-if="summary" class="summary-text">{{ summary }}</p>
-              </transition>
-              <p v-if="!summaryLoading && !summary" class="no-summary-text">暂无摘要</p>
-            </el-card>
-          </div>
         </div>
-      </main>
-      <footer v-if="!isMobile">
+
+        <div v-if="summary || summaryLoading" class="summary-section">
+          <!-- 文件摘要标题 -->
+          <div class="summary-header">
+            <h2 class="summary-title">文件摘要</h2>
+            <el-button
+              size="small"
+              @click="closeSummary"
+              class="close-button"
+              :icon="Close"
+              plain
+            >
+            </el-button>
+          </div>
+          <el-card class="summary-card">
+            <transition name="fade">
+              <div v-if="summaryLoading" class="summary-loading">
+                <el-progress  :percentage="estimatedProgress"   :text-inside="true" :stroke-width="18"  :format="formatSummaryProgress"></el-progress>
+              </div>
+            </transition>
+
+            <transition name="fade">
+              <p v-if="summary" class="summary-text">{{ summary }}</p>
+            </transition>
+            <p v-if="!summaryLoading && !summary" class="no-summary-text">暂无摘要</p>
+          </el-card>
+        </div>
+      </div>
+    </main>
+    <footer v-if="!isMobile">
       <p>&copy; 2024 慧议先锋. </p>
-      </footer>
-    </div>
-  </template>
+    </footer>
+  </div>
+</template>
   
   <script setup>
   import { ref, onMounted, nextTick, computed } from 'vue';
@@ -514,514 +523,519 @@ const performSearch = () => {
   
   
   <style scoped>
+  /* 搜索框和按钮的整体容器 */
+ .search-section {
+   display: flex;
+   justify-content: center; /* 居中对齐 */
+   align-items: center; /* 垂直居中对齐 */
+   margin: 20px 0; /* 上下间距 */
+ }
+ 
+ /* 搜索框样式 */
+ .search-input {
+   width: 400px; /* 调整为更长的宽度 */
+   height: 40px; /* 固定高度 */
+   margin-right: 15px; /* 与按钮的间距 */
+   border-radius: 8px; /* 圆角 */
+   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 添加轻微阴影 */
+   transition: border-color 0.3s ease, box-shadow 0.3s ease; /* 平滑过渡效果 */
+ }
+ .search-input:focus-within {
+   border-color: #3498db; /* 聚焦时边框颜色变化 */
+   box-shadow: 0 2px 12px rgba(52, 152, 219, 0.2); /* 聚焦时阴影增强 */
+ }
+ 
+ /* 搜索按钮样式 */
+ .search-button {
+   padding: 8px 20px; /* 内边距 */
+   font-size: 15px; /* 字体大小 */
+   font-weight: bold; /* 加粗字体 */
+   color: white; /* 文字颜色 */
+   background-color: #3498db; /* 按钮背景色 */
+   border: none; /* 去掉边框 */
+   border-radius: 8px; /* 圆角 */
+   cursor: pointer; /* 鼠标悬停时显示手型 */
+   transition: all 0.2s ease; /* 平滑过渡效果 */
+   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 添加轻微阴影 */
+ }
+ .search-button:hover {
+   background-color: #2f93d6; /* 悬停时背景色加深 */
+   transform: translateY(-1px); /* 悬停时轻微上移 */
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 悬停时阴影增强 */
+ }
+ .search-button:active {
+   transform: translateY(0); /* 点击时恢复原位 */
+   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 点击时阴影减弱 */
+ }
+ 
+ .file-manager-container {
+   position: relative;
+   overflow: hidden;
+     font-family: 'Helvetica Neue', Arial, sans-serif;
+     /* background-color: #f8f9fa; */
+     background-color: var(--background-color);
+     display: flex;
+     height: 100vh;
+ }
+   
+   /* 主内容区 */
+   .main-content {
+     flex: 1;
+     display: flex;
+     flex-direction: column;
+     padding: 30px;
+     overflow: auto;
+     position: relative;
+     /* background-color: #f8f9fa; */
+     background-color: var(--background-color);
+     min-height: 80vh; /* 增加最小高度 */
+     scrollbar-width: none; /* Firefox */
+   -ms-overflow-style: none; /* IE/Edge */
+   }
+   
+   /* 标题 */
+   .file-manager-title {
+     font-size: 28px;
+     font-weight: 700;
+     color: var(--text-color);
+     margin-bottom: 10px;
+     text-align: center;
+   }
+   
+   .file-manager-description {
+     font-size: 15px;
+     color: #7f8c8d;
+     margin-bottom: 25px;
+     text-align: center;
+   }
+   
+   /* 上传区域 */
+   .upload-section {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     margin-bottom: 25px;
+   }
+   
+   .upload-area {
+     border: 2px dashed #bdc3c7;
+     border-radius: 15px;
+     padding: 40px 50px;
+     text-align: center;
+     width: 500px;
+     cursor: pointer;
+     transition: border-color 0.3s, background-color 0.3s;
+     background-color: var(--background-color);
+     box-shadow: var(--global-box-shadow);
+   }
+   
+   .upload-area:hover {
+     border-color: #3498db;
+     background-color: #f0f8ff;
+   }
+   
+   .upload-icon {
+     font-size: 45px;
+     color: #3498db;
+   }
+   
+   .upload-text {
+     font-size: 17px;
+     color: #000;;
+     margin-top: 18px;
+   }
+   
+   .upload-text em {
+     color: #3498db;
+     font-style: normal;
+   }
+   
+   .upload-tip {
+     font-size: 13px;
+     color: var(--text-color);
+     margin-top: 10px;
+   }
+   
+   .upload-progress {
+     margin-top: 25px;
+     width: 65%;
+   }
+   
+   /* 内容区域 */
+   .content-wrapper {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 30px;
+     overflow: visible;
+     scrollbar-width: none; /* Firefox */
+   -ms-overflow-style: none; /* IE/Edge */
+   }
+   
+   /* 分割线 */
+   .divider{
+       margin-top: 1rem;
+       margin-bottom: 2rem;
+   }
+ 
+   /* 文件列表 */
+   .file-list-section {
+   flex: 2;
+   min-width: 400px;
+   max-height: calc(100vh - 320px);
+   height: 600px; /* 固定高度 */
+   overflow-x: auto; 
+   overflow-y: auto;
+   border-radius: 15px;
+   position: relative;  
+   
+ }
+ 
+   .table-wrapper {
+   overflow-x: auto;
+   overflow-y: auto; 
+   border-radius: 15px;
+   margin-top: 15px;
+   }
+   .el-table-column {
+   min-width: 120px;
+ }
+ .file-table {
+   width: 100%;
+   min-width: 500px;       /* 根据列宽总和调整 */
+   border-radius: 15px;
+   box-shadow: var(--global-box-shadow);
+ }
+   
+   .file-table :deep(.el-table__row) {
+     height: 55px;
+     background-color: var(--background-color);
+     border-bottom: 1px solid #eaeff1;
+     color: #47666e;
+   }
+   
+   .file-type-cell {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+   }
+   
+   .pdf-icon,
+   .word-icon {
+     font-size: 19px;
+     margin-right: 5px;
+   }
+   
+   .pdf-icon {
+     color: #e74c3c;
+   }
+   
+   .word-icon {
+     color: #3498db;
+   }
+   
+   /* 操作按钮容器 */
+   .operations-cell {
+     display: flex;
+     justify-content: center; 
+   }
+ 
+   .button-group {
+   display: flex;
+   gap: 2px;
+   flex-wrap: wrap; /* 允许换行 */
+   justify-content: center;
+ }
+   .download-button,
+   .summary-button,
+   .delete-button {
+     padding: 5px 10px;    /* 调整内边距 */
+     border-radius: 8px;  /* 圆角 */
+     border: none;
+     transition: all 0.2s ease;
+     width: auto;
+   }
+   .download-button {
+   background-color: transparent;
+   color:#67b9ef;
+   font-weight: bold;
+ 
+ }
+ 
+ .download-button:hover {
+   color:#2f93d6;
+ }
+ 
+ .summary-button {
+   background-color: transparent;
+   color: #38d714;
+   font-weight: bold;
+ }
+ 
+ .summary-button:hover {
+   color: rgb(30, 218, 74);
+ }
+ 
+ .delete-button {
+   background-color: transparent;
+   color: #ff7070;  
+   font-weight: bold;
+ }
+ 
+ .delete-button:hover {
+   color: #ff4c4c;
+ }
+ .download-button,
+ .summary-button,
+ .delete-button {
+   min-width: 120px; /* 最小宽度 */
+   flex-shrink: 0; /* 禁止缩小 */
+   white-space: normal; /* 允许文字换行 */
+   padding: 6px 12px;
+ }
+   .download-button:hover,
+   .summary-button:hover,
+   .delete-button:hover {
+     background-color: #ecf5ff; /* 统一的浅蓝色悬停背景 */
+     transform: translateY(-1px); /* 上移 */
+   }
+   .download-button:focus,
+   .download-button:active,
+   .summary-button:focus,
+   .summary-button:active,
+   .delete-button:focus,
+   .delete-button:active{
+     outline: none; /* 移除焦点框 */
+     transform: translateY(0);
+     box-shadow: none;
+   }
+   
+   /* 摘要区域 */
+   .summary-section {
+     flex: 1;
+     min-width: 320px;
+     background-color: var(--background-color);
+     border-radius: 15px;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+     padding: 25px;
+     max-height: calc(100vh - 320px);;
+     overflow-y: auto;
+     position: relative;
+   }
+   
+   .summary-header {
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     margin-bottom: 15px;
+ }
+ 
+   .summary-title {
+     font-size: 22px;
+     font-weight: 600;
+     color: var(--text-color);
+     text-align: center; /* 标题居中 */
+     margin: 0;
+     margin-bottom: 15px;
+   }
+ 
+   .close-button {
+   background-color: transparent;
+   border: none;
+   border-radius: 8px;
+   padding: 6px 12px;
+   font-weight: bold;
+   transition: all 0.2s ease;
+   display: flex;
+   align-items: center;
+   gap: 4px;
+   font-size: 24px;
+   position: absolute; /* 使用绝对定位 */
+   top: 25px; /* 距离顶部的距离，与摘要区域的内边距一致 */
+   right: 25px; /* 距离右侧的距离，与摘要区域的内边距一致 */
+ }
+ 
+ .close-button:hover {
+   font-weight: bold;
+   transform: translateY(-1px);
+ }
+ 
+ .close-button:focus,
+ .close-button:active {
+   outline: none;
+   transform: translateY(0);
+   box-shadow: none;
+ }
+ 
+   .summary-card {
+     padding: 0;
+     border: none;
+     box-shadow: none;
+     background-color: transparent;
+   }
+   
+   .summary-loading {
+     padding: 20px 0;
+   }
+   
+   .summary-text {
+     font-size: 15px;
+     color: var(--text-color);
+     line-height: 1.7;
+     margin-bottom: 12px;
+   }
+   
+   .no-summary-text {
+     font-style: italic;
+     color: #95a5a6;
+   }
+   
+ 
+   footer {
+   height: 25px;
+   background-color: var(--background-color); /* 使用全局背景颜色 */
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border-top: 1px solid #ddd;
+   z-index: 10;
+   box-shadow: 0 -2px 4px rgba(0,0,0,0.08);
+   bottom: 0;
+   width: 100%;
+   position: fixed;
+ }
+   /* 过渡效果 */
+   .fade-enter-active,
+   .fade-leave-active {
+     transition: opacity 0.3s ease;
+   }
+   
+   .fade-enter-from,
+   .fade-leave-to {
+     opacity: 0;
+   }
+ 
+   /* 移动端优化 */
+   @media (max-width: 768px) {
+     .file-manager-container {
+       flex-direction: column;
+       height: auto;
+       /* 移除可能导致水平滚动的内边距 */
+       padding: 0;
+     }
+   
+     .main-content {
+       /* 移除可能导致水平滚动的内边距 */
+       padding: 15px;
+       min-height: auto;
+       /* 移除可能导致水平滚动的 overflow 设置 */
+       overflow-x: hidden;
+     }
+   
+     /* ... (其他样式) ... */
+     .file-list-section {
+       height: auto;
+       max-height: none;
+       overflow-x: hidden;
+       width: 100%;
+     }
+   
+     /*  移除 display: block;  保留 width: 100%; */
+     .file-table {
+       min-width: 100%;
+       width: 100%;
+       overflow-x: auto;
+       table-layout: fixed; /* 添加 table-layout 属性 */
+     }
+   
+     /* 移动端文件信息样式 */
+     .mobile-file-info {
+       display: flex;
+       flex-direction: column;
+     }
+   
+     /* ... mobile-file-name, mobile-file-details 等样式保持不变 ... */
+     .mobile-file-name {
+       font-weight: bold;
+       margin-bottom: 4px;
+     }
+   
+     .mobile-file-details {
+       font-size: 12px;
+       color: #666;
+     }
+   
+     .button-group {
+       flex-direction: column; /* 按钮垂直排列 */
+       gap: 6px;
+     }
+   
+     .download-button,
+     .summary-button,
+     .delete-button {
+       width: 100%; /* 按钮宽度占满 */
+       padding: 8px; /* 更小的内边距 */
+       font-size: 13px;
+     }
+   
+     .summary-section {
+       max-height: 50vh;
+       /* 移除可能导致水平滚动的 overflow 设置 */
+       width: 100%;
+     }
+   }
+   
+   /* 响应式设计 - 较小屏幕的手机 */
+    @media (max-width: 480px) {
+     .file-manager-title {
+       font-size: 20px; /* 更小的标题 */
+     }
+   
+     .file-manager-description {
+       font-size: 13px; /* 更小的描述文字 */
+     }
+   
+     .upload-area {
+       padding: 20px;  /* 更小的内边距 */
+     }
+   
+     .upload-text {
+       font-size: 14px;
+     }
+   
+     .upload-tip {
+       font-size: 12px;
+     }
+   
+     .el-table-column {
+       /* min-width: 80px;  移除最小列宽 */  /* let column width adjust to the content */
+     }
+   
+     .file-type-cell .el-icon {
+       font-size: 16px;
+     }
+   
+     .summary-title {
+       font-size: 18px; /* 摘要标题 */
+     }
+   
+     .summary-text {
+       font-size: 14px;
+       line-height: 1.6; /* 行高 */
+     }
+   
+     footer {
+         height: 40px;       /* 页脚高度 */
+         font-size: 12px;    /* 页脚文字 */
+     }
+   
+     /* 关闭按钮 */
+     .close-button {
+       padding: 4px;      /* 关闭按钮更小 */
+       font-size: 18px;  /* 图标大小 */
+       top: 20px;         /* 调整位置 */
+       right: 20px;       /* 调整位置 */
+     }
+ }
 
- /* 搜索框和按钮的整体容器 */
-.search-section {
-  display: flex;
-  justify-content: center; /* 居中对齐 */
-  align-items: center; /* 垂直居中对齐 */
-  margin: 20px 0; /* 上下间距 */
-}
-
-/* 搜索框样式 */
-.search-input {
-  width: 400px; /* 调整为更长的宽度 */
-  height: 40px; /* 固定高度 */
-  margin-right: 15px; /* 与按钮的间距 */
-  border-radius: 8px; /* 圆角 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 添加轻微阴影 */
-  transition: border-color 0.3s ease, box-shadow 0.3s ease; /* 平滑过渡效果 */
-}
-.search-input:focus-within {
-  border-color: #3498db; /* 聚焦时边框颜色变化 */
-  box-shadow: 0 2px 12px rgba(52, 152, 219, 0.2); /* 聚焦时阴影增强 */
-}
-
-/* 搜索按钮样式 */
-.search-button {
-  padding: 8px 20px; /* 内边距 */
-  font-size: 15px; /* 字体大小 */
-  font-weight: bold; /* 加粗字体 */
-  color: white; /* 文字颜色 */
-  background-color: #3498db; /* 按钮背景色 */
-  border: none; /* 去掉边框 */
-  border-radius: 8px; /* 圆角 */
-  cursor: pointer; /* 鼠标悬停时显示手型 */
-  transition: all 0.2s ease; /* 平滑过渡效果 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 添加轻微阴影 */
-}
-.search-button:hover {
-  background-color: #2f93d6; /* 悬停时背景色加深 */
-  transform: translateY(-1px); /* 悬停时轻微上移 */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 悬停时阴影增强 */
-}
-.search-button:active {
-  transform: translateY(0); /* 点击时恢复原位 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 点击时阴影减弱 */
-}
-
-.file-manager-container {
-  position: relative;
-  overflow: hidden;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    /* background-color: #f8f9fa; */
-    background-color: var(--background-color);
-    display: flex;
-    height: 100vh;
-}
-  
-  /* 主内容区 */
-  .main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 30px;
-    overflow: auto;
-    position: relative;
-    /* background-color: #f8f9fa; */
-    background-color: var(--background-color);
-    min-height: 80vh; /* 增加最小高度 */
-    scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  }
-  
-  /* 标题 */
-  .file-manager-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-color);
-    margin-bottom: 10px;
-    text-align: center;
-  }
-  
-  .file-manager-description {
-    font-size: 15px;
-    color: #7f8c8d;
-    margin-bottom: 25px;
-    text-align: center;
-  }
-  
-  /* 上传区域 */
-  .upload-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 25px;
-  }
-  
-  .upload-area {
-    border: 2px dashed #bdc3c7;
-    border-radius: 15px;
-    padding: 40px 50px;
-    text-align: center;
-    width: 500px;
-    cursor: pointer;
-    transition: border-color 0.3s, background-color 0.3s;
-    background-color: var(--background-color);
-    box-shadow: var(--global-box-shadow);
-  }
-  
-  .upload-area:hover {
-    border-color: #3498db;
-    background-color: #f0f8ff;
-  }
-  
-  .upload-icon {
-    font-size: 45px;
-    color: #3498db;
-  }
-  
-  .upload-text {
-    font-size: 17px;
-    color: #000;;
-    margin-top: 18px;
-  }
-  
-  .upload-text em {
-    color: #3498db;
-    font-style: normal;
-  }
-  
-  .upload-tip {
-    font-size: 13px;
-    color: var(--text-color);
-    margin-top: 10px;
-  }
-  
-  .upload-progress {
-    margin-top: 25px;
-    width: 65%;
-  }
-  
-  /* 内容区域 */
-  .content-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px;
-    overflow: visible;
-    scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  }
-  
-  /* 分割线 */
-  .divider{
-      margin-top: 1rem;
-      margin-bottom: 2rem;
-  }
-
-  /* 文件列表 */
-  .file-list-section {
-  flex: 2;
-  min-width: 400px;
-  max-height: calc(100vh - 320px);
-  height: 600px; /* 固定高度 */
-  overflow-x: auto; 
-  overflow-y: auto;
-  border-radius: 15px;
-  position: relative;  
-  
-}
-
-  .table-wrapper {
-  overflow-x: auto;
-  overflow-y: auto; 
-  border-radius: 15px;
-  margin-top: 15px;
-  }
-  .el-table-column {
-  min-width: 120px;
-}
-.file-table {
-  width: 100%;
-  min-width: 500px;       /* 根据列宽总和调整 */
-  border-radius: 15px;
-  box-shadow: var(--global-box-shadow);
-}
-  
-  .file-table :deep(.el-table__row) {
-    height: 55px;
-    background-color: var(--background-color);
-    border-bottom: 1px solid #eaeff1;
-    color: #47666e;
-  }
-  
-  .file-type-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .pdf-icon,
-  .word-icon {
-    font-size: 19px;
-    margin-right: 5px;
-  }
-  
-  .pdf-icon {
-    color: #e74c3c;
-  }
-  
-  .word-icon {
-    color: #3498db;
-  }
-  
-  /* 操作按钮容器 */
-  .operations-cell {
-    display: flex;
-    justify-content: center; 
-  }
-
-  .button-group {
-  display: flex;
-  gap: 2px;
-  flex-wrap: wrap; /* 允许换行 */
-  justify-content: center;
-}
-  .download-button,
-  .summary-button,
-  .delete-button {
-    padding: 5px 10px;    /* 调整内边距 */
-    border-radius: 8px;  /* 圆角 */
-    border: none;
-    transition: all 0.2s ease;
-    width: auto;
-  }
-  .download-button {
-  background-color: transparent;
-  color:#67b9ef;
-  font-weight: bold;
-
-}
-
-.download-button:hover {
-  color:#2f93d6;
-}
-
-.summary-button {
-  background-color: transparent;
-  color: #38d714;
-  font-weight: bold;
-}
-
-.summary-button:hover {
-  color: rgb(30, 218, 74);
-}
-
-.delete-button {
-  background-color: transparent;
-  color: #ff7070;  
-  font-weight: bold;
-}
-
-.delete-button:hover {
-  color: #ff4c4c;
-}
-.download-button,
-.summary-button,
-.delete-button {
-  min-width: 120px; /* 最小宽度 */
-  flex-shrink: 0; /* 禁止缩小 */
-  white-space: normal; /* 允许文字换行 */
-  padding: 6px 12px;
-}
-  .download-button:hover,
-  .summary-button:hover,
-  .delete-button:hover {
-    background-color: #ecf5ff; /* 统一的浅蓝色悬停背景 */
-    transform: translateY(-1px); /* 上移 */
-  }
-  .download-button:focus,
-  .download-button:active,
-  .summary-button:focus,
-  .summary-button:active,
-  .delete-button:focus,
-  .delete-button:active{
-    outline: none; /* 移除焦点框 */
-    transform: translateY(0);
-    box-shadow: none;
-  }
-  
-  /* 摘要区域 */
-  .summary-section {
-    flex: 1;
-    min-width: 320px;
-    background-color: var(--background-color);
-    border-radius: 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-    padding: 25px;
-    max-height: calc(100vh - 320px);;
-    overflow-y: auto;
-    position: relative;
-  }
-  
-  .summary-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-  .summary-title {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--text-color);
-    text-align: center; /* 标题居中 */
-    margin: 0;
-    margin-bottom: 15px;
-  }
-
-  .close-button {
-  background-color: transparent;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 24px;
-  position: absolute; /* 使用绝对定位 */
-  top: 25px; /* 距离顶部的距离，与摘要区域的内边距一致 */
-  right: 25px; /* 距离右侧的距离，与摘要区域的内边距一致 */
-}
-
-.close-button:hover {
-  font-weight: bold;
-  transform: translateY(-1px);
-}
-
-.close-button:focus,
-.close-button:active {
-  outline: none;
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-  .summary-card {
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    background-color: transparent;
-  }
-  
-  .summary-loading {
-    padding: 20px 0;
-  }
-  
-  .summary-text {
-    font-size: 15px;
-    color: var(--text-color);
-    line-height: 1.7;
-    margin-bottom: 12px;
-  }
-  
-  .no-summary-text {
-    font-style: italic;
-    color: #95a5a6;
-  }
-  
-
-  footer {
-  height: 25px;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-top: 1px solid #ddd;
-  z-index: 10;
-  box-shadow: 0 -2px 4px rgba(0,0,0,0.08);
-  bottom: 0;
-  width: 100%;
-  position: fixed;
-}
-  /* 过渡效果 */
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity 0.3s ease;
-  }
-  
-  .fade-enter-from,
-  .fade-leave-to {
-    opacity: 0;
-  }
-
-  @media (max-width: 768px) {
-  .file-manager-container {
-    flex-direction: column;
-    height: auto;
-    padding: 15px;
-  }
-
-  .main-content {
-    padding: 20px;
-    min-height: auto;
-  }
-
-  .file-manager-title {
-    font-size: 22px;
-    margin-bottom: 8px;
-  }
-
-  .file-manager-description {
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-
-  .upload-area {
-    width: 100%;
-    padding: 30px;
-  }
-
-  .upload-text {
-    font-size: 15px;
-  }
-
-  .content-wrapper {
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .file-list-section {
-    height: 400px;
-    max-height: 60vh;
-  }
-
-  .file-table :deep(.el-table__row) {
-    height: 48px;
-  }
-
-  .button-group {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .download-button,
-  .summary-button,
-  .delete-button {
-    width: 100%;
-    padding: 8px;
-    font-size: 13px;
-  }
-
-  .summary-section {
-    max-height: 50vh;
-  }
-}
-
-@media (max-width: 480px) {
-  .file-manager-title {
-    font-size: 20px;
-  }
-
-  .file-manager-description {
-    font-size: 13px;
-  }
-
-  .upload-area {
-    padding: 20px;
-  }
-
-  .upload-text {
-    font-size: 14px;
-  }
-
-  .upload-tip {
-    font-size: 12px;
-  }
-
-  .el-table-column {
-    min-width: 80px;
-  }
-
-  .file-table {
-    min-width: 320px;
-  }
-
-  .file-type-cell .el-icon {
-    font-size: 16px;
-  }
-
-  .summary-title {
-    font-size: 18px;
-  }
-
-  .summary-text {
-    font-size: 14px;
-    line-height: 1.6;
-  }
-
-  footer {
-    height: 40px;
-    font-size: 12px;
-  }
-
-  .close-button {
-    padding: 4px;
-    font-size: 18px;
-    top: 20px;
-    right: 20px;
-  }
-}
-  </style>
+</style>
   
