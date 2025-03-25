@@ -1042,7 +1042,72 @@ wss.on('connection', (ws) => {
     });
 
 });
+const getMaterials = (dirPath, relativePath = '') => {
+  const items = fs.readdirSync(dirPath);
+  const result = [];
+  for (const item of items) {
+      try {
+          const fullPath = path.join(dirPath, item);
+          const stat = fs.statSync(fullPath);
+          if (stat.isDirectory()) {
+              result.push({
+                  id: path.join(relativePath, item), // 使用相对路径作为 ID
+                  name: item,
+                  type: 'directory',
+                  children: getMaterials(fullPath, path.join(relativePath, item)), // 递归
+              });
+          } else if (stat.isFile()) {
+              result.push({
+                  id: path.join(relativePath, item),
+                  name: item,
+                  type: 'file',
+                  size: stat.size,
+              });
+          }
+      } catch (error) {
+          console.error("处理文件/文件夹时出错:", error, item);
+      }
+  }
+  return result;
+};
 
+app.get('/api/materials', (req, res) => {
+  const materialsDir = path.join(__dirname, 'public', 'materials'); // 正确！
+  console.log(materialsDir);
+  try {
+      const materials = getMaterials(materialsDir);
+      res.status(200).json(materials);
+  } catch (error) {
+      console.error("获取资料列表失败:", error);
+      res.status(500).send({ error: '无法获取资料列表' });
+  }
+});
+
+// 2. 提供文件下载的 API (根据路径参数)
+app.get('/api/downloadMaterial', (req, res) => {
+  const relativeFilePath = req.query.path; // 从查询参数获取相对路径
+  if (!relativeFilePath) {
+      return res.status(400).send({ error: '缺少文件路径参数' });
+  }
+
+  // 修正: 使用 materialsDir，不再使用 process.cwd()
+  const materialsDir = path.join(__dirname, 'public', 'materials');
+  const fullFilePath = path.join(materialsDir, relativeFilePath);
+
+  fs.access(fullFilePath, fs.constants.F_OK, (err) => {
+      if (err) {
+          console.error('文件不存在或不可访问:', err, fullFilePath);
+          return res.status(404).send({ error: '文件未找到' });
+      }
+      // 使用 res.download()
+      res.download(fullFilePath, (err) => {
+          if (err) {
+              console.error('下载出错：', err);
+              res.status(500).send({ error: "下载出错" });
+          }
+      }); // 设置响应头
+  });
+});
 // --- 2. 启动 Express 和 WebSocket 服务 ---
 
 // 2.1 启动 Express 应用 (并获取 HTTP 服务器对象)

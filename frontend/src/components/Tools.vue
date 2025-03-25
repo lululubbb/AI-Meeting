@@ -1,3 +1,4 @@
+<!-- Tools.vue -->
 <template>
     <!-- 文件功能-->
     <button @click="navigateToFiles">
@@ -15,7 +16,12 @@
    <button @click="navigateToForum">
     <i class="fa-solid fa-users"></i>
    <span>会议论坛</span>
+
     </button>
+    <button @click="navigateToMaterials" class="nav-button">
+    <i class="fas fa-file-download"></i> 
+     <span>会议资料</span>
+  </button>
 
     <!-- 日历功能-->
    <button @click="navigateToCalendar">
@@ -74,6 +80,10 @@
     // 使用命名路由更安全（需在router/index.js配置）
     router.push({ name: 'RecentActivityCard' })
   }
+  const navigateToMaterials = () => {
+  router.push({ name: 'Materials' });
+};
+  
   </script>
   
   <style scoped>
