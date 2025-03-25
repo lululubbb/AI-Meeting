@@ -1,114 +1,182 @@
-<!-- Tools.vue -->
 <template>
-    <!-- 文件功能-->
-    <button @click="navigateToFiles">
-   <i class="fa-solid fa-file"></i>
-   <span>文件管理</span>
-    </button>
+  <div class="tools-page">
+    <el-row :gutter="16" justify="start">
+      <!-- :xs="12"  在xs屏幕下改为占据12列(一行两个) -->
+      <el-col :xs="12" :sm="8" :md="6" :lg="4" v-for="tool in tools" :key="tool.name" class="tool-card-wrapper">
+         <el-card shadow="hover" class="tool-card" @click="navigateTo(tool.route)">
+          <div class="tool-icon-wrapper">
+             <i :class="tool.icon" class="tool-icon" :style="{ color: tool.color }"></i>
+           </div>
+           <div class="tool-content">
+             <h3 class="tool-title">{{ tool.title }}</h3>
+            <p class="tool-description">{{ tool.description }}</p>
+          </div>
+       </el-card>
+     </el-col>
+    </el-row>
+  </div>
+</template>
 
-   <!-- 地图功能-->
-   <button @click="navigateToMap">
-    <i class="fa-solid fa-map-location-dot"></i>
-   <span>地图导航</span>
-    </button>
+<script setup>
+import { useRouter } from 'vue-router';
+import { ElRow, ElCol, ElCard } from 'element-plus';
 
-    <!-- 论坛功能-->
-   <button @click="navigateToForum">
-    <i class="fa-solid fa-users"></i>
-   <span>会议论坛</span>
+const router = useRouter();
 
-    </button>
-    <button @click="navigateToMaterials" class="nav-button">
-    <i class="fas fa-file-download"></i> 
-     <span>会议资料</span>
-  </button>
+const tools = [
+  {
+    name: 'Files',
+    title: '文件管理',
+    description: '上传、下载和管理会议相关文件',
+    icon: 'fa-solid fa-file',
+    color: '#409eff',
+    route: 'Files',
+  },
+  {
+    name: 'Map',
+    title: '地图导航',
+    description: '查看会议地点及周边信息',
+    icon: 'fa-solid fa-map-location-dot',
+    color: '#67c23a',
+    route: 'Map',
+  },
+  {
+    name: 'Forum',
+    title: '会议论坛',
+    description: '参与讨论，与其他参会者交流',
+    icon: 'fa-solid fa-users',
+    color: '#e6a23c',
+    route: 'Forum',
+  },
+  {
+    name: 'Materials',
+    title: '会议资料',
+    description: '下载会议资料',
+    icon: 'fas fa-file-download',
+    color: '#f56c6c',
+    route: 'Materials',
+  },
+  {
+    name: 'CalendarToDoList',
+    title: '日历助手',
+    description: '帮助您管理日程',
+    icon: 'fa-solid fa-calendar-days',
+    color: 'pink',
+    route: 'CalendarToDoList',
+  },
+  {
+    name: 'RecentActivityCard',
+    title: '最近活动',
+    description: '查看近期活动',
+    icon: 'fa-solid fa-star',
+    color: '#909399',
+    route: 'RecentActivityCard',
+  },
+  {
+    name: 'Help',
+    title: '帮助页面',
+    description: '查看与会议相关帮助信息',
+    icon: 'fa-solid fa-file',
+    color: '#409eff',
+    route: 'Help',
+  },
+];
 
-    <!-- 日历功能-->
-   <button @click="navigateToCalendar">
-    <i class="fa-solid fa-calendar-days"></i>
-   <span>日历助手</span>
-    </button>
-
-    <!-- 活动功能-->
-   <button @click="navigateToActivity">
-    <i class="fa-solid fa-star"></i>
-   <span>最近活动</span>
-    </button>
-
-    <!-- 帮助功能-->
-   <button @click="navigateToHelp">
-   <i class="fa-solid fa-file"></i>
-   <span>帮助页面</span>
-    </button>
-    
-  </template>
-  
-  <script setup>
-  // 导入正确的路由API
-  import { useRouter } from 'vue-router'
-  
-  // 获取路由实例
-  const router = useRouter()
-  
-  // 跳转到文件页面
-  const navigateToFiles = () => {
-    // 使用命名路由更安全（需在router/index.js配置）
-    router.push({ name: 'Files' })
-  }
-
-  const navigateToMap = () => {
-    // 使用命名路由更安全（需在router/index.js配置）
-    router.push({ name: 'Map' })
-  }
-
-  const navigateToForum = () => {
-    // 使用命名路由更安全（需在router/index.js配置）
-    router.push({ name: 'Forum' })
-  }
-
-  const navigateToHelp = () => {
-    // 使用命名路由更安全（需在router/index.js配置）
-    router.push({ name: 'Help' })
-  }
-
-  const navigateToCalendar = () => {
-    // 使用命名路由更安全（需在router/index.js配置）
-    router.push({ name: 'CalendarToDoList' })
-  }
-
-  const navigateToActivity = () => {
-    // 使用命名路由更安全（需在router/index.js配置）
-    router.push({ name: 'RecentActivityCard' })
-  }
-  const navigateToMaterials = () => {
-  router.push({ name: 'Materials' });
+const navigateTo = (routeName) => {
+  router.push({ name: routeName });
 };
-  
-  </script>
-  
-  <style scoped>
-  button {
-    background: none;
-    border: none;
-    font-size: 16px;
-    display: box;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
+</script>
+
+<style scoped>
+.tools-page {
+  padding: 16px; /* 减小整体 padding */
+  background-color: #f8f8f8;
+}
+
+.tool-card-wrapper {
+  margin-bottom: 16px; /* 减小卡片间距 */
+  display: flex; /* 添加 display: flex */
+  justify-content: center; /* 水平居中 */
+}
+
+.tool-card {
+  border-radius: 8px; /* 减小圆角 */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+ width: 100%; /* 添加 width: 100% */
+  max-width: 200px; /* 设置最大宽度 */
+}
+
+.tool-card:hover {
+  transform: translateY(-4px); /* 减小上浮幅度 */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); /* 减小阴影 */
+}
+
+.tool-icon-wrapper {
+  padding: 12px; /* 减小图标区域 padding */
+  text-align: center;
+  border-radius: 8px 8px 0 0;
+}
+
+.tool-icon {
+  font-size: 36px; /* 减小图标大小 */
+}
+
+.tool-content {
+   padding: 10px 16px;
+  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tool-title {
+  font-size: 16px; /* 减小标题字体大小 */
+  font-weight: bold;
+  margin-bottom: 4px; /* 减小标题下边距 */
+  color: #333;
+}
+
+.tool-description {
+  font-size: 12px; /* 减小描述字体大小 */
+  color: #777;
+  line-height: 1.3; /* 减小行高 */
+  margin: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .tool-title {
+    font-size: 14px;
   }
-  i {
-    font-size: 20px;
-    margin-bottom: 5px;
+
+  .tool-description {
+    font-size: 11px;
   }
-  /* 移动端适配 */
-  @media (max-width: 768px) {
-    .icon {
-      width: 20px;
-      height: 20px;
-    }
-    
-    .text {
-      display: none; /* 小屏隐藏文字 */
-    }
+}
+
+@media (max-width: 576px) {
+.tool-card-wrapper{
+     justify-content: flex-start;
+
+}
+.tool-card{
+     max-width: 300px; /* 设置最大宽度 */
+}
+  .tool-icon-wrapper {
+    padding: 8px; /* 进一步减小 padding */
   }
-  </style>
+
+  .tool-icon {
+    font-size: 30px; /* 进一步减小图标大小 */
+  }
+
+  .tool-content {
+    padding: 8px 12px; /* 减小 padding */
+  }
+}
+</style>
