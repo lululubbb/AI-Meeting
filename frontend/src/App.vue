@@ -1,8 +1,8 @@
 <template>
   <div id="app">
     <AIFloatingChat v-if="!isLoginOrIntroductionPage" />
-    <Header v-if="!isLoginOrIntroductionPage" />
-    <div :class="['content', { 'no-header': isLoginOrIntroductionPage }]">
+    <Header v-if="!isLoginOrIntroductionPage && !isMobile" />
+    <div :class="['content', { 'no-header': isLoginOrIntroductionPage&&isMobile }]">
       <!-- 新增：用一个 div 包裹 -->
       <div style="position: relative;">
         <transition name="fade" mode="out-in">
@@ -11,6 +11,7 @@
         <VideoCall v-if="isVideoCallActive" />
       </div>
     </div>
+    <Footer v-if="!isLoginOrIntroductionPage && isMobile" /> 
   </div>
 </template>
 
@@ -26,6 +27,15 @@ import FirestoreService from './services/FirestoreService.js';
 import { useStore } from 'vuex';
 import axios from 'axios';
 import VideoCall from './views/VideoCall.vue'; // 作为全局组件导入
+import Footer from './components/Footer.vue';
+
+// --- Mobile Detection ---
+const isMobile = ref(false); // Define isMobile here
+
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
+};
+
 export default {
   name: 'App',
   components: {
@@ -33,6 +43,7 @@ export default {
     Header,
     IntroductionPage,
     VideoCall, 
+    Footer,
   },
   setup() {
     const route = useRoute();
@@ -42,6 +53,7 @@ export default {
     const store = useStore();
     const isVideoCallActive = computed(() => store.state.isVideoCallActive);
     const isMaximized = computed(() => store.state.isMaximized); //获取最大化状态
+    
     // 全局的显示会议开始通知的方法
      const showMeetingStartNotification = (meetingData) => {
 
@@ -199,7 +211,9 @@ export default {
         store.commit('SET_VIDEOCALL_MAXIMIZED', false); // 切换到其他页面, 设置为小窗
         }
   });
-    onMounted(() => {
+  onMounted(() => {
+      checkIsMobile();
+      window.addEventListener('resize', checkIsMobile);
       const user = store.getters.getUser;
       if (user) {
         FirestoreService.getAllMeetingHistory(user.uid)
@@ -213,12 +227,17 @@ export default {
       }
     });
 
+    // onUnmounted(() => {
+    //   window.removeEventListener('resize', checkIsMobile); // Remove event listener
+    // });
+
     return {
       isLoginOrIntroductionPage,
       aiFloatingChat,
       isVideoCallActive,
       route,         
       returnToMeeting, 
+      isMobile, // Return isMobile to the template!
 
     };
   },
@@ -290,5 +309,13 @@ a {
 
 .return-to-meeting:hover {
   background-color: #0056b3; /* 悬停时颜色加深 */
+}
+
+/* 移动端适配：去掉 padding-top */
+@media screen and (max-width: 768px) {
+  .content {
+    padding-top: 0;
+    min-height: 100vh;
+  }
 }
 </style>

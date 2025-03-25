@@ -16,6 +16,10 @@ import Helpview from '../views/Helpview.vue';
 import Settingview from '../views/Settingview.vue';
 import IntroductionPage from '../views/IntroductionPage.vue'
 import MeetingShow from '../components/MeetingShow.vue'; // 1. 导入 MeetingShow 组件
+import Tools from '../components/Tools.vue';
+import AIFloatingChat from '../components/AIFloatingChat.vue'
+import DataSummary from '../components/DataSummary.vue'
+import Footer from '../components/Footer.vue'
 
 // 定义路由规则
 const routes = [
@@ -43,17 +47,27 @@ const routes = [
     component: ReserveMeeting,
     meta: { requiresAuth: true }
   },
-  // {
-  //   path: '/video-call',
-  //   name: 'VideoCall',
-  //   component: VideoCall,
-  //   meta: { requiresAuth: true }
-  // },
+  {
+    path: '/footer',
+    name: 'Footer',
+    component: Footer,
+    meta: { requiresAuth: true }
+  },
   { path: '/meetings',
     name: 'Meetings', 
     component: Meetings,
     meta: { requiresAuth: true }
   },
+  { path: '/tools',
+    name: 'Tools', 
+    component: Tools,
+    meta: { requiresAuth: true }
+  },
+  { path: '/dataSummary', 
+    name: 'DataSummary', 
+    component: DataSummary,
+    meta: { requiresAuth: true }
+   },
   { path: '/reservations',
     name: 'Reservations', 
     component: Reservations,
@@ -72,6 +86,11 @@ const routes = [
   { path: '/chat',
     name: 'Chat', 
     component: Chat,
+    meta: { requiresAuth: true }
+  },
+  { path: '/aiFloatingChat',
+    name: 'AIFloatingChat', 
+    component: AIFloatingChat,
     meta: { requiresAuth: true }
   },
   { path: '/help',

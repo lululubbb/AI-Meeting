@@ -148,7 +148,7 @@
           </div>
         </div>
       </main>
-      <footer>
+      <footer v-if="!isMobile">
       <p>&copy; 2024 慧议先锋. </p>
       </footer>
     </div>
@@ -174,6 +174,11 @@
   const summaryProgress = ref(0);
   const receivedChars = ref(0);
   const estimatedMaxChars = ref(200); // 初始估算最大字符数
+  const isMobile = ref(false);
+
+  const checkIsMobile = () => {
+    isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
+  };
 
   // 进度条颜色
   const customColors = [
@@ -479,6 +484,8 @@ const closeSummary = () => {
 onMounted(() => {
   fetchUploadedFiles();
   console.log('已加载的文件列表:', uploadedFiles.value);
+  checkIsMobile();
+  window.addEventListener('resize', checkIsMobile);
 })
   
   const tableRowClassName = ({ row, rowIndex }) => {
