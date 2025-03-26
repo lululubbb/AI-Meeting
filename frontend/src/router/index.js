@@ -25,6 +25,11 @@ import Forum from '../components/Forum.vue'
 import CalendarToDoList from '../components/CalendarToDoList.vue'
 import RecentActivityCard from '../components/RecentActivityCard.vue'
 import Materials from '../components/Materials.vue'
+import ConferenceAgenda from '../components/ConferenceAgenda.vue'; 
+import ParticipantGuide from '../components/ParticipantGuide.vue'; 
+import NewsCenter from '../components/NewsCenter.vue';       
+import FeaturedEvents from '../components/FeaturedEvents.vue';     
+import ExhibitorShowcase from '../components/ExhibitorShowcase.vue';
 // 定义路由规则
 const routes = [
   {
@@ -150,6 +155,12 @@ const routes = [
     meta: { requiresAuth: true }      // 添加路由元信息，表示需要身份验证
 
   },
+  { path: '/agenda',name: 'ConferenceAgenda',component: ConferenceAgenda, 
+      meta: { requiresAuth: true } },
+  { path: '/guide', name: 'ParticipantGuide', component: ParticipantGuide, meta: { requiresAuth: true } },
+  { path: '/news', name: 'NewsCenter', component: NewsCenter, meta: { requiresAuth: true } },
+  { path: '/events', name: 'FeaturedEvents', component: FeaturedEvents, meta: { requiresAuth: true } },
+  { path: '/exhibitors', name: 'ExhibitorShowcase', component: ExhibitorShowcase, meta: { requiresAuth: true } },
   // 处理未定义的路径
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

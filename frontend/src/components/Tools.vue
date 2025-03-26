@@ -20,7 +20,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { ElRow, ElCol, ElCard } from 'element-plus';
-
+import { ElMessage } from 'element-plus';
 const router = useRouter();
 
 const tools = [
@@ -61,7 +61,7 @@ const tools = [
     title: '日历助手',
     description: '帮助您管理日程',
     icon: 'fa-solid fa-calendar-days',
-    color: 'pink',
+    color: '#b37feb', 
     route: 'CalendarToDoList',
   },
   {
@@ -76,14 +76,59 @@ const tools = [
     name: 'Help',
     title: '帮助页面',
     description: '查看与会议相关帮助信息',
-    icon: 'fa-solid fa-file',
-    color: '#409eff',
+    icon: 'fa-solid fa-circle-question', // 更新了图标
+    color: '#5bc0de', 
     route: 'Help',
+  },
+  {
+    name: 'ConferenceAgenda',
+    title: '大会议程',
+    description: '查看详细会议日程安排',
+    icon: 'fa-solid fa-calendar-alt', // 日程图标
+    color: '#5cb85c', 
+    route: 'ConferenceAgenda',
+  },
+  {
+    name: 'ParticipantGuide',
+    title: '参会指南',
+    description: '交通、住宿、签到等指引',
+    icon: 'fa-solid fa-book-open', // 指南/书本图标
+    color: '#f0ad4e', 
+    route: 'ParticipantGuide',
+  },
+  {
+    name: 'NewsCenter',
+    title: '新闻中心',
+    description: '查看会议最新动态与报道',
+    icon: 'fa-solid fa-newspaper', // 新闻图标
+    color: '#d9534f', 
+    route: 'NewsCenter',
+  },
+  {
+    name: 'FeaturedEvents',
+    title: '特色活动',
+    description: '了解会议期间的特别活动',
+    icon: 'fa-solid fa-lightbulb', // 灯泡/创意图标
+    color: '#337ab7', 
+    route: 'FeaturedEvents',
+  },
+  {
+    name: 'ExhibitorShowcase',
+    title: '展商风采',
+    description: '浏览参展商信息与展位',
+    icon: 'fa-solid fa-store', // 商店/展位图标
+    color: '#777777', 
+    route: 'ExhibitorShowcase',
   },
 ];
 
 const navigateTo = (routeName) => {
-  router.push({ name: routeName });
+  // 检查路由名称是否存在，避免无效跳转
+  if (router.hasRoute(routeName)) {
+      router.push({ name: routeName });
+  } else {
+      ElMessage.warning(`功能 "${routeName}" 正在开发中...`);
+  }
 };
 </script>
 
