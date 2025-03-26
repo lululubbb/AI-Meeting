@@ -29,7 +29,9 @@ import ConferenceAgenda from '../components/ConferenceAgenda.vue';
 import ParticipantGuide from '../components/ParticipantGuide.vue'; 
 import NewsCenter from '../components/NewsCenter.vue';       
 import FeaturedEvents from '../components/FeaturedEvents.vue';     
-import ExhibitorShowcase from '../components/ExhibitorShowcase.vue';
+import Guests from '../components/Guests.vue';  
+import ExhibitorShowcase from '../components/ExhibitorShowcase.vue';  
+
 // 定义路由规则
 const routes = [
   {
@@ -161,6 +163,7 @@ const routes = [
   { path: '/news', name: 'NewsCenter', component: NewsCenter, meta: { requiresAuth: true } },
   { path: '/events', name: 'FeaturedEvents', component: FeaturedEvents, meta: { requiresAuth: true } },
   { path: '/exhibitors', name: 'ExhibitorShowcase', component: ExhibitorShowcase, meta: { requiresAuth: true } },
+  { path: '/guests', name: 'Guests', component: Guests, meta: { requiresAuth: true } }, 
   // 处理未定义的路径
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

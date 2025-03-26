@@ -1,0 +1,873 @@
+{
+    "expert_committee": [
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/ac735aba5dfc4e8b9f0e1f406b566065.png",
+            "name": "杨小牛",
+            "description": "中国工程院院士"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/09a621d62e6246b893e31b0038ab79ab.jpeg",
+            "name": "冯登国",
+            "description": "中国科学院院士"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/d3fc25a6b3c84ebc98e154893a49ac40.jpg",
+            "name": "严明",
+            "description": "中国计算机学会计算机安全专业委员会主任、公安部第一研究所、第三研究所原所长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/517e9a9d04484be38c37f406dd3fb9c1.jpg",
+            "name": "叶红",
+            "description": "中国信息协会信息安全专业委员会主任"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/4c510785420048cd816d13b3a9460c91.jpg",
+            "name": "王连印",
+            "description": "中国网络安全审查技术与认证中心原党委书记、副主任"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/d2ba2266308d42668d200b4385b02120.jpg",
+            "name": "王才有",
+            "description": "原国家卫计委统计信息中心副主任、中国医院协会信息专委会主任委员"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/46474a4b81034418b7040ae57ab85f32.jpg",
+            "name": "李新友",
+            "description": "国家信息中心研究员"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/290c566801534b46ab8d8c3810ad591c.jpg",
+            "name": "封化民",
+            "description": "教育部高等学校网络空间安全专业教学指导委员会秘书长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/a6333d68f77e458bb63c362c7eaf9f92.png",
+            "name": "李京春",
+            "description": "国家信息技术安全研究中心原副主任兼总工程师"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/866c2800369f4b2790ee04b05169becb.png",
+            "name": "顾嘉福",
+            "description": "上海市通信学会副理事长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/45d698748a394f6e923254d06ffdcc76.png",
+            "name": "左晓栋",
+            "description": "中国科学技术大学网络空间安全学院教授"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/ff38093e590441dbbab62c2ce2b0d4db.jpg",
+            "name": "宋皆荣",
+            "description": "浙江省网络空间安全协会理事长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/22a1b6c5e9c049a6be23d2b11f3244a1.png",
+            "name": "赵宏志",
+            "description": "中国网络空间安全协会原副秘书长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/63c23cf679a449ffb53a17bdef1115de.jpg",
+            "name": "傅正",
+            "description": "浙江省企业信息化促进会秘书长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/5a0bc0c5bc414eb3928e7baf488ec0db.png",
+            "name": "尹本臻",
+            "description": "浙江省数字经济联合会秘书长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/1dcf91d9daee4a34a0042066dae4dbd4.jpg",
+            "name": "黄益超",
+            "description": "浙江省大数据产业技术联盟副理事长、浙江省智慧城市促进会常务副秘书长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/4864cb0f12d84e69861237c11f5be772.png",
+            "name": "陈钟",
+            "description": "北京大学教授"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/0a14210cd71649918bba8bad04e9a5b1.jpg",
+            "name": "胡红升",
+            "description": "中国电机工程学会电力信息化专委会副主任委员"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/4/2c799da6938744cda98e9a017daec4e4.jpg",
+            "name": "陈晓桦",
+            "description": "中国信息协会信息安全专委会常务副主任"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/e93465d2e3bf4d3d8f9cce134f7cceec.jpg",
+            "name": "许玉娜",
+            "description": "中国网络安全产业联盟副秘书长"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/40e8f0cd23054e04b3707fada757a200.png",
+            "name": "谭晓生",
+            "description": "北京赛博英杰科技有限公司创始人"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/416955f5d3a34eda8b95411dd0483065.jpg",
+            "name": "崔光耀",
+            "description": "《中国信息安全》杂志原主编"
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/3/7938d2171df44666815d3e61450f9ab6.png",
+            "name": "李少鹏",
+            "description": "数世咨询创始人"
+        }
+    ],
+    "speakers": [
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/250e51aeec1b49fa9714d9b44424cbea.png",
+            "name": "王纲",
+            "blurb": "中央宣传部副部长 （时任浙江省委常委、宣传部部长）",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/0e25983429bd4babb66dca2d6bf73c71.png",
+            "name": "刘世锦",
+            "blurb": "第十三届全国政协经济委员会副主任、国务院发展研究中心原副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/eae15010beb043628f5e0c0d8ba3d737.png",
+            "name": "邬江兴",
+            "blurb": "中国工程院院士",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/4077a6bf874c4acdbbed0047e3838843.jpg",
+            "name": "吴世忠",
+            "blurb": "中国工程院院士",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/1d9224252e4f4ee69b2b288ca65a5653.png",
+            "name": "方滨兴",
+            "blurb": "中国工程院院士",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/448bbbc51aa94b29a53ca165d6978bfc.png",
+            "name": "沈昌祥",
+            "blurb": "中国工程院院士",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/7dd2fd4899f74aabbde01b2a7c9a17dc.jpg",
+            "name": "龚克",
+            "blurb": "中国新一代人工智能发展战略研究院执行院长",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/fa8029b9c6fa4b2e9472b7b9c72e2245.png",
+            "name": "谭建荣",
+            "blurb": "中国工程院院士",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/b1050f31ea504b3897f829b098a4d235.jpg",
+            "name": "汪玉凯",
+            "blurb": "国家行政学院电子政务专家委员会原副主任、 全国数字经济联盟学术委员",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/032030bfde9b40a389941d863f86b66d.jpg",
+            "name": "李正茂",
+            "blurb": "中国电信集团公司原总经理、全球云网宽带协会董事会主席",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/f294603147df42feb5582afde018a19f.png",
+            "name": "胡瑞敏",
+            "blurb": "教育部新工科联盟网络空间安全工委会主任委员、俄罗斯国家工程院外籍院士",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/12a6040fa30d4a44bb225fb67845764a.jpg",
+            "name": "严明",
+            "blurb": "中国计算机学会计算机安全专业委员会主任、公安部第一研究所、第三研究所原所长",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "14:00",
+                    "title": "- 17:10     数据安全创新实践案例集发布活动",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/1ddb6c116cfb474791791b12ebbd0dd3.png",
+            "name": "张才方",
+            "blurb": "浙江省委宣传部副部长、省委网信办主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/0518209423944e7ab3a929100dbabfe7.jpg",
+            "name": "王连印",
+            "blurb": "中国网络安全审查技术与认证中心原党委书记、副主任",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "14:30",
+                    "title": "- 17:20     企业数字化与数据出海流通专项会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/3adfbb1104a54c49ac55e7a3b0f842ca.jpg",
+            "name": "郝志强",
+            "blurb": "工业和信息化部教育与考试中心主任",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     2024全国数字安全行业产教融合共同体大会暨西湖论剑·数字安全产教融合人才培养论坛",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/24061150354f43148945eaa48447227e.png",
+            "name": "孙蔚敏",
+            "blurb": "中央网络安全和信息化委员会办公室、国家互联网信息办公室总工程师",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/279fb3d338e74a65b39b23f7fd40a5e4.jpg",
+            "name": "杨建军",
+            "blurb": "工业和信息化部商用密码应用产业促进联盟理事长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/052aa608e85341aa86c422864133ff0e.png",
+            "name": "黄海峰",
+            "blurb": "杭州市委常委、宣传部部长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/3091de96d03d4a35834140d8e04f7436.png",
+            "name": "张立",
+            "blurb": "中国电子信息产业发展研究院院长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/47cecdf9e9224be7afa38f0d212772c0.jpg",
+            "name": "钟振山",
+            "blurb": "IDC中国副总裁",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/23d2bc072f414450adb3fab361614bd3.png",
+            "name": "杜广达",
+            "blurb": "工业和信息化部网络安全管理局副局长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/d63126df81df46b4b101796f333a4b59.png",
+            "name": "郭启全",
+            "blurb": "公安部网络安全保卫局原副局长、一级巡视员、总工程师",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/8d8a97c9248c4c63811d2cf7afe8db98.png",
+            "name": "唐刚",
+            "blurb": "中国软件评测中心副主任、重点实验室常务副主任",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "14:00",
+                    "title": "- 17:10     数据安全创新实践案例集发布活动",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/ea4ff25016164f3db8688914526a8bfe.png",
+            "name": "武锁宁",
+            "blurb": "工信部通信专家委顾问",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "09:00",
+                    "title": "- 12:00     开幕式及主题大会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/9814735a50dd4cad8010983c0009d018.jpg",
+            "name": "封化民",
+            "blurb": "教育部高等学校网络空间安全专业教学指导委员会秘书长",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     2024全国数字安全行业产教融合共同体大会暨西湖论剑·数字安全产教融合人才培养论坛",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/20e9d841161449e78b6a7924094f1352.png",
+            "name": "左晓栋",
+            "blurb": "中国科学技术大学网络空间安全学院教授、科技人文高等研究院副院长",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     数据要素安全与新质生产力高端对话",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/4acebc82fbb14375b1a50a27f51e7f38.jpg",
+            "name": "宋皆荣",
+            "blurb": "浙江省网络空间安全协会理事长",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "13:40",
+                    "title": "- 17:30     智能安全运营专家交流会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/05b2dfaaf29e433288990281ea141f32.png",
+            "name": "赵宏志",
+            "blurb": "中国网络空间安全协会原副秘书长",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "14:00",
+                    "title": "- 17:10     数据安全创新实践案例集发布活动",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/999edc72bd0345c1a4984265cf8a05ab.png",
+            "name": "孙文龙",
+            "blurb": "工业和信息化部商用密码应用产业促进联盟理事长单位领导、中国电子技术标准化研究院副院长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/34a9ca8054ec4a638cbd13fcfa9ea136.jpg",
+            "name": "刘克",
+            "blurb": "中国网络安全审查技术与认证中心副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/005cfd0f7d66482381b738785f747c68.jpg",
+            "name": "曾德华",
+            "blurb": "教育部教育管理信息中心副主任",
+            "participation": [
+                {
+                    "date": "4月25日",
+                    "time": "08:00",
+                    "title": "- 12:00     教育系统数据安全专题会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/1830eabdb6cb4f0283d98d1cd5fd34e0.png",
+            "name": "吴铤",
+            "blurb": "浙江省网络空间安全协会秘书长",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "13:40",
+                    "title": "- 17:30     智能安全运营专家交流会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/0e89eeb9aed944b98211a1ab4841bfd4.png",
+            "name": "许榕生",
+            "blurb": "中国科学院高能物理研究所计算中心研究员",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/82a5ddcbadc84873b86bd81faa653bc0.jpg",
+            "name": "郭宗臣",
+            "blurb": "教育信息安全等级保护测评中心副主任",
+            "participation": [
+                {
+                    "date": "4月25日",
+                    "time": "08:00",
+                    "title": "- 12:00     教育系统数据安全专题会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/d60c94717f5a4c36a0c5b09323a5dec6.png",
+            "name": "卢卫",
+            "blurb": "中国网络空间安全协会副理事长、人工智能安全治理专业委员会主任委员",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     AI引领数字安全新浪潮专题会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/ad682c84e27e43afbb79681bed781f52.png",
+            "name": "周民",
+            "blurb": "国家信息中心副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/d1b3042a34a345df923d22a83fcc34c4.jpg",
+            "name": "谢永泉",
+            "blurb": "国家密码管理局商密办副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/bcab6014f4704f6fb648692739c430cd.png",
+            "name": "贺定超",
+            "blurb": "应急管理部研究中心、中国煤炭工业发展研究中心副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/ce7937e10e8544b3a74700b9c4a7a94a.jpg",
+            "name": "张华",
+            "blurb": "浙江省密码管理局总工程师",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/23fdbc4f430149b9bb8c4768acfa85df.png",
+            "name": "张涛",
+            "blurb": "国家信息中心 高级工程师",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "13:40",
+                    "title": "- 17:30     智能安全运营专家交流会",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/60d3b93d2cd640d08d12f632146792e3.jpg",
+            "name": "陈佳毅",
+            "blurb": "广州市白云区政务服务数据管理局副局长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/48ea5541340349c18e4c6c3a4ccb2d02.jpg",
+            "name": "崔光耀",
+            "blurb": "《中国信息安全》杂志原主编",
+            "participation": [
+                {
+                    "date": "5月17日",
+                    "time": "14:00",
+                    "title": "- 17:10     数据安全创新实践案例集发布活动",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/ad3ff247d8ca4985be405e3e99434f23.jpg",
+            "name": "杨伟平",
+            "blurb": "教育部教育管理信息中心网络安全处处长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/3288c366be074d9eb8ba7bc8a57f558a.png",
+            "name": "谭晓生",
+            "blurb": "北京赛博英杰科技有限公司创始人",
+            "participation": [
+                {
+                    "date": "4月19日",
+                    "time": "09:00",
+                    "title": "- 11:45     西湖论剑暨安恒信息年度新品发布日",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/dcc582093a424db99257c2cc89911670.png",
+            "name": "邢镔",
+            "blurb": "中国航天科工集团有限公司工业大数据应用技术国家工程实验室首席科学家",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/e08b594ad8d74c139606c1f9d4e0dca6.png",
+            "name": "范渊",
+            "blurb": "安恒信息董事长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/ab35adc5d08047f58af70acf95bce6c6.jpg",
+            "name": "吕淑艳",
+            "blurb": "中国政法大学网络安全和信息化办公室主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/072daf2480c542cca55d6b41f0932a32.png",
+            "name": "项武铭",
+            "blurb": "公安部第三研究所 审思实验室技术负责人",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/ac36272bbae74c95ac0de0a1f0ef327b.jpg",
+            "name": "曹岳",
+            "blurb": "国家信息技术安全研究中心处长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/5fd92287e7c94827a9331fa6b6b7c933.png",
+            "name": "洪晟",
+            "blurb": "北京航空航天大学副教授、博士生导师",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/e65a1914d19446ce9124b533a1c24bbc.png",
+            "name": "于瑞国",
+            "blurb": "天津大学信息与网络中心主任",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     AI引领数字安全新浪潮专题会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/8e6f11e78dbd448a9522dbf57be6edd5.png",
+            "name": "梁文杰",
+            "blurb": "中国科学院物理所研究员",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/210f8727a8914435985abf6570b167ab.jpg",
+            "name": "陈克非",
+            "blurb": "中国密码学会副理事长、杭州师范大学教授",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/e99c880e4c2545c7b661fd346347261c.png",
+            "name": "曹静",
+            "blurb": "北京灰度科技有限公司CEO",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/84685534901f4685851fa65aa0e6a32a.png",
+            "name": "刘长波",
+            "blurb": "中央企业电子商务联盟跨境专委会副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/80e4caa315fa4c1f91d1c55dab49cadd.png",
+            "name": "王亚奇",
+            "blurb": "杭州人工智能学会副秘书长",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     AI引领数字安全新浪潮专题会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/342b6bfd70b14ac48c8567c7b2271afc.jpg",
+            "name": "林峰峻",
+            "blurb": "市密码管理局技术处副处长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/fc9de9f0bc524b92a807fbd16090840b.png",
+            "name": "高丹",
+            "blurb": "赛迪顾问总裁助理",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/246aec572bb24f4ea573db0d77591388.jpg",
+            "name": "杨晓伟",
+            "blurb": "国家工业信息安全发展研究中心产业促进所研究部主任、博士",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/002ead9d6f36480998e93dc0904b8305.png",
+            "name": "林海",
+            "blurb": "联通数字科技有限公司数据智能事业部、 安全合规部总经理",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/6/746232ddc03c40e8aab6fad9cc4e6ef8.png",
+            "name": "宋端智",
+            "blurb": "安恒信息顾问",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/dccb3c6eda1849e69feefa8760e198ee.jpg",
+            "name": "刘博",
+            "blurb": "安恒信息CTO",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/e9aad4155d3c4597902f10d68c1b281c.jpg",
+            "name": "袁明坤",
+            "blurb": "安恒信息CSO",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/8eeaeae4ae924d1b98de7b1f026fb218.jpg",
+            "name": "王欣",
+            "blurb": "安恒信息研究院院长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/5eb1ac172b814a66ac8113f9b040d207.png",
+            "name": "张德馨",
+            "blurb": "中国软件评测中心安全事业部执行总经理、重点实验室副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/6b7666f0f76a459583d3baa984f08e1d.jpg",
+            "name": "唐辉",
+            "blurb": "北京国家金融科技认证中心有限公司 副总经理",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/04693216039e4f4cb21d8da7cac199fa.jpg",
+            "name": "李俊",
+            "blurb": "国家工业信息安全发展研究中心保障技术所所长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/6e4104231ddf45e082b2b01fb0d5dfdc.png",
+            "name": "高敏",
+            "blurb": "汉帛集团总裁",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/0378cff03fa6494cb36f0cb32c63d94b.png",
+            "name": "黄连金",
+            "blurb": "CSA大中华区研究院副院长",
+            "participation": [
+                {
+                    "date": "5月18日",
+                    "time": "13:30",
+                    "title": "- 17:30     AI引领数字安全新浪潮专题会议",
+                    "isSubscribed": false
+                }
+            ]
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/51c11c6279bc4d4fa9a63b342f3560ca.jpg",
+            "name": "纪兆华",
+            "blurb": "北京信息职业技术学院产业互联网学院院长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/c7cb509f231a4c8d84606b8376ea2a7c.jpg",
+            "name": "王乐",
+            "blurb": "广州大学网络空间安全学院副院长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/9b61f87bab024ab397f9972a2163503b.png",
+            "name": "许欣芃",
+            "blurb": "恒生电子股份有限公司技术平台总部副部长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/21a12cc54403437bb42f98d267b6470d.png",
+            "name": "马红斌",
+            "blurb": "湖州市大数据发展管理局 党组成员 市数据服务中心主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/dcc5ac15f3cc4bde801e68bbcd790a7f.jpg",
+            "name": "周健将",
+            "blurb": "人保财险浙江省分公司机构业务部副总经理",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/fecdf2714ca74326a38d51bfacaa52fd.jpg",
+            "name": "邱卫东",
+            "blurb": "上海交通大学网络空间安全学院副院长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/25922072fc2847a3abb20218e18de179.jpg",
+            "name": "李大兴",
+            "blurb": "台州科技职业学院校长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/bd42f257b5124d35b8a86051a2d4e3cc.jpg",
+            "name": "李达",
+            "blurb": "解放军总医院信息科高级工程师，派驻第一医学中心信息室主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/a1cdd796292c482599c38f3fc54ce1f4.png",
+            "name": "王文海",
+            "blurb": "浙江大学求是特聘教授",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/fb066f79a8e84bb9b53268ce69e3f590.png",
+            "name": "刘应杰",
+            "blurb": "中国创新战略和政策研究中心副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/a76210cd16b14beaa9a5ef21ebb3e7f1.jpg",
+            "name": "刘健",
+            "blurb": "中国电子科技集团公司第十五研究所-信息产业信息安全测评中心 副主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/0cac40940e674321b4341d6f536aa224.png",
+            "name": "焦培",
+            "blurb": "中国服装协会副会长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/3b60ef30d0584462b481e4d900c57a79.jpg",
+            "name": "张海川",
+            "blurb": "安恒信息数据安全产品线总裁",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/4/68b67c9ad7d848fda56194bf1ee5a9ff.png",
+            "name": "王首媛",
+            "blurb": "中国联通中讯邮电咨询设计院物联网安全中心 总经理",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/c567abbec64c49c497a0234aa2bdff94.jpg",
+            "name": "尤其",
+            "blurb": "中国网络安全审查技术与认证中心副处长",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2023/5/208871b23e5249d2aeea35b6f910a796.jpg",
+            "name": "王军民",
+            "blurb": "IDC中国研究总监",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/0b1eafeccbdf41778367de64fc825dd4.jpg",
+            "name": "杨勃",
+            "blurb": "安恒信息智能检测与终端产品线总裁",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/6449902d2913460080da754ad397b478.jpg",
+            "name": "梁浩",
+            "blurb": "安恒信息AiLPHA态势感知产品线总裁",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/825c5b113bf642a19b60a1c7b4bea121.jpg",
+            "name": "何恐",
+            "blurb": "安恒信息基础安全产品线总裁",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/8d1f8328a2ba499d81c534529de0a245.jpg",
+            "name": "徐明",
+            "blurb": "深圳大学信息中心总工程师",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/d1c9537a09184a7bb2230948d13a6251.jpg",
+            "name": "段磊",
+            "blurb": "四川大学信息化建设与管理办公室 主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/94b21d73afa64fdd95b1f66ea76062cc.jpg",
+            "name": "陈文智",
+            "blurb": "浙江大学信息技术中心智云实验室主任",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/2e252f3282fb439084545a7d4e3445fa.jpg",
+            "name": "王盛昱",
+            "blurb": "安恒信息软件供应链安全产品总监",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/125761e947974d88b722bf1a2a2f9c31.jpg",
+            "name": "莫凡",
+            "blurb": "安恒信息数据安全产品总监",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/d23d437ee38f4c5f913a2357b7869f80.jpg",
+            "name": "陶立峰",
+            "blurb": "安恒信息隐私计算产品总监",
+            "participation": []
+        },
+        {
+            "image": "https://obs-xhlj.obs.cn-east-3.myhuaweicloud.com/2024/5/fe763e5b6454402f85a732d162a165ea.jpg",
+            "name": "李华伟",
+            "blurb": "安恒信息研究院创新业务部产品经理",
+            "participation": []
+        }
+    ]
+}

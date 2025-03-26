@@ -120,6 +120,14 @@ const tools = [
     color: '#777777', 
     route: 'ExhibitorShowcase',
   },
+  {
+    name: 'Guests', 
+    title: '参会嘉宾',
+    description: '了解本次大会的重要嘉宾',
+    icon: 'fa-solid fa-users-rectangle', // 备选: fa-solid fa-id-card, fa-solid fa-user-tie
+    color: '#8a6d3b', 
+    route: 'Guests', 
+  },
 ];
 
 const navigateTo = (routeName) => {
