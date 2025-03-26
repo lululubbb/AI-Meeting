@@ -31,7 +31,6 @@ import NewsCenter from '../components/NewsCenter.vue';
 import FeaturedEvents from '../components/FeaturedEvents.vue';     
 import Guests from '../components/Guests.vue';  
 import ExhibitorShowcase from '../components/ExhibitorShowcase.vue';  
-
 // 定义路由规则
 const routes = [
   {
