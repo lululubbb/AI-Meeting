@@ -883,6 +883,7 @@ onUnmounted(() => {
   .post-card {
   transition: all 0.3s;
   margin-bottom: 15px;
+  width: 100%;
 }
 
 .post-card:hover {
@@ -1240,6 +1241,7 @@ el-select {
     border: none;
     box-shadow: none;
     border-bottom: 1px solid #eee;
+    width: 100%;
   }
   .post-header {
     align-items: flex-start;
@@ -1453,9 +1455,12 @@ el-select {
     display: none; /* 隐藏浏览量和评论数 */
   }
   .post-list {
+    width: 100%;
     max-height: calc(100vh - 100px); /* 移动端调整 */
   }
-  
+  .post-list-container {
+    width: 100%; /* 确保帖子列表内容区域占满容器 */
+  }
   .el-pagination {
     position: sticky;
     bottom: 0;
