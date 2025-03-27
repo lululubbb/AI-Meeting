@@ -520,6 +520,7 @@ onMounted(async () => {
     margin: 5px 0;
     font-size: 14px;
     color: #606266;
+    /* word-break: break-all; */
 }
 .contact-person-details .detail-line .el-icon {
     margin-right: 8px;
@@ -546,5 +547,33 @@ onMounted(async () => {
   .transport-options, .sign-in-details, .contact-details-desc { font-size: 13px; }
   .transport-options :deep(.el-descriptions__label) { width: 60px !important; }
   .notice-alert :deep(.el-alert__title) { font-size: 12px; }
+  .contact-details-desc :deep(.el-descriptions__body .el-descriptions__table) {
+      width: 100% !important; /* 强制表格宽度不超出容器 */
+  }
+  .contact-person-label {
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 6px 0;
+  }
+  .contact-person-label .el-tag {
+      margin-left: 0;
+      width: 100%; /* 让标签独占一行 */
+  }
+
+  /* 缩小字体大小 */
+  .contact-person-label span {
+      font-size: 13px;
+  }
+  
+  /* 调整详情行间距 */
+  .contact-person-details .detail-line {
+      font-size: 12px;
+      margin: 3px 0;
+  }
+  
+  /* 图标缩小 */
+  .contact-person-details .el-icon {
+      font-size: 14px !important;
+  }
 }
 </style>

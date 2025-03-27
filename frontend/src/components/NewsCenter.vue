@@ -29,7 +29,7 @@
           <el-card shadow="hover" class="news-item-card" @click="showNewsDetail(news)">
             <!-- Removed the <a> tag wrapper -->
             <el-row :gutter="15" align="top">
-              <el-col :span="24">
+              <el-col :span="24" >
                 <el-image :src="news.image" fit="cover" class="news-image" lazy>
                   <template #placeholder>
                     <div class="image-slot">加载中<span class="dot">...</span></div>
@@ -226,10 +226,11 @@ onMounted(async () => {
   height: 100%; /* Ensure cards in the same row have equal height */
   display: flex; /* Needed for height: 100% to work correctly with flex children */
   flex-direction: column;
+  padding-left: 12px;
 }
 .news-item-card :deep(.el-card__body) {
     padding: 0; /* Remove padding, let el-row handle it */
-      flex-grow: 1; /* Allow body to grow */
+    flex-grow: 1; /* Allow body to grow */
     display: flex; /* Use flex for internal layout too */
 }
  .news-item-card .el-row {
@@ -242,9 +243,10 @@ onMounted(async () => {
 }
 
 .news-image {
-  width: 100%;
-  height: 180px; /* Adjust height as needed */
-  border-radius: 8px 8px 0 0; /* Round top corners only */
+ width: auto;
+  max-width: 100%;
+  height: 180px;
+  border-radius: 8px 8px 0 0;
   display: block;
   background-color: #f5f7fa;
 }
@@ -390,6 +392,20 @@ onMounted(async () => {
 .dialog-footer .el-button {
   margin-left: 10px;
 }
+
+.news-item-card :deep(.el-col:first-child) {
+  display: flex;
+  justify-content: center;
+}
+
+.news-image {
+  width: auto;
+  max-width: 100%;
+  height: 180px;
+  border-radius: 8px 8px 0 0;
+  display: block;
+}
+
 
 /* --- Responsiveness --- */
 @media (max-width: 768px) {

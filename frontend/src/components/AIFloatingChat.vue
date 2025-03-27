@@ -1,7 +1,11 @@
 `<!-- src/components/AIFloatingChat.vue -->
 <template>
   <div>
-    <button class="ai-float-button" @click="drawer = true">
+    <button class="ai-float-button"
+      @mousedown="startDragging"
+      @touchstart="startDragging"
+      :style="{ left: buttonLeft + 'px', top: buttonTop + 'px' }"
+      @click="drawer = true">
       <img src="@/assets/AI.png" alt="AI Chat" />
     </button>
 

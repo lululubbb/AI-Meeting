@@ -7,7 +7,7 @@
           <p class="card-description">请选择您需要的资料进行下载：</p>
           <el-breadcrumb separator="/" v-if="path.length > 0" class="breadcrumb">
             <el-breadcrumb-item :to="{ path: '/materials' }" @click="resetPath">全部资料</el-breadcrumb-item>
-            <el-breadcrumb-item v-for="(item, index) in path" :key="index">
+              <el-breadcrumb-item v-for="(item, index) in path" :key="index">
               <span @click="goToPath(index)" class="breadcrumb-item">{{ item }}</span>
             </el-breadcrumb-item>
           </el-breadcrumb>
@@ -303,7 +303,7 @@ onMounted(() => {
 }
 /* 面包屑导航样式 */
 .breadcrumb {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .breadcrumb-item {
