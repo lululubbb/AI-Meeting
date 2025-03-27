@@ -407,30 +407,72 @@ function formatDateForComparison(date) {
   }
   
   /* 响应式设计 */
-  @media (max-width: 768px) {
-    .data-summary {
-      padding:5px;
+  @media (max-width: 640px) {
+    .page-content-container {
+        /* 微调容器内边距，给卡片更多空间感 */
+        padding-left: 15px;
+        padding-right: 15px;
+        padding-top: 25px;
+        padding-bottom: 25px;
     }
-  
-    .chart-container h3 {
-      font-size: 14px;
+    .guide-page {
+        /* 手机端页面边距也可微调 */
+        padding: 20px 10px;
     }
-  
-    .chart {
-      height: 250px;
+
+    .activity-flex-container {
+        justify-content: space-between;
+        gap: 18px; /* 可以稍微调整卡片间距 */
     }
-  }
-  
-  @media (max-width: 480px) {
-    .data-summary {
-      padding: 3px;
-  
+
+    .activity-item-wrapper {
+        /* 根据上面的 gap 重新计算宽度 */
+        width: calc(50% - 9px); /* 50% - (18px / 2) */
+        border-radius: 8px; /* 移动端圆角可以稍小 */
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05); /* 调整阴影 */
+        /* 移除 min-height，让内容自然撑高，或设置一个更合适的 min-height */
+        /* min-height: 260px; */ /* 示例：根据实际内容调整 */
     }
-    .chart {
-      height: 200px;
+
+    /* 微调图片容器和文字区域 */
+    .activity-image-container {
+         height: 130px; /* 调整图片高度 */
+         border-radius: 8px 8px 0 0; /* 确保上面圆角 */
     }
-    .chart-container h3 {
-    font-size: 13px; /* 进一步减小标题字体 */
-  }
-  }
+    .activity-text-content {
+         padding: 12px 15px 15px 15px; /* 调整文字区域内边距 */
+    }
+
+    /* 调整字体大小和行高，提升可读性 */
+     .activity-title {
+         font-size: 14px; /* 标题字号 */
+         line-height: 1.4;
+         -webkit-line-clamp: 2; /* 确保标题不超过2行 */
+         min-height: calc(1.4em * 2); /* 保留2行空间 */
+         margin-bottom: 6px; /* 减少标题和描述间距 */
+     }
+    .activity-description {
+         font-size: 12px; /* 描述字号 */
+         line-height: 1.55; /* 稍微增加行高 */
+         color: #888; /* 描述文字颜色稍浅 */
+         -webkit-line-clamp: 2; /* 移动端描述限制2行 */
+         margin-bottom: 10px; /* 描述和日期时间距 */
+     }
+     .activity-datetime {
+         font-size: 11px; /* 日期字号 */
+         color: #b0b0b0; /* 日期文字更浅 */
+     }
+     .activity-datetime .el-icon {
+         font-size: 13px;
+         margin-right: 4px;
+     }
+
+    /* 保留 Dialog 的移动端样式调整 */
+    :deep(.el-dialog.activity-dialog) { width: 95% !important; top: 3vh; }
+    :deep(.activity-dialog .el-dialog__body) { padding: 20px 15px; max-height: 80vh; }
+    .dialog-main-title { font-size: 18px; }
+    .dialog-datetime { font-size: 13px;}
+    .dialog-html-content { font-size: 14px; }
+}
+
   </style>
