@@ -40,6 +40,7 @@
     background-color: #fff;
     padding: 10px 0;
     border-top: 1px solid #ddd;
+    z-index: 800;
   }
   button {
     background: none;

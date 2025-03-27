@@ -425,6 +425,7 @@ scrollbar-width: none; /* Firefox */
 .todo-list {
   width: 90%;
   margin-top: 15px;
+  margin-bottom: 10px;
   max-width: 100%;
   padding: 20px;
   border-radius: 10px;
@@ -576,6 +577,7 @@ font-size: 16px;
   .calendar-todolist {
     margin-top: 20px;
     padding: 10px;
+    padding-bottom: 40px; /* 移动端适当减少下边距 */
   }
 
   .calendar {

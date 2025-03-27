@@ -403,13 +403,13 @@ function formatDateForComparison(date) {
   
   .chart {
     width: 100%;
-    height: 250px; /* 增加高度 */
+    height: 260px; /* 增加高度 */
   }
   
   /* 响应式设计 */
   @media (max-width: 768px) {
     .data-summary {
-      padding: 10px;
+      padding:5px;
     }
   
     .chart-container h3 {
@@ -417,18 +417,20 @@ function formatDateForComparison(date) {
     }
   
     .chart {
-      height: 200px;
+      height: 250px;
     }
   }
   
   @media (max-width: 480px) {
     .data-summary {
-      padding: 5px;
-      margin-right: -10px;
+      padding: 3px;
   
     }
     .chart {
-      height: 180px;
+      height: 200px;
     }
+    .chart-container h3 {
+    font-size: 13px; /* 进一步减小标题字体 */
+  }
   }
   </style>

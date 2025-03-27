@@ -528,7 +528,7 @@ const performSearch = () => {
    display: flex;
    justify-content: center; /* 居中对齐 */
    align-items: center; /* 垂直居中对齐 */
-   margin: 20px 0; /* 上下间距 */
+   margin: 10px 0 20px 0; /* 上下间距 */
  }
  
  /* 搜索框样式 */
@@ -536,10 +536,11 @@ const performSearch = () => {
    width: 400px; /* 调整为更长的宽度 */
    height: 40px; /* 固定高度 */
    margin-right: 15px; /* 与按钮的间距 */
-   border-radius: 8px; /* 圆角 */
    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 添加轻微阴影 */
    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* 平滑过渡效果 */
+   border-radius: 15px; /* 圆角 */
  }
+
  .search-input:focus-within {
    border-color: #3498db; /* 聚焦时边框颜色变化 */
    box-shadow: 0 2px 12px rgba(52, 152, 219, 0.2); /* 聚焦时阴影增强 */
@@ -583,7 +584,7 @@ const performSearch = () => {
      flex: 1;
      display: flex;
      flex-direction: column;
-     padding: 30px;
+     padding: 20px;
      overflow: auto;
      position: relative;
      /* background-color: #f8f9fa; */
@@ -680,7 +681,7 @@ const performSearch = () => {
    /* 文件列表 */
    .file-list-section {
    flex: 2;
-   min-width: 400px;
+   min-width: 350px;
    max-height: calc(100vh - 320px);
    height: 600px; /* 固定高度 */
    overflow-x: auto; 
@@ -693,17 +694,21 @@ const performSearch = () => {
    .table-wrapper {
    overflow-x: auto;
    overflow-y: auto; 
-   border-radius: 15px;
    margin-top: 15px;
+   padding: 0px;
    }
    .el-table-column {
    min-width: 120px;
  }
+
+
  .file-table {
    width: 100%;
+   min-width: 100%;
    min-width: 500px;       /* 根据列宽总和调整 */
-   border-radius: 15px;
+   border-radius: 10px;
    box-shadow: var(--global-box-shadow);
+   overflow-x: auto;
  }
    
    .file-table :deep(.el-table__row) {
@@ -937,6 +942,7 @@ const performSearch = () => {
        max-height: none;
        overflow-x: hidden;
        width: 100%;
+       margin-bottom: 50px;
      }
    
      /*  移除 display: block;  保留 width: 100%; */
@@ -977,11 +983,33 @@ const performSearch = () => {
        font-size: 13px;
      }
    
+
+     .table-wrapper {
+    border-radius: 15px; /* 明确设置圆角 */
+    overflow: hidden; /* 确保圆角生效 */
+  }
+
      .summary-section {
        max-height: 50vh;
        /* 移除可能导致水平滚动的 overflow 设置 */
        width: 100%;
      }
+
+     .upload-area {
+    width: 90%; /* 适应手机屏幕宽度 */
+    padding: 20px; /* 减少内边距 */
+  }
+
+  .upload-text {
+    font-size: 14px; /* 缩小文字大小 */
+  }
+
+  .upload-tip {
+    font-size: 12px; /* 缩小提示文字 */
+  }
+  .el-table-column {
+    min-width: auto; /* 移除最小列宽，让列宽根据内容调整 */
+  }
    }
    
    /* 响应式设计 - 较小屏幕的手机 */
@@ -1007,7 +1035,7 @@ const performSearch = () => {
      }
    
      .el-table-column {
-       /* min-width: 80px;  移除最小列宽 */  /* let column width adjust to the content */
+       min-width: 80px;  
      }
    
      .file-type-cell .el-icon {
@@ -1035,6 +1063,23 @@ const performSearch = () => {
        top: 20px;         /* 调整位置 */
        right: 20px;       /* 调整位置 */
      }
+     
+     .table-wrapper {
+    border-radius: 15px; /* 明确设置圆角 */
+    overflow: hidden; /* 确保圆角生效 */
+  }
+  .table-wrapper {
+    width: 100%; /* 确保表格容器宽度为 100% */
+    overflow-x: auto; /* 允许水平滚动 */
+  }
+
+  .file-table {
+    min-width: 100%;
+    width: 100%;
+    overflow-x: auto;
+    table-layout: fixed;
+  }
+  
  }
 
 </style>
