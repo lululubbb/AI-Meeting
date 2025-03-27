@@ -57,6 +57,14 @@ const tools = [
     route: 'Materials',
   },
   {
+    name: 'DataSummary', 
+    title: '会议数据',
+    description: '查看会议统计图表',
+    icon: 'fa-solid fa-chart-pie', 
+    color: '#17a2b8', 
+    route: 'DataSummary', 
+  },
+  {
     name: 'CalendarToDoList',
     title: '日历助手',
     description: '帮助您管理日程',

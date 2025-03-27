@@ -10,7 +10,7 @@
       </button>
       <button @click="navigateToDataSummary">
         <i class="fa-solid fa-database"></i>
-        <span>会议数据</span>
+        <span>会议论坛</span>
       </button>
       <button @click="navigateToTools">
         <i class="fa-solid fa-toolbox"></i>
