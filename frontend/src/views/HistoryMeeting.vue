@@ -38,6 +38,7 @@
         <strong>📅 会议名称:</strong> {{ meeting.sessionName }} <br />
         <strong>👤 创建人员:</strong> {{ meeting.hostName }} <br />
         <strong>🕒 创建时间:</strong> {{ formatDate(meeting.startTime) }} <br />
+        <strong>📋 会议简介:</strong> {{ meeting.sessionIntro || '无' }} <br />
         <strong>📊 会议状态:</strong> {{ meeting.status }}<br />
         <strong>⏰ 结束时间:</strong> {{ formatDate(meeting.endTime) }}
       </div>
@@ -71,6 +72,7 @@
         <p><strong>📅 会议名称:</strong> {{ selectedMeeting.sessionName }}</p>
         <p><strong>🔑 会议号:</strong> {{ selectedMeeting.meetingId }}</p>
         <p><strong>👤 发起人:</strong> {{ selectedMeeting.hostName }}</p>
+        <p><strong>📋 会议简介:</strong> {{ selectedMeeting.sessionIntro || '无' }}</p>
         <p><strong>🕒 开始时间:</strong> {{ formatDate(selectedMeeting.createdAt) }}</p>
         <p><strong>⏰ 结束时间:</strong>  {{ formatDate(selectedMeeting.endTime) }}</p>
         

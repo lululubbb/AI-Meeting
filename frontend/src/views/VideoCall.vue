@@ -34,6 +34,10 @@
     <label for="sessionPasscode">会议密码 (可选):</label>
     <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码(无密码请不输入任何字符)" @paste="handlePaste"/>
   </div>
+  <div v-if="mode === 'create'" class="input-group">
+    <label for="sessionIntro">会议简介 (可选):</label>
+    <input id="sessionIntro" v-model="config.sessionIntro" placeholder="请输入会议简介" @paste="handlePaste"/>
+  </div>
   <div v-if="mode === 'join'" class="input-group">
     <label for="sessionName">会议名称:</label>
     <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" @paste="handlePaste"/>
@@ -835,6 +839,7 @@ const handleSession = async () => {
           hostId:config.hostId,
           hostName: config.userName,
           sessionPasscode: config.sessionPasscode,
+          sessionIntro:config.sessionIntro,
           startTime: new Date(),
           // 其他字段...
         }

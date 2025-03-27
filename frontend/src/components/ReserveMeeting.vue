@@ -1,17 +1,21 @@
 <template>
   <div class="reserve-container">
     <div id="reservation-form">
-      <div v-if="route.name === 'ReserveMeeting'" class="close-btn-wrapper">      
+      <div v-if="route.name === 'ReserveMeeting'" class="close-btn-wrapper">
         <button @click="goHome" class="close-btn" aria-label="关闭">
           <img src="@/assets/exit.png" alt="退出" />
         </button>
       </div>
       <h1>预约会议</h1>
-      
+
       <!-- 会议名称 -->
       <div class="input-group">
         <label for="sessionName">会议名称:</label>
-        <input id="sessionName" v-model="config.sessionName" placeholder="请输入会议名称" />
+        <input
+          id="sessionName"
+          v-model="config.sessionName"
+          placeholder="请输入会议名称"
+        />
       </div>
 
       <!-- 用户名 -->
@@ -23,7 +27,17 @@
       <!-- 会议密码 (可选) -->
       <div class="input-group">
         <label for="sessionPasscode">会议密码 (可选):</label>
-        <input id="sessionPasscode" v-model="config.sessionPasscode" placeholder="请输入会议密码" />
+        <input
+          id="sessionPasscode"
+          v-model="config.sessionPasscode"
+          placeholder="请输入会议密码"
+        />
+      </div>
+
+      <!-- 会议简介 (可选) -->
+      <div class="input-group">
+        <label for="sessionIntro">会议简介 (可选):</label>
+        <input id="sessionIntro" v-model="config.sessionIntro" placeholder="请输入会议简介" />
       </div>
 
       <!-- 角色选择 -->
@@ -45,11 +59,12 @@
           range-separator="至"
           start-placeholder="开始时间"
           end-placeholder="结束时间"
-          align="right"></el-date-picker>
+          align="right"
+        ></el-date-picker>
       </div>
 
       <div class="button-container">
-        <CustomButton text="复制会议邀请" @click="copyInvitationToClipboard" /> 
+        <CustomButton text="复制会议邀请" @click="copyInvitationToClipboard" />
         <!-- 提交按钮 -->
         <CustomButton :text="'预约会议'" @click="handleReservation" />
       </div>
@@ -58,34 +73,33 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject } from 'vue';
-import CustomButton from '../components/CustomButton.vue';
-import { ElMessage, ElDatePicker } from 'element-plus';
-import { useRoute, useRouter } from 'vue-router';
-import FirestoreService from '../services/FirestoreService.js';
-import { useStore } from 'vuex';
+import { ref, reactive, computed, inject } from "vue";
+import CustomButton from "../components/CustomButton.vue";
+import { ElMessage, ElDatePicker } from "element-plus";
+import { useRoute, useRouter } from "vue-router";
+import FirestoreService from "../services/FirestoreService.js";
+import { useStore } from "vuex";
 
 //复制预约会议信息
 const generateInvitationContent = () => {
   const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${config.meetingDateRange}\n会议密码:${config.sessionPasscode}\n复制该文本打开“慧议”系统点击“加入会议”按钮可直接入会！`;
   return meetingInfo;
-  };
+};
 
-  const copyInvitationToClipboard = async () => {
+const copyInvitationToClipboard = async () => {
   // 检查用户输入是否完整
   if (!config.userName || !config.sessionName) {
-    ElMessage.warning('请填写完整的会议信息后再复制');
+    ElMessage.warning("请填写完整的会议信息后再复制");
     return;
   }
   const invitationContent = generateInvitationContent();
   try {
     await navigator.clipboard.writeText(invitationContent);
-    ElMessage.success('会议邀请已复制到剪贴板');
+    ElMessage.success("会议邀请已复制到剪贴板");
   } catch (err) {
-    ElMessage.error('复制失败，请手动复制');
+    ElMessage.error("复制失败，请手动复制");
   }
-  };
-
+};
 
 // 获取当前路由和路由实例
 const route = useRoute();
@@ -93,12 +107,13 @@ const router = useRouter();
 const store = useStore();
 
 const config = reactive({
-  sessionName: '',
+  sessionName: "",
   userName: computed(() => {
     const user = store.state.user;
-    return user.name || user.email || '请输入用户名';
+    return user.name || user.email || "请输入用户名";
   }).value,
-  sessionPasscode: '',
+  sessionPasscode: "",
+  sessionIntro: "",
   meetingDateRange: [],
 });
 const role = ref(1); // 默认是主持人角色
@@ -122,43 +137,43 @@ const userEmail = computed(() => {
 });
 
 // 注入 emitMeetingScheduled
-const emitMeetingScheduled = inject('emitMeetingScheduled');
+const emitMeetingScheduled = inject("emitMeetingScheduled");
 
 const saveTodo = async (selectedDate, newTodoText) => {
-  console.log('当前 sessionName:', config.sessionName);
+  console.log("当前 sessionName:", config.sessionName);
   if (!user.value || !user.value.uid) {
-    ElMessage.warning('用户未登录，无法保存待办事项');
+    ElMessage.warning("用户未登录，无法保存待办事项");
     return;
   }
 
   if (!selectedDate) {
-    ElMessage.warning('请先选择一个日期！');
+    ElMessage.warning("请先选择一个日期！");
     return;
   }
 
   if (!newTodoText.trim()) {
-    ElMessage.warning('请输入待办事项内容！');
+    ElMessage.warning("请输入待办事项内容！");
     return;
   }
 
   const newTodo = {
     id: Date.now(),
     text: config.sessionName, // 确保不是空字符串
-    data:new Date(selectedDate.value).toISOString().split('T')[0],
+    data: new Date(selectedDate.value).toISOString().split("T")[0],
     //date: selectedDate.value, // 确保有日期
-    isCompleted: false, 
+    isCompleted: false,
   };
 
   console.log("准备添加待办事项:", newTodo); // 调试输出
 
   try {
-    await store.dispatch('addTodo', newTodo);
-    ElMessage.success('待办事项已添加');
+    await store.dispatch("addTodo", newTodo);
+    ElMessage.success("待办事项已添加");
     // 触发日历事件刷新
     refreshCalendarEvents();
   } catch (error) {
     console.error("添加失败：", error);
-    ElMessage.error('添加失败');
+    ElMessage.error("添加失败");
   }
   closeDialog();
 };
@@ -168,7 +183,6 @@ const handleDateClick = (info) => {
   openAddTodoDialog();
 };
 
-
 const handleReservation = async () => {
   if (
     !config.sessionName ||
@@ -176,27 +190,27 @@ const handleReservation = async () => {
     !config.meetingDateRange ||
     config.meetingDateRange.length !== 2
   ) {
-    ElMessage.warning('请填写完整的会议信息');
+    ElMessage.warning("请填写完整的会议信息");
     return;
   }
 
   try {
     if (!userId.value) {
-      ElMessage.warning('用户未登录!');
+      ElMessage.warning("用户未登录!");
       return;
     }
     isJoining.value = true; // 显示加载动画
 
     // 确保 startTime 和 endTime 是有效的 Date 对象
     let [startTime, endTime] = config.meetingDateRange;
-    startTime = new Date(startTime);  // 强制转换为 Date 对象
-    endTime = new Date(endTime);      // 强制转换为 Date 对象
+    startTime = new Date(startTime); // 强制转换为 Date 对象
+    endTime = new Date(endTime); // 强制转换为 Date 对象
 
-    console.log('StartTime:', startTime.toString(), 'EndTime:', endTime.toString()); // 调试输出
+    console.log("StartTime:", startTime.toString(), "EndTime:", endTime.toString()); // 调试输出
 
     // 检查是否是有效的日期
     if (!(startTime instanceof Date) || !(endTime instanceof Date)) {
-      ElMessage.warning('会议时间格式不正确，请检查会议日期');
+      ElMessage.warning("会议时间格式不正确，请检查会议日期");
       return;
     }
 
@@ -204,13 +218,14 @@ const handleReservation = async () => {
       sessionName: config.sessionName,
       hostName: config.userName,
       sessionPasscode: config.sessionPasscode,
-      startTime: startTime.toISOString(),  // 使用 ISO 格式
-      endTime: endTime.toISOString(),      // 使用 ISO 格式
+      sessionIntro: config.sessionIntro,
+      startTime: startTime.toISOString(), // 使用 ISO 格式
+      endTime: endTime.toISOString(), // 使用 ISO 格式
       createdAt: new Date().toISOString(), // 使用 ISO 格式
-      status: 'scheduled',
+      status: "scheduled",
     };
 
-    console.log('Meeting Data:', meetingData); // 调试输出
+    console.log("Meeting Data:", meetingData); // 调试输出
 
     // 将会议数据添加到 Firestore
     const meetingId = await FirestoreService.addToMeetingHistory(
@@ -222,34 +237,30 @@ const handleReservation = async () => {
     // 这里是将会议添加到待办事项
     const todo = {
       text: `预约会议 ${config.sessionName}`, // 会议名称作为待办事项标题
-      date: startTime.toISOString().split('T')[0], // 使用会议开始时间作为待办事项的日期
+      date: startTime.toISOString().split("T")[0], // 使用会议开始时间作为待办事项的日期
       isCompleted: false, // 默认未完成
     };
 
     // 将待办事项添加到用户的 todolist 中
     await FirestoreService.addTodoItem(userId.value, todo);
-    ElMessage.success('已将会议添加至待办事项');
+    ElMessage.success("已将会议添加至待办事项");
 
-     // 调用 inject 的方法
-     emitMeetingScheduled({
+    // 调用 inject 的方法
+    emitMeetingScheduled({
       ...meetingData,
       meetingId,
     });
 
-    ElMessage.success('预约成功!');
+    ElMessage.success("预约成功!");
   } catch (error) {
-    ElMessage.error('预约失败');
+    ElMessage.error("预约失败");
   } finally {
     isJoining.value = false; // 隐藏加载动画
   }
-    
 };
 
-
-
-
 const goHome = () => {
-  router.push('/home');
+  router.push("/home");
 };
 </script>
 
@@ -273,7 +284,7 @@ const goHome = () => {
   box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
   max-width: 90%;
   max-height: 80%;
-  width:95%;
+  width: 95%;
   overflow: auto;
   border-radius: 15px;
   box-sizing: border-box;
@@ -305,8 +316,6 @@ const goHome = () => {
 .close-btn:hover {
   transform: rotate(90deg);
 }
-
-
 
 h1 {
   margin-bottom: 20px;
