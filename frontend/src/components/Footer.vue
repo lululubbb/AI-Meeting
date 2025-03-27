@@ -8,7 +8,7 @@
         <i class="fa-solid fa-robot"></i>
         <span>AI功能</span>
       </button>
-      <button @click="navigateToDataSummary">
+      <button @click="navigateToForum">
         <i class="fa-solid fa-database"></i>
         <span>会议论坛</span>
       </button>
@@ -26,7 +26,7 @@
   
   const navigateToHome = () => router.push('/home');
   const navigateToAIFloatingChat = () => router.push('/aiFloatingChat');
-  const navigateToDataSummary = () => router.push('/dataSummary');
+  const navigateToForum = () => router.push('/Forum');
   const navigateToTools = () => router.push('/tools');
   </script>
   
