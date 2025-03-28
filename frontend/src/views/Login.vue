@@ -610,7 +610,6 @@ export default {
   display: flex;
   min-height: 100vh;
   background: linear-gradient(135deg, #f0f4ff 0%, #d8e7ff 100%);
-  font-family: 'SourceSansPro', sans-serif;
 }
 
 /* 登录区域 */

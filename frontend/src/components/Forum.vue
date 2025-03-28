@@ -56,28 +56,37 @@
           </div>
   
           <!-- 帖子列表 -->
-          <div class="post-list-container">
+    <div class="post-list-content-wrapper"> 
+      <div v-if="loadingPosts" class="loading-state">
+        <el-icon class="is-loading" :size="30"><Loading /></el-icon>
+        <span>加载论坛信息中...</span>
+      </div>
+      <el-alert v-else-if="error" :title="'加载论坛帖子失败: ' + error" type="error" show-icon :closable="false" class="full-width-alert"/>
+
+      <!-- Agenda Tabs -->
+      <div v-else class="post-list-container">
             <el-empty 
-            v-if="filteredPosts.length === 0" 
-            description="没有相关帖子"
+            v-if="!allFilteredAndSortedPosts || allFilteredAndSortedPosts.length === 0" 
+            description="当前分类下没有相关帖子"
             style="margin-top: 20px;"
             />
             <div v-else>
         <el-card 
             v-for="post in filteredPosts" 
-            :key="post.id" 
+            :key="post.id + (post.isAgendaPost ? '_agenda' : '')"
             class="post-card"
             @click="viewDetail(post)" 
             style="cursor: pointer;"
             >            
             <template #header>
               <div class="post-header">
-                <el-avatar :size="35" :src="post.author.avatar" />
+                <el-avatar :size="35" :src="post.author?.avatar || defaultAvatar" />
                 <div class="post-info">
-                  <h3 class="post-title">{{ post.title }}</h3>
+                  <h3 class="post-title">{{ post.title }}
+                    <el-tag v-if="post.isAgendaPost" type="info" size="mini">议程帖子</el-tag>
+                </h3>
                   <div class="author-info">
-                    <span class="author-name">{{ post.author.name }}</span>
-                    <el-tag size="small">{{ post.author.role }}</el-tag>
+                    <el-tag size="small">{{ post.author?.name || '用户' }}</el-tag>
                     <span class="post-time">{{ formatTime(post.createTime) }}</span>
                   </div>
                 </div>
@@ -97,33 +106,42 @@
                     <el-icon class="view-icon"><ChatLineRound /></el-icon>
                     {{  post.comments?.length || 0  }}
             </span>
-            <div class="author-actions" v-if="isAuthor(post)">
+            <div class="author-actions"  v-if="!post.isAgendaPost && isAuthor(post)">
             <el-tooltip content="编辑" placement="top">
-                <el-button>
-                    <el-icon><Edit /></el-icon>
-                </el-button>
+                <el-button
+                            @click.stop="showEditDialog(post)" 
+                            :icon="Edit"
+                            size="small"
+                            circle
+                        />
             </el-tooltip>
             <el-tooltip content="删除" placement="top">
-                <el-button>
-                    <el-icon><Delete /></el-icon>
-                </el-button>
+                <el-button
+                            @click.stop="handleDeletePost(post.id)" 
+                            type="danger"
+                            :icon="Delete"
+                            size="small"
+                            circle
+                        />
             </el-tooltip>
             </div>
           </div>
           </el-card>
         </div>
         </div> 
-          <el-pagination
-            background
-            layout="prev, pager, next"
-            :total="totalPosts"
-            :page-size="dynamicPageSize"
-            :pager-count="isMobile ? 3 :4"
-            @current-change="handlePageChange"
-            class="pagination-container"
-          />
+        <el-pagination
+                v-if="!loadingPosts && !error && totalPosts > 0" 
+                background
+                layout="prev, pager, next"
+                :total="totalPosts"
+                :page-size="dynamicPageSize"
+                :current-page="currentPage"
+                :pager-count="isMobile ? 3 : 5" 
+                @current-change="handlePageChange"
+                class="pagination-container"
+             />
         </div>
-  
+    </div>
           <!-- 右侧热门帖子 -->
   <div class="hot-posts" v-if="!isMobile">
     <el-card class="hot-card">
@@ -195,11 +213,10 @@
             placement="top"
           >
             <el-card>
-                <div class="post-header">
+            <div class="post-header">
             <el-avatar :size="30" :src="currentPost?.author.avatar" />
             <div class="comment-info">
-              <span class="author-name">{{ currentPost?.author.name }}</span>
-              <el-tag size="mini">{{ currentPost?.author.role }}</el-tag>
+              <el-tag size="mini">{{ currentPost?.author.name }}</el-tag>
               <span class="comment-time">{{ formatTime(currentPost?.createTime) }}</span>
             </div>
           </div>
@@ -216,30 +233,46 @@
             :timestamp="formatTime(comment.time)"
             placement="top"
           >
-          <el-card class="comment-card" :style="{ marginLeft: comment.depth * 40 + 'px' }">
+          <el-card class="comment-card" :style="{ marginLeft: (isMobile ? (comment.depth * 10) : (comment.depth * 40)) + 'px' }">
           <div class="comment-header">
-            <el-avatar :size="30" :src="comment.author.avatar" />
-            <div class="comment-info">
-              <span class="author-name">{{ comment.author.name }}</span>
-              <el-tag size="mini">{{ comment.author.role }}</el-tag>
-              <span class="comment-time">{{ formatTime(comment.time) }}</span>
-              <span v-if="comment.replyTo" class="reply-to">
-                回复 @{{ comment.replyTo.name }}
-              </span>
+            <el-avatar :size="30" :src="comment.author?.avatar || defaultAvatar" />
+        <div class="comment-info">
+          <el-tag size="mini">{{ comment.author?.name || '用户' }}</el-tag>
+          <span class="comment-time">{{ formatTime(comment.time) }}</span>
+          <span v-if="comment.replyTo" class="reply-to">
+             回复 @{{ comment.replyTo?.name || '用户' }}
+          </span>
             </div>
           </div>
-          <div class="comment-content">
-            {{ comment.content }}
-          </div>
+          <div class="comment-content"> {{ comment.content }} </div>
           <div class="comment-actions">
-            <el-button
-              size="small"
-              class="reply-btn"
-              @click="showReplyForm(comment)"
-            >
-              回复
-            </el-button>
-          </div>
+            <el-tooltip content="回复" placement="top" :disabled="isMobile"> <!-- Disable tooltip on mobile potentially -->
+                    <el-button
+                        v-if="!currentPost?.isAgendaPost" 
+                        size="small"
+                        text       
+                        :icon="ChatLineRound"
+                        @click="showReplyForm(comment)"
+                        :disabled="!currentUser"
+                        class="action-button reply-button" 
+                    >
+                       {{ isMobile ? '' : '回复' }} <!-- Show text only on desktop -->
+                    </el-button>
+                </el-tooltip>
+
+                <!-- Delete Button -->
+                <el-tooltip content="删除" placement="top" :disabled="isMobile">
+                    <el-button
+                        v-if="currentUser && comment.authorId === currentUser.uid"
+                        :icon="Delete"
+                        size="small"
+                        type="danger"
+                        text  
+                        @click="handleDeleteComment(comment)"
+                        class="action-button delete-button"
+                    />
+                </el-tooltip>
+            </div>
 
   
               <!-- 回复表单 -->
@@ -285,7 +318,7 @@
         </div>
       </el-timeline-item>
 
-        </el-timeline>
+    </el-timeline>
       </el-dialog>
 
       <el-dialog v-model="editDialogVisible" title="编辑帖子" :width="isMobile ? '95%' : '60%'">
@@ -313,13 +346,17 @@
   
   <script setup>
   import { ref, computed,onUnmounted,onBeforeUnmount ,onMounted,watch } from 'vue'
-  import { ElNotification, ElMessageBox } from 'element-plus'
+  import { ElNotification, ElMessageBox} from 'element-plus'
   import dayjs from 'dayjs'
-import { Search,ArrowUp, ArrowDown, View ,HotWater, ChatLineRound,Plus,Delete,Edit  } from '@element-plus/icons-vue'
+  import FirestoreService from "../services/FirestoreService.js";
+import { Timestamp } from 'firebase/firestore';
+import { Search,ArrowUp, ArrowDown, View ,Loading, HotWater, ChatLineRound,Plus,Delete,Edit  } from '@element-plus/icons-vue'
+import defaultAvatar from '../assets/柴犬.png';
+import { useStore } from 'vuex';
 const screenWidth = ref(window.innerWidth)
 const isMobile = computed(() => screenWidth.value < 768)
 
-
+const store = useStore();
 const topics = ref([
   { id: 1, name: '主论坛' },
   { id: 2, name: '新品发布' },
@@ -331,109 +368,7 @@ const topics = ref([
   { id: 8, name: '产教融合' }
 ])
   
-  const posts = ref([
-    {
-      id: 1,
-      topicId: 1,
-      title: '关于网络安全人才培养的讨论',
-      content: '当前网络安全人才缺口较大，如何建立有效的人才培养体系？',
-      author: {
-        id: 1,
-        name: '王小明',
-        avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-        role: '专家'
-      },
-      createTime: '2023-07-20 09:00',
-      viewCount: 0, 
-      comments: [
-        {
-          id: 1,
-          author: {
-            id: 2,
-            name: '李华',
-            avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-            role: '参会者'
-          },
-          content: '非常赞同这个观点',
-          time: '2023-07-20 10:30'
-        }
-      ]
-    },
-     // 新品发布
-  {
-    id: 2,
-    topicId: 2, 
-    title: '恒脑2.0技术解析',
-    content: '新一代安全大脑的核心技术突破...',
-    author: {
-        id: 1,
-        name: '王小明',
-        avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-        role: '专家'
-      },
-      createTime: '2023-07-20 09:00',
-      viewCount: 0, 
-      comments: [
-        {
-          id: 1,
-          author: {
-            id: 2,
-            name: '李华',
-            avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-            role: '参会者'
-          },
-          content: '非常赞同这个观点',
-          time: '2023-07-20 10:30'
-        }
-      ]
-  },
-
-  // 平行会议
-  {
-    id: 3,
-    topicId: 3,
-    title: '教育系统数据安全实践',
-    content: '浙江大学分享数智安全治理经验...',
-    author: {
-        id: 1,
-        name: '王小明',
-        avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-        role: '专家'
-      },
-      createTime: '2023-07-20 09:00',
-      viewCount: 0, 
-      comments: [
-        {
-          id: 1,
-          author: {
-            id: 2,
-            name: '李华',
-            avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-            role: '参会者'
-          },
-          content: '非常赞同这个观点',
-          time: '2023-07-20 10:30'
-        }
-      ]
-  },
-
-  // 数据安全
-  {
-    id: 4,
-    topicId: 5,
-    title: '数据跨境流动安全方案',
-    content: '探讨企业出海数据合规实践...',
-    author: {
-        id: 1,
-        name: '王小明',
-        avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-        role: '专家'
-      },
-      createTime: '2023-07-20 09:00',
-      viewCount: 0, 
-      comments: []
-  }
-  ])
+  const posts = ref([])
   
   // 状态管理
   const activeTopic = ref(1)
@@ -448,16 +383,125 @@ const topics = ref([
     topicId: 1
   })
   const currentPage = ref(1)
-  const searchKeyword = ref('')
   const showMainReply = ref(false)
 const mainReplyContent = ref('')
-
-
+const editDialogVisible = ref(false);
+const editingPost = ref(null);
+const loadingPosts = ref(true); 
+const error = ref(null);      
+let unsubscribePosts = null;
+const agendaData = ref(null);
+let postIdCounter = 10; 
+const searchKeyword = ref('');
+const sortType = ref('time') // 默认按时间排序
+const sortOrder = ref('desc') // 默认降序
 const dynamicPageSize = computed(() => isMobile.value ? 3 :4)
+const generatedPosts = ref([]);
+const firestorePosts = ref([]);
+// 合并后的帖子数据
+const allPosts = computed(() => {
+    const agendaPosts = generatedPosts.value.map(p => ({ ...p, isAgendaPost: true }));
+    const dbPosts = firestorePosts.value.map(p => ({ ...p, isAgendaPost: false }));
+    return [...agendaPosts, ...dbPosts];
+});
+
+const findTopicIdByName = (forumName) => {
+    const topic = topics.value.find(t => t.name === forumName);
+    if (forumName === "生态合作论坛") return topics.value.find(t => t.name === "生态合作")?.id || 1;
+    if (forumName === "AI引领数字安全新浪潮专题会议") return topics.value.find(t => t.name === "AI与数字安全")?.id || 1; // Example mapping
+    if (forumName === "数据要素安全与新质生产力高端对话") return topics.value.find(t => t.name === "数据安全")?.id || 1; // Example mapping
+
+    return topic ? topic.id : 1; 
+};
+
+const fetchAgendaAndGeneratePosts = async () => {
+    console.log("Starting fetch agenda...");
+    try {
+        const response = await fetch('/data/agenda.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+        }
+        const fetchedData = await response.json();
+
+        if (!Array.isArray(fetchedData) || fetchedData.length === 0) {
+            console.warn("Fetched agenda data is empty or not an array.");
+            generatedPosts.value = []; 
+            return;
+        }
+
+        const tempGenerated = [];
+        let localPostIdCounter = 1000000;
+
+        fetchedData.forEach(day => {
+            day.sessions.forEach(session => {
+                let postContent = `会议时间: ${session.time_or_status || '待定'}\n地点: ${session.location || '待定'}\n`;
+                 if(session.content && session.content.length > 0) {
+                     postContent += `主要议程见会议日程:\n`;
+                     session.content.slice(0, 3).forEach(item => {
+                         postContent += `- ${item.title} (${item.time})\n`;
+                     });
+                 } else {
+                     postContent += "具体议程请关注官方发布。";
+                 }
+
+                 let startTimePart = session.time_or_status?.split(' - ')[0].trim() || '09:00';
+                    if (!/^\d{2}:\d{2}$/.test(startTimePart)) {
+                        console.warn(`Invalid time format "${startTimePart}" for session "${session.title}", using 09:00`);
+                        startTimePart = '09:00';
+                    }
+                 let createDateTime;
+                 try {
+                     const year = new Date().getFullYear();
+                     const dateParts = day.date.match(/(\d+)月(\d+)日/);
+                     if (dateParts) {
+                         const month = dateParts[1].padStart(2, '0');
+                         const dayOfMonth = dateParts[2].padStart(2, '0');
+                         createDateTime = `${year}-${month}-${dayOfMonth}T${startTimePart}:00`; // ISO format
+                     } else {
+                        console.warn(`Could not parse date "${day.date}", using today.`);
+                         const today = new Date();
+                         createDateTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T${startTimePart}:00`;
+                     }
+                 } catch (e) {
+                    console.error("Error parsing date/time:", day.date, session.time_or_status, e);
+                    createDateTime = new Date().toISOString(); // Fallback
+                 }
+
+                 let topicId = findTopicIdByName(session.forum);
+
+                tempGenerated.push({
+                    id: `agenda_${localPostIdCounter++}`, // Prefix agenda IDs
+                    topicId: topicId,
+                    title: session.title,
+                    content: postContent,
+                    author: { id: 'system_agenda', name: '会议主办方', avatar: defaultAvatar }, // Use default avatar or a specific one
+                    createTime: dayjs(createDateTime).isValid() ? dayjs(createDateTime).toISOString() : new Date().toISOString(),
+                    viewCount: Math.floor(Math.random() * 50) + 5, 
+                    comments: [], 
+                    commentCount: 0, 
+                    isAgendaPost: true 
+                });
+            });
+        });
+
+        generatedPosts.value = tempGenerated; 
+        console.log(`Generated ${generatedPosts.value.length} agenda posts.`);
+
+    } catch (err) {
+        console.error("Failed to fetch or process agenda data:", err);
+        error.value = `日程加载失败: ${err.message}`; 
+        generatedPosts.value = []; 
+    }
+};
 
 const handlePageChange = (page) => {
-  currentPage.value = page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+    currentPage.value = page
+    const container = document.querySelector('.post-list-container');
+    if (container) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Fallback
+    }
 }
 const updateScreenWidth = () => {
   screenWidth.value = window.innerWidth
@@ -466,6 +510,12 @@ const updateScreenWidth = () => {
 watch(activeTopic, () => {
   currentPage.value = 1
 })
+watch(detailDialogVisible, (newValue) => {
+    if (!newValue && unsubscribeComments) {
+        unsubscribeComments();
+        unsubscribeComments = null;
+    }
+});
 const handleScroll = () => {
   if (!isMobile.value) return
   
@@ -477,255 +527,387 @@ const handleScroll = () => {
     }
   }
 }
+const authorCache = ref({}); 
 
-const currentUser = ref({
-    id: 100, // Assuming ID 100 is the logged-in user
-    name: '当前用户',
-    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-    role: '用户'
+const currentUser = computed(() => {
+    const userFromStore = store.getters.getUser; 
+    if (userFromStore && userFromStore.uid) {
+        return {
+            uid: userFromStore.uid,
+            name: userFromStore.name || '用户',
+            avatar: userFromStore.avatarUrl || defaultAvatar,
+        };
+    }
+    return null;
 });
 
-const editDialogVisible = ref(false);
-const editingPost = ref(null); // To store the post data being edited
 
-// Function to show the edit dialog
+const getAuthorDisplayInfo = async (authorId) => {
+    if (!authorId) return { name: '访客', avatar: defaultAvatar };
+    if (authorCache.value[authorId]) return authorCache.value[authorId];
+
+    if (authorId === 'system_agenda') {
+        const sysInfo = { name: '会议主办方', avatar: defaultAvatar };
+        authorCache.value[authorId] = sysInfo; // Cache it
+        return sysInfo;
+    }
+
+    try {
+        console.log(`Fetching profile for authorId (UID): ${authorId}`);
+        const userInfo = await FirestoreService.getUserProfile(authorId);
+
+        if (userInfo) {
+            const displayInfo = {
+                name: userInfo.name || '用户', 
+                avatar: userInfo.avatarUrl || defaultAvatar 
+            };
+            authorCache.value[authorId] = displayInfo; 
+            return displayInfo;
+        } else {
+             console.warn(`getUserProfile returned null/undefined for UID: ${authorId}`);
+             const fallbackInfo = { name: '未知用户', avatar: defaultAvatar };
+             authorCache.value[authorId] = fallbackInfo; 
+            return fallbackInfo;
+        }
+    } catch (err) {
+        console.error("Error in getAuthorDisplayInfo for UID:", authorId, err);
+         const errorFallback = { name: '加载出错', avatar: defaultAvatar };
+         authorCache.value[authorId] = errorFallback; // Cache error fallback
+        return errorFallback;
+    }
+ };
+
+ const fetchAuthorsForItems = async (items, idField = 'authorId') => {
+    if (!Array.isArray(items)) {
+        console.warn("fetchAuthorsForItems received non-array:", items);
+        return [];
+    }
+    const authorIds = [...new Set(items.map(item => item[idField]).filter(id => id && id !== 'system_agenda'))];
+    const authorsToFetch = authorIds.filter(id => !authorCache.value[id]);
+
+    if (authorsToFetch.length > 0) {
+        console.log("Fetching profiles for UIDs:", authorsToFetch);
+        try {
+            await Promise.all(authorsToFetch.map(id => getAuthorDisplayInfo(id)));
+        } catch (fetchErr) {
+             console.error("Error during batch author fetching:", fetchErr);
+        }
+    }
+
+    return items.map(item => {
+         const authorInfo = authorCache.value[item[idField]] || { name: (item[idField] === 'system_agenda' ? '会议主办方' : '未知'), avatar: defaultAvatar };
+        return {
+            ...item,
+            author: authorInfo
+        };
+    });
+ };
+
+
+ const setupPostsListener = () => {
+    if (unsubscribePosts) {
+        unsubscribePosts();
+        unsubscribePosts = null;
+    }
+    loadingPosts.value = true;
+    error.value = null;
+
+    const firestoreSortField = sortType.value === 'comments' ? 'commentCount' : 'createdAt';
+
+    unsubscribePosts = FirestoreService.listenToPosts(
+        activeTopic.value,
+        firestoreSortField,
+        sortOrder.value,
+        async (fetchedDbPosts) => { 
+            console.log(`Listener update: Received ${fetchedDbPosts.length} Firestore posts for topic ${activeTopic.value}.`);
+            try {
+                const postsWithTime = fetchedDbPosts.map(p => ({
+                    ...p,
+                    createTime: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : new Date(0).toISOString(),
+                    updatedTime: p.updatedAt?.toDate ? p.updatedAt.toDate().toISOString() : null,
+                    isAgendaPost: false,
+                    commentCount: p.commentCount || 0
+                }));
+
+                const postsWithAuthors = await fetchAuthorsForItems(postsWithTime, 'authorId');
+
+                firestorePosts.value = postsWithAuthors;
+                console.log(`Processed ${firestorePosts.value.length} Firestore posts with authors.`);
+                error.value = null; 
+
+            } catch (fetchError) {
+                console.error("Error processing Firestore posts or fetching authors:", fetchError);
+                firestorePosts.value = fetchedDbPosts.map(p => ({
+                    ...p,
+                    createTime: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : new Date(0).toISOString(),
+                    author: { name: '加载失败', avatar: defaultAvatar },
+                    isAgendaPost: false,
+                    commentCount: p.commentCount || 0
+                }));
+                error.value = `帖子作者信息加载失败: ${fetchError.message}`;
+            } finally {
+                loadingPosts.value = false;
+            }
+        },
+        (listenerError) => { 
+            error.value = `数据库帖子监听失败: ${listenerError.message}`;
+            firestorePosts.value = []; 
+            loadingPosts.value = false;
+            console.error("Firestore listener error:", listenerError);
+        }
+    );
+ };
+
+
 const showEditDialog = (post) => {
-    // Create a deep copy to avoid modifying the original post directly in the form
-    editingPost.value = JSON.parse(JSON.stringify(post));
+    if (post.isAgendaPost) {
+        ElNotification.warning('官方议程帖子不可编辑');
+        return;
+    }
+    if (!currentUser.value || currentUser.value.uid !== post.authorId) {
+        ElNotification.error('无权编辑此帖子');
+        return;
+    }
+    const rawPostData = firestorePosts.value.find(p => p.id === post.id);
+    if (!rawPostData) {
+        ElNotification.error('无法找到原始帖子数据进行编辑');
+        return;
+    }
+    editingPost.value = {
+        id: rawPostData.id,
+        title: rawPostData.title,
+        content: rawPostData.content,
+    };
     editDialogVisible.value = true;
 };
 
-// Function to submit the edited post
-const submitEdit = () => {
-    if (!editingPost.value || !editingPost.value.title || !editingPost.value.content) {
-         ElNotification({
-            title: '错误',
-            message: '标题和内容不能为空',
-            type: 'error',
-            position: 'bottom-right'
+const submitEdit = async () => {
+    if (!editingPost.value) return;
+    if (!editingPost.value.title || !editingPost.value.content) {
+        ElNotification({ title: '错误', message: '标题和内容不能为空', type: 'error' });
+        return;
+    }
+    try {
+        await FirestoreService.updatePost(editingPost.value.id, {
+            title: editingPost.value.title,
+            content: editingPost.value.content
         });
+        editDialogVisible.value = false;
+    } catch (err) {
+        console.error('Submit edit failed:', err);
+    }
+};
+
+const handleDeletePost = async (postId) => {
+    const postToDelete = allPosts.value.find(p => p.id === postId);
+
+    if (postToDelete?.isAgendaPost) {
+        ElNotification.error('官方议程帖子不可删除');
         return;
     }
 
-    const index = posts.value.findIndex(p => p.id === editingPost.value.id);
-    if (index !== -1) {
-        // Update the original post in the array
-        posts.value[index] = { ...posts.value[index], ...editingPost.value }; // Basic merge, adjust if needed
-         ElNotification({
-            title: '成功',
-            message: '帖子修改成功',
-            type: 'success',
-            position: 'bottom-right',
-            duration: 2000
-        });
-    } else {
-         ElNotification({
-            title: '错误',
-            message: '未找到要修改的帖子',
-            type: 'error',
-            position: 'bottom-right'
-        });
+    if (!currentUser.value || !postToDelete || currentUser.value.uid !== postToDelete.authorId) {
+        ElNotification.error('无权删除此帖子');
+        return; //
     }
-    editDialogVisible.value = false;
-    editingPost.value = null; // Clear the editing state
-};
 
-// Function to handle post deletion
-const handleDeletePost = (postId) => {
-    ElMessageBox.confirm(
-        '确定要删除这篇帖子吗？此操作无法撤销。',
-        '确认删除',
-        {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning',
-        }
-    )
-    .then(() => {
-        // Filter out the post to be deleted
-        posts.value = posts.value.filter(p => p.id !== postId);
-        ElNotification({
-            title: '成功',
-            message: '帖子已删除',
-            type: 'success',
-            position: 'bottom-right',
-            duration: 2000
-        });
-         // If the deleted post was being viewed in detail, close the detail dialog
+    try {
+        await ElNotificationBox.confirm(
+            '确定要删除这篇帖子吗？此操作无法撤销（评论也会丢失）。',
+            '确认删除',
+            { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+        );
+
+        await FirestoreService.deletePost(postId);
+
         if (currentPost.value && currentPost.value.id === postId) {
             detailDialogVisible.value = false;
-            currentPost.value = null;
         }
-
-    })
-    .catch(() => {
-        // User clicked cancel or closed the dialog
-        ElNotification({
-            type: 'info',
-            message: '删除已取消',
-            position: 'bottom-right',
-            duration: 1500
-        });
-    });
+    } catch (action) {
+        if (action === 'cancel') {
+            ElNotification({ type: 'info', message: '删除已取消' });
+        } else {
+            console.error('Delete post failed:', action);
+        }
+    }
 };
+
+    
 
 const isAuthor = (post) => {
-    // Ensure both post and post.author exist before comparing
-    return post && post.author && post.author.id === currentUser.value.id;
+    if (!post || post.isAgendaPost) return false;
+    return currentUser.value && post.authorId === currentUser.value.uid;
 };
 
-onMounted(() => {
-const container = document.querySelector('.post-list')
-  if (container) {
-    container.addEventListener('scroll', handleScroll)
-  }
-  window.addEventListener('resize', updateScreenWidth)
-  window.addEventListener('scroll', handleScroll)
-})
-const sortType = ref('time') // 默认按时间排序
-const sortOrder = ref('desc') // 默认降序
+onMounted(async () => {
+    loadingPosts.value = true; 
+    error.value = null;
+    generatedPosts.value = []; 
+    firestorePosts.value = []; 
+
+    await fetchAgendaAndGeneratePosts();
+
+    setupPostsListener();
+
+    window.addEventListener('resize', updateScreenWidth);
+    window.addEventListener('scroll', handleScroll);
+});
+
+watch([activeTopic, sortType, sortOrder], () => {
+    console.log("Topic or sort changed, re-fetching Firestore posts...");
+    currentPage.value = 1; 
+    setupPostsListener();
+});
+
+watch(detailDialogVisible, (newValue) => {
+    if (!newValue && unsubscribeComments) {
+        unsubscribeComments();
+        unsubscribeComments = null;
+        currentPost.value = null;
+        comments.value = [];
+    }
+});
+
+watch(allPosts, (newVal) => {
+  console.log('合并后的帖子数据:', newVal);
+}, { deep: true });
+
 const handleTopicSelect = (selectedTopicId) => {
   activeTopic.value = parseInt(selectedTopicId); // 将字符串转换为数字
   currentPage.value = 1; // 切换主题时重置页码
 };
+
+const allFilteredAndSortedPosts = computed(() => {
+    let filtered = allPosts.value.filter(p => p.topicId === activeTopic.value);
+
+    const keyword = searchKeyword.value.trim().toLowerCase();
+    if (keyword) {
+        filtered = filtered.filter(post =>
+            (post.title && post.title.toLowerCase().includes(keyword)) ||
+            (post.content && post.content.toLowerCase().includes(keyword)) ||
+            (post.author?.name && post.author.name.toLowerCase().includes(keyword))
+        );
+    }
+
+    filtered.sort((a, b) => {
+        let compareResult = 0;
+        if (sortType.value === 'time') {
+            const timeA = a.createTime ? Date.parse(a.createTime) : 0;
+            const timeB = b.createTime ? Date.parse(b.createTime) : 0;
+            compareResult = timeB - timeA;
+        } else if (sortType.value === 'comments') {
+            const aCount = a.commentCount ?? (a.comments?.length || 0);
+            const bCount = b.commentCount ?? (b.comments?.length || 0);
+            compareResult = bCount - aCount;
+        }
+        return sortOrder.value === 'desc' ? compareResult : -compareResult;
+    });
+
+    return filtered;
+});
+
+
 const filteredPosts = computed(() => {
-  console.log('当前主题ID:', activeTopic.value);
-  const filtered = posts.value
-    .filter(p => p.topicId === activeTopic.value)
-    .filter(post => {
-      const keyword = searchKeyword.value.toLowerCase()
-      return (
-        post.title.toLowerCase().includes(keyword) ||
-        post.content.toLowerCase().includes(keyword) ||
-        post.author.name.toLowerCase().includes(keyword)
-      )
-    })
-    .sort((a, b) => {
-      let compareResult = 0
-      if (sortType.value === 'time') {
-        compareResult = Date.parse(a.createTime) - Date.parse(b.createTime)
-      } else if (sortType.value === 'comments') {
-        const aCount = a.comments?.length || 0
-        const bCount = b.comments?.length || 0
-        compareResult = aCount - bCount
-      }
-      return sortOrder.value === 'desc' ? -compareResult : compareResult
-    })
-  
-  console.log('过滤后的帖子数:', filtered.length);
-  
-  // 修改分页切片使用动态分页大小
-  return filtered.slice(
-    (currentPage.value - 1) * dynamicPageSize.value,
-    currentPage.value * dynamicPageSize.value
-  )
-})
+    const start = (currentPage.value - 1) * dynamicPageSize.value;
+    const end = start + dynamicPageSize.value;
+    const paginated = allFilteredAndSortedPosts.value.slice(start, end);
+    console.log(`Displaying posts ${start + 1} to ${end} of ${allFilteredAndSortedPosts.value.length}`);
+    return paginated;
+});
 
-const currentTopic = computed(() => 
-  topics.value.find(t => t.id === activeTopic.value)
-)
+const totalPosts = computed(() => allFilteredAndSortedPosts.value.length);
 
-const totalPosts = computed(() => {
-  const count = posts.value.filter(p => p.topicId === activeTopic.value).length
-  console.log('总帖子数:', count);
-  return count
-})
-  
+const currentTopic = computed(() => topics.value.find(t => t.id === activeTopic.value));
 
   // 方法
   const formatTime = (time) => dayjs(time).format('YYYY-MM-DD HH:mm')
   
   const showCreateDialog = () => {
+    if (!currentUser.value) {    ElNotification({ title: '错误', message: '请先登录', type: 'error' }); return; }
+    newPost.value = { title: '', content: '', topicId: activeTopic.value }; 
     createDialogVisible.value = true
-  }
-  
-  const submitPost = () => {
-    if (!newPost.value.title || !newPost.value.content) {
-        ElNotification({
-      title: '错误',
-      message: '请填写完整信息',
-      type: 'error',
-      position: 'bottom-right'
-    })      
-    return
-    }
-    
-    posts.value.unshift({
-      ...newPost.value,
-      id: Date.now(),
-      author: {
-        id: currentUser.value.id,
-        name: currentUser.value.name,
-        avatar: currentUser.value.avatar,
-        role: currentUser.value.role
-      },
-      createTime: new Date().toISOString(),
-      viewCount: 0, 
-      comments: []
-    })
-    
-    createDialogVisible.value = false
-    ElNotification({
-    title: '成功',
-    message: '发帖成功',
-    type: 'success',
-    position: 'bottom-right',
-    duration: 2000
-  })    
-  newPost.value = { title: '', content: '', topicId: activeTopic.value }
-  }
-  
-  
-  const showReplyForm = (currentComment) => {
-  activeReply.value = currentComment.id
-  // 存储当前父级评论
-  currentParentComment.value = currentComment
 }
+
+const submitPost = async () => {
+    if (!currentUser.value) {
+        ElNotification({ title: '错误', message: '请先登录', type: 'error' });
+        return;
+    }
+    if (!newPost.value.title || !newPost.value.content) {
+        ElNotification({ title: '错误', message: '请填写完整信息', type: 'error' });
+        return;
+    }
+        try {
+        await FirestoreService.createPost({
+            ...newPost.value,
+            topicId: activeTopic.value,
+            authorId: currentUser.value.uid, // 添加authorId
+            createdAt: Timestamp.now(),
+            viewCount: 0,
+            commentCount: 0
+        });
+        createDialogVisible.value = false;
+        newPost.value = { title: '', content: '', topicId: activeTopic.value }; 
+    } catch (err) {
+        console.error('发帖失败:', err);
+    }
+}
+  
+  
+const showReplyForm = (comment) => {
+    if (!currentUser.value) {
+        ElNotification({ title: '警告', message: '请先登录后再回复', type: 'warning', duration: 2000 });
+        return;
+    }
+    if (currentPost.value?.isAgendaPost) {
+        ElNotification({ title: '警告', message: '议程帖子不支持评论交互', type: 'warning', duration: 2000 });
+
+        return;
+    }
+    activeReply.value = comment.id;
+    currentParentComment.value = comment;
+    replyContent.value = '';
+};
   
   const cancelReply = () => {
     activeReply.value = null
     replyContent.value = ''
+    currentParentComment.value = null;
   }
   
- const showMainReplyForm = () => {
- showMainReply.value = true
-}
+  const showMainReplyForm = () => {
+    if (!currentUser.value) { ElNotification.warning('请先登录'); return; }
+    if (currentPost.value?.isAgendaPost) {
+        ElNotification.info('议程帖子当前不支持评论交互');
+        return;
+    }
+    showMainReply.value = true;
+    mainReplyContent.value = '';
+};
 
 const cancelMainReply = () => {
-  showMainReply.value = false
-  mainReplyContent.value = ''
-}
+    showMainReply.value = false;
+    mainReplyContent.value = '';
+};
 
-  const submitReply = (comment) => {
-  if (!replyContent.value) {
-    ElNotification({
-      title: '错误',
-      message: '请输入回复内容',
-      type: 'error',
-      position: 'bottom-right'
-    })
-    return
-  }
 
-  // 创建新回复对象
-  const newReply = {
-    id: Date.now(),
-    author: {
-      id: 100,
-      name: '当前用户',
-      avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-      role: '用户'
-    },
-    content: replyContent.value,
-    time: new Date().toISOString(),
-    replyTo: currentParentComment.value.author,
-    depth: currentParentComment.value.depth + 1,
-    parentId: currentParentComment.value.id
-  }
+const submitReply = async () => { 
+    if (!currentUser.value) { ElNotification.error('请重新登录'); return; }
+    if (!currentPost.value || !currentParentComment.value) { ElNotification.error('无法确定回复目标'); return; }
+    if (!replyContent.value.trim()) { ElNotification({ title: '错误', message: '请输入回复内容', type: 'error' }); return; }
 
-  currentPost.value.comments.push(newReply)
-  resetReplyForm()
-}
+    try {
+        await FirestoreService.createComment(currentPost.value.id, {
+            content: replyContent.value,
+            parentId: currentParentComment.value.id, // ID of the comment being replied to
+            depth: (currentParentComment.value.depth || 0) + 1,
+            replyToAuthorId: currentParentComment.value.authorId // ID of the author being replied to
+        });
+        resetReplyForm(); 
+    } catch (err) {
+        console.error("Submit reply failed:", err);
+    }
+};
 
 // 新增状态管理
 const currentParentComment = ref(null)
@@ -737,92 +919,174 @@ const resetReplyForm = () => {
   currentParentComment.value = null
 }
 
-const submitMainReply = () => {
-  if (!mainReplyContent.value) {
-    ElNotification({
-      title: '错误',
-      message: '请输入回复内容',
-      type: 'error',
-      position: 'bottom-right'
-    })
-    return
-  }
+const submitMainReply = async () => {
+    if (!currentUser.value) { ElNotification({ title: '错误', message: '请重新登陆', type: 'error' }); return; }
+    if (!currentPost.value) { ElNotification({ title: '错误', message: '无法确定评论目标', type: 'error' }); return;  }
+    if (!mainReplyContent.value.trim()) { ElNotification({ title: '错误', message: '请输入评论内容', type: 'error' }); return; }
 
-  const newReply = {
-    id: Date.now(),
-    author: {
-      id: 100,
-      name: '当前用户',
-      avatar: 'https://cube.elemecdn.com/3/7c/3ea6beaf643a5d4ac49ca7e83c3dfpng.png',
-      role: '用户'
-    },
-    content: mainReplyContent.value,
-    time: new Date().toISOString(),
-    depth: 0,
-    replyTo: currentPost.value.author 
-  }
+    try {
+        await FirestoreService.createComment(currentPost.value.id, {
+            content: mainReplyContent.value,
+            parentId: null, 
+            depth: 0,
+            replyToAuthorId: null 
+        });
+        cancelMainReply(); 
+    } catch (err) {
+        console.error("Submit main reply failed:", err);
+    }
+};
 
-  currentPost.value.comments.push(newReply)
-  mainReplyContent.value = ''
-  showMainReply.value = false
-  ElNotification({
-    title: '成功',
-    message: '回复成功',
-    type: 'success',
-    position: 'bottom-right',
-    duration: 2000
-  })
-}
+const handleDeleteComment = async (comment) => {
+    if (!currentUser.value || !comment || currentUser.value.uid !== comment.authorId) {
+        ElNotification({ title: '错误', message: '无权删除此评论', type: 'error' });
+        return;
+    }
+     if (!currentPost.value || !currentPost.value.id) {
+         ElNotification({ title: '错误', message: '无法确定帖子信息', type: 'error' });
+        return;
+    }
 
-const viewDetail = (post) => {
-  // 找到原始数据中的帖子对象
-  const originalPost = posts.value.find(p => p.id === post.id)
-  if (originalPost) {
-    originalPost.viewCount = (originalPost.viewCount || 0) + 1
-  }
-  currentPost.value = originalPost || post
-  detailDialogVisible.value = true
-}
+    try {
+        await ElNotificationBox.confirm(
+            '确定要删除这条评论吗？', '确认删除',
+            { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+        );
+        await FirestoreService.deleteComment(currentPost.value.id, comment.id);
+    } catch (action) {
+         if (action === 'cancel') {
+            ElNotification({ type: 'info', message: '删除已取消' });
+        } else {
+            console.error('Delete comment failed:', action);
+        }
+    }
+};
+
+
+let unsubscribeComments = null;
+const comments = ref([]);
+const loadingComments = ref(false);
+const commentError = ref(null);
+
+const viewDetail = async (post) => {
+    if (!post || !post.id) {return; }
+    console.log("Viewing detail for post:", post.id, "Is Agenda:", post.isAgendaPost);
+
+     const postWithAuthor = Array.isArray(await fetchAuthorsForItems([post])) ? (await fetchAuthorsForItems([post]))[0] : post;
+
+
+    currentPost.value = {
+        ...postWithAuthor, 
+        comments: [] 
+    };
+    detailDialogVisible.value = true;
+    loadingComments.value = true;
+    commentError.value = null;
+
+    if (unsubscribeComments) {
+        unsubscribeComments();
+        unsubscribeComments = null;
+    }
+
+    if (post.isAgendaPost) {
+        console.log(`Agenda post ${post.id}: Handling view count locally.`);
+        const index = generatedPosts.value.findIndex(p => p.id === post.id);
+        if (index > -1) {
+             generatedPosts.value[index].viewCount = (generatedPosts.value[index].viewCount || 0) + 1;
+             if (currentPost.value && currentPost.value.id === post.id) {
+                 currentPost.value.viewCount = generatedPosts.value[index].viewCount;
+             }
+        }
+        currentPost.value.comments = post.comments || []; // Use comments from JSON
+        loadingComments.value = false;
+        console.log("Agenda post - Comments loaded from JSON (if any).");
+
+    } else {
+        console.log(`Firestore post ${post.id}: Incrementing view count & listening for comments.`);
+        FirestoreService.incrementViewCount(post.id).catch(err => console.warn(`Failed increment view count: ${err.message}`));
+        console.log(`Setting up comments listener for post ID: ${post.id}`);
+        unsubscribeComments = FirestoreService.listenToComments(
+            post.id,
+            async (fetchedComments) => { 
+                console.log(`Listener update: Received ${fetchedComments.length} comments for post ${post.id}.`);
+                if (!currentPost.value || currentPost.value.id !== post.id) {
+                     console.warn(`Comment listener update skipped: currentPost changed or missing. Target post ID: ${post.id}`);
+                     if (unsubscribeComments) unsubscribeComments(); 
+                    return;
+                }
+                try {
+                    const commentsWithTime = fetchedComments.map(c => ({
+                        ...c,
+                        time: c.createdAt?.toDate ? c.createdAt.toDate().toISOString() : new Date(0).toISOString(),
+                        replyToAuthorId: c.replyToAuthorId || null
+                    }));
+
+                    const commentsWithAuthors = await fetchAuthorsForItems(commentsWithTime, 'authorId');
+
+                    const processedComments = await Promise.all(commentsWithAuthors.map(async (comment) => {
+                         let replyToInfo = null;
+                         if (comment.replyToAuthorId) {
+                             replyToInfo = await getAuthorDisplayInfo(comment.replyToAuthorId);
+                         }
+                         return {
+                             ...comment,
+                             replyTo: replyToInfo
+                         };
+                    }));
+
+                    currentPost.value.comments = processedComments;
+                    console.log(`Updated comments for currentPost ${post.id}`, currentPost.value.comments);
+
+                    commentError.value = null;
+
+                } catch (err) {
+                    console.error(`Error processing comments or fetching authors for post ${post.id}:`, err);
+                    commentError.value = `评论信息加载出错: ${err.message}`;
+                     currentPost.value.comments = [];
+                } finally {
+                    loadingComments.value = false;
+                }
+            },
+            (listenerError) => { f
+                console.error(`Comment listener error for post ${post.id}:`, listenerError);
+                commentError.value = `评论监听失败: ${listenerError.message}`;
+                 if (currentPost.value && currentPost.value.id === post.id) {
+                     currentPost.value.comments = []; // Clear comments
+                 }
+                loadingComments.value = false;
+            }
+        );
+    }
+ };
 
 const hotPosts = computed(() => {
-  return posts.value
-    .map(post => ({
-      ...post,
-      // 热度计算规则：评论数*2 + 浏览量
-      hotScore: (post.comments?.length || 0) * 2 + (post.viewCount || 0)
-    }))
-    .sort((a, b) => b.hotScore - a.hotScore)
-    .slice(0, 10)
-})
-
-
-
-
+    return [...allPosts.value] 
+      .map(post => ({
+        ...post,
+        hotScore: (post.commentCount ?? (post.comments?.length || 0)) * 2 + (post.viewCount || 0)
+      }))
+      .sort((a, b) => b.hotScore - a.hotScore)
+      .slice(0, 10);
+});
 
 onBeforeUnmount(() => {
-  // 清理可能的异步操作
-  const container = document.querySelector('.post-list-container')
-  if (container) {
-    container.removeEventListener('scroll', handleScroll)
-  }
-  currentPost.value = null
-  activeReply.value = null
-  window.removeEventListener('resize', updateScreenWidth)
-})
+    window.removeEventListener('resize', updateScreenWidth);
+    window.removeEventListener('scroll', handleScroll);
+    if (unsubscribePosts) unsubscribePosts();
+    if (unsubscribeComments) unsubscribeComments();
+});
 
 onUnmounted(() => {
   currentPost.value = null;
 });
 
-
-  </script>
-  
+</script>
   <style scoped>
   .forum-page {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    height: 110vh;
+    height: 140vh;
     border: none;
   }
 
@@ -875,7 +1139,7 @@ onUnmounted(() => {
   }
 
   .post-list-container {
-  flex: 1;
+    flex-grow: 1; 
   overflow-y: auto;
   margin-bottom: 20px;
 }
@@ -883,7 +1147,7 @@ onUnmounted(() => {
   .post-card {
   transition: all 0.3s;
   margin-bottom: 15px;
-  width: 100%;
+  width: 99.5%;
 }
 
 .post-card:hover {
@@ -945,9 +1209,16 @@ el-select {
   }
   
   .post-content {
-    color: #333;
-    line-height: 1.6;
-    margin-bottom: 5px;
+    color: #555;
+    line-height: 1.5; 
+    margin: 10px 0; 
+     display: -webkit-box;
+     -webkit-line-clamp: 3; 
+     -webkit-box-orient: vertical;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     max-height: calc(1.5em * 3); 
+     white-space: pre-line; 
   }
   
   .post-actions {
@@ -1003,7 +1274,7 @@ el-select {
   vertical-align: middle;
 }
 .pagination-container {
-  position: sticky;
+  /* position: sticky; */
   bottom: 0;
   background: transparent;
   z-index: 1000;
@@ -1032,12 +1303,19 @@ el-select {
   border-radius: 50%;
   flex-shrink: 0;
 }
-  .comment-actions {
-  margin-top: 10px;
-  border-top: 1px solid #eee;
-  padding-top: 10px;
+.comment-actions {
+    margin-top: 10px;
+   display: flex;   
+   align-items: center; 
+   justify-content: flex-end;
+   gap: 10px; 
 }
 
+.comment-actions .el-button {
+    white-space: nowrap;
+    border: none !important;
+    font-size: 12px;
+}
   .comment-info {
     display: flex;
     align-items: center;
@@ -1067,7 +1345,10 @@ el-select {
   
   .form-actions {
     margin-top: 10px;
-    text-align: right;
+    display: flex;           
+  justify-content: flex-end;
+  align-items: center; 
+  gap: 8px;  
   }
   
   .reply-btn {
@@ -1152,6 +1433,7 @@ el-select {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-size: 15x;
 }
 
 .el-pagination {
@@ -1162,6 +1444,44 @@ el-select {
   bottom: 0;
   z-index: 100;
 }
+
+.post-list-content-wrapper {
+    flex-grow: 1; /* Allow content area to grow */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for flex-grow with potential overflow */
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.loading-state .el-icon {
+  margin-bottom: 10px;
+  color: var(--el-color-primary); 
+}
+
+.full-width-alert {
+    margin: 20px 0; 
+}
+.el-dialog__footer {
+    display: flex !important;            
+    justify-content: space-between !important; 
+    padding: 10px !important;           
+  }
+
+  /* 按钮样式 */
+  .el-dialog__footer .el-button {
+    flex: 1;                           
+    margin: 2px 4px !important;        
+    padding: 10px 12px;               
+  }
 @media (max-width: 768px) {
   /* 小屏幕（如手机） */
   .forum-page {
@@ -1233,16 +1553,35 @@ el-select {
     width: 100%;
     margin-top: 5px;
   }
+  .comment-actions {
+    margin-top: 5px;
+    gap: 0px;
+    justify-content: flex-end;
+}
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 15x;
+}
 
+.comment-actions .el-button {
+    white-space: nowrap;
+    border: none !important;
+    font-size: 10px;
+}
   /* 帖子列表 */
-  .post-card {
-    margin: 0 -12px 8px;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    border-bottom: 1px solid #eee;
-    width: 100%;
-  }
+  .post-card .post-content {
+        font-size: 13px !important;
+        color: #555 !important; 
+        margin: 6px 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-height: calc(1.4em * 2); 
+    }
   .post-header {
     align-items: flex-start;
     gap: 5px;
@@ -1266,26 +1605,26 @@ el-select {
     flex-wrap: wrap;
   }
 
-  .post-content {
-    font-size: 13px !important;
-    line-height: 1.4;
-    color: #444 !important;
-    margin: 8px 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
+  .el-dialog .post-content { 
+        display: block !important; 
+        -webkit-line-clamp: unset !important;
+        max-height: none !important;
+        overflow: visible !important; 
+        white-space: pre-line; 
+    }
+    .el-dialog .comment-content {
+         white-space: pre-line;
+    }
   .post-actions {
-    border-top: none;
+    border: none;
     padding: 6px 0 0;
     font-size: 12px;
   }
   /* 分页 */
   .el-pagination {
     padding: 8px 0;
-    position: fixed;
+    position: sticky;
+    z-index: 1;
     bottom: 0;
     left: 0;
     right: 0;
@@ -1304,6 +1643,13 @@ el-select {
     border: none;
   }
   
+  .form-actions .el-button {
+        width: auto;      
+        flex-grow: 0;     
+        margin-top: 0;    
+        padding: 6px 12px;
+    }
+
   :deep(.el-pagination__total) {
     display: none;
   }
@@ -1318,6 +1664,17 @@ el-select {
   :deep(.el-pager li:not(.is-active)) {
     display: none; /* 隐藏非当前页码 */
   }
+  :deep(.el-dialog__footer) { /* Use :deep() */
+      display: flex !important;
+      justify-content: space-between !important;
+      padding: 10px !important;
+    }
+
+    :deep(.el-dialog__footer .el-button) { /* Use :deep() */
+      flex: 1;
+      margin: 2px 4px !important;
+      padding: 10px 12px;
+    }
   .el-dialog__header {
     padding: 12px 16px;
   }
@@ -1329,19 +1686,6 @@ el-select {
     margin-right: 0 !important;
     margin-left: 0 !important;
     padding: 0 8px; /* 保留最小安全边距 */
-  }
-  /* 按钮容器修正 */
-  .el-dialog__footer {
-    display: flex !important;
-    justify-content: space-between !important;
-    padding: 10px !important;
-  }
-
-  /* 按钮样式 */
-  .el-dialog__footer .el-button {
-    flex: 1;
-    margin: 2px 4px !important;
-    padding: 10px 12px;
   }
 
   /* 输入框字号优化 */
@@ -1461,14 +1805,7 @@ el-select {
   .post-list-container {
     width: 100%; /* 确保帖子列表内容区域占满容器 */
   }
-  .el-pagination {
-    position: sticky;
-    bottom: 0;
-    background: white;
-    z-index: 1;
-    padding: 8px 0;
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
-  }
+
   
   :deep(.btn-prev),
   :deep(.btn-next) {

@@ -394,7 +394,6 @@ export default {
   position: relative; /* 确保图标定位正确 */
 }
 .map-container {
-  font-family: Arial, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;

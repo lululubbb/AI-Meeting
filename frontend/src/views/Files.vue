@@ -572,7 +572,6 @@ const performSearch = () => {
  .file-manager-container {
    position: relative;
    overflow: hidden;
-     font-family: 'Helvetica Neue', Arial, sans-serif;
      /* background-color: #f8f9fa; */
      background-color: var(--background-color);
      display: flex;

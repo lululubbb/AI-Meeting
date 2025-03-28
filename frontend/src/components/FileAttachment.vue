@@ -134,7 +134,6 @@ export default {
 .file-type {
   color: #ffffff;
   font-size: 12px;
-  font-family: "Poppins", sans-serif;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -176,7 +175,6 @@ export default {
 .file-name {
   color: var(--text-color);
   font-size: 15px;
-  font-family: "Poppins", sans-serif;
   font-weight: 500;
 
 }
@@ -213,7 +211,6 @@ export default {
 
 .action.download {
   color: var(--text-color);
-  font-family: "Poppins", sans-serif;
   font-weight: 500;
 }
 
