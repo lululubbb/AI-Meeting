@@ -1,15 +1,20 @@
 <template>
   <div class="map-container">
     <div class="search-bar">
-      <input v-model="destination" placeholder="输入目的地" />
-      <button @click="searchRoute">搜索路线</button>
-      <select v-model="transportMode">
-        <option value="driving">驾车</option>
-        <option value="walking">步行</option>
-        <option value="transit">公交</option>
-        <option value="subway">地铁</option>
-      </select>
-      <button @click="returnToCurrentLocation">回到当前位置</button>
+      <div class="search-input-container">
+        <input v-model="destination" placeholder="输入目的地" class="destination-input" />
+      </div>
+
+      <div class="button-group">
+        <button @click="searchRoute">搜索路线</button>
+        <select v-model="transportMode">
+          <option value="driving">驾车</option>
+          <option value="walking">步行</option>
+          <option value="transit">公交</option>
+          <option value="subway">地铁</option>
+        </select>
+        <button @click="returnToCurrentLocation">当前位置</button>
+      </div>
     </div>
 
     <div v-if="userPoint" class="location-info">
@@ -22,7 +27,17 @@
       <p v-if="routeDuration" class="duration">
         预计时间：{{ routeDuration }} | 预计费用：{{ routeCost }}
       </p>
-      <div v-if="routeDetails.length" class="route-details">
+      <!-- 显示主要途经点 -->
+      <div v-if="waypoints && waypoints.length" class="waypoints">
+        <h3>主要途经点</h3>
+        <ul>
+          <li v-for="(point, index) in waypoints" :key="'waypoint-' + index">
+            {{ index + 1 }}. {{ point.name }} ({{ point.action }})
+          </li>
+        </ul>
+      </div>
+
+      <div v-if="routeDetails && routeDetails.length" class="route-details">
         <h3>路线详情</h3>
         <ul>
           <li v-for="(detail, index) in routeDetails" :key="index">{{ detail }}</li>
@@ -48,6 +63,9 @@ export default {
       mapLoaded: false,
       routeDetails: [],
       routeCost: "", // 新增字段，用于存储预计费用
+      routeDetails: [], // 初始化为空数组
+      waypoints: [], // 初始化为空数组
+      geocodeCache: {}, // 地理编码缓存
     };
   },
   methods: {
@@ -66,7 +84,13 @@ export default {
     },
     initMap() {
       this.mapLoaded = true;
-      this.map = new BMap.Map("map-container", { enableMapClick: false });
+      this.map = new BMap.Map("map-container", {
+        enableMapClick: false,
+        enableDragging: true,
+        enablePinchToZoom: true,
+      });
+      // 启用鼠标滚轮缩放功能
+      this.map.enableScrollWheelZoom(true);
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -131,6 +155,12 @@ export default {
       );
     },
     searchRoute() {
+      // 重置之前的数据
+      this.routeDetails = [];
+      this.waypoints = [];
+      this.routeDuration = "";
+      this.routeCost = "";
+
       if (!this.destination) {
         alert("请输入目的地");
         return;
@@ -169,17 +199,40 @@ export default {
           switch (this.transportMode) {
             case "driving":
               route = new BMap.DrivingRoute(this.map, {
-                //...commonConfig,
-                renderOptions: { map: this.map, autoViewport: true },
-                onSearchComplete: (results) => {
-                  if (!results || results.getNumPlans() === 0) {
-                    console.error("路径规划失败：未找到有效路线");
-                    return;
+                renderOptions: {
+                  map: this.map,
+                  autoViewport: true,
+                  enableDragging: true,
+                },
+                policy: BMAP_DRIVING_POLICY_DEFAULT, // 可以改为BMAP_DRIVING_POLICY_LEAST_TIME等
+                // 修改后的 onSearchComplete 回调
+                onSearchComplete: async (results) => {
+                  console.group("驾车路线规划完整结果");
+                  console.log("原始结果对象:", results);
+
+                  if (results && results.Yl && results.Yl[0]) {
+                    const plan = results.Yl[0];
+                    console.log("方案详情:", {
+                      distance: plan.Zj,
+                      time: plan.If,
+                      routes: plan.ai,
+                    });
                   }
-                  // 正常处理结果
+                  console.groupEnd();
+
+                  // 显示路线信息
                   this.displayRouteInfo(results);
-                  this.routeDetails = this.parseRouteDetails(results);
+                  this.routeDetails = await this.parseDrivingDetails(results);
                   this.calculateRouteCost(results);
+                },
+                onMarkersSet: (markers) => {
+                  console.log("起点终点标记:", markers);
+                },
+                onPolylinesSet: (routes) => {
+                  console.log("绘制的路线:", routes);
+                },
+                onInfoHtmlSet: (html, marker) => {
+                  console.log("信息窗口内容:", html);
                 },
               });
               break;
@@ -258,27 +311,409 @@ export default {
       );
     },
 
-    parseDrivingDetails(results) {
-      if (!results || results.getNumPlans() === 0) return [];
-      const plan = results.getPlan(0);
-      const details = ["🚗 驾车路线：起点"];
-      for (let i = 0; i < plan.getNumRoutes(); i++) {
-        const route = plan.getRoute(i);
-        for (let j = 0; j < route.getNumSteps(); j++) {
-          const step = route.getStep(j);
-          if (step) {
-            const desc = this.cleanStepDescription(step.getDescription());
-            const keyMatch = desc.match(/出发|到达|进入|拐入|经过|换乘|下高速|上高速/);
-            if (keyMatch) {
-              details.push(`▸ ${desc}`);
+    // 新增方法：根据坐标获取地点名称
+    // 更新后的 getLocationName 方法
+    async getLocationName(point) {
+      if (!point || !point.lat || !point.lng) return null;
+
+      // 简单缓存机制
+      const cacheKey = `${point.lng.toFixed(6)},${point.lat.toFixed(6)}`;
+      if (this.geocodeCache && this.geocodeCache[cacheKey]) {
+        return this.geocodeCache[cacheKey];
+      }
+
+      return new Promise((resolve) => {
+        const geocoder = new BMap.Geocoder();
+        geocoder.getLocation(
+          new BMap.Point(point.lng, point.lat),
+          (result) => {
+            let name = null;
+
+            if (result) {
+              // 优先使用POI名称，如果没有则使用道路+门牌号，最后使用区县名称
+              if (result.surroundingPois && result.surroundingPois.length > 0) {
+                name = result.surroundingPois[0].title;
+              } else if (result.address) {
+                const addr = result.addressComponents;
+                name = addr.street || addr.district || addr.city;
+                if (addr.streetNumber) name += addr.streetNumber;
+              }
+            }
+
+            // 初始化缓存
+            if (!this.geocodeCache) this.geocodeCache = {};
+            this.geocodeCache[cacheKey] = name;
+
+            resolve(name);
+          },
+          {
+            poiRadius: 50, // 搜索50米范围内的POI
+            extensions_poi: 1, // 返回周边POI信息
+          }
+        );
+      });
+    },
+    // 修改后的 parseDrivingDetails 方法
+    // 修改后的 parseDrivingDetails 方法
+    async parseDrivingDetails(results) {
+      if (!results || !results.Yl || !Array.isArray(results.Yl)) {
+        console.error("无效的驾车路线结果", results);
+        return ["无法获取驾车路线详情"];
+      }
+
+      const details = [];
+      const plan = results.Yl[0]; // 获取第一个方案
+      if (!plan) {
+        return ["无法获取路线方案"];
+      }
+
+      try {
+        // 1. 添加总体信息
+        const totalDistance = (plan.Zj / 1000).toFixed(1);
+        const totalTime = Math.ceil(plan.If / 60);
+        details.push(`🚗 驾车路线总距离: ${totalDistance}公里 `);
+
+        // 2. 解析详细导航指令
+        if (plan.ai && plan.ai.length > 0) {
+          const route = plan.ai[0];
+
+          if (route.ds && route.ds.length > 0) {
+            let previousPoint = null;
+
+            for (let i = 0; i < route.ds.length; i++) {
+              try {
+                const step = route.ds[i];
+                const nextStep = i < route.ds.length - 1 ? route.ds[i + 1] : null;
+                const instruction = await this.parseDrivingStep(
+                  step,
+                  previousPoint,
+                  nextStep
+                );
+                if (instruction) {
+                  details.push(instruction);
+                }
+                previousPoint = step.Zh;
+              } catch (stepError) {
+                console.error(`解析步骤${i}时出错:`, stepError);
+                continue;
+              }
+            }
+          } else if (route.Or && route.Or.length > 0) {
+            details.push("🗺 基础路线指引:");
+            await this.generateEnhancedInstructions(route.Or, details);
+          }
+        }
+      } catch (e) {
+        console.error("解析驾车路线时出错:", e);
+        return ["路线解析出错，请查看地图显示"];
+      }
+
+      return details;
+    },
+    // 解析单个驾驶步骤
+    // 修改后的 parseDrivingStep 方法
+    // 修改后的 parseDrivingStep 方法
+    async parseDrivingStep(step, previousPoint, nextStep) {
+      if (!step) return null;
+
+      const distance = step.If ? step.If : 0;
+      const point = step.Zh || {};
+      const actionType = step.hk; // 百度地图的动作类型代码
+      const roadName = step.Yg || ""; // 道路名称
+
+      // 获取方向信息
+      const direction = previousPoint ? this.getDirection(previousPoint, point) : "";
+
+      // 根据动作类型生成对应的导航指令
+      let action = "";
+      switch (actionType) {
+        case 0:
+          action = `从起点向${direction}方向出发`;
+          if (roadName) action += `,沿${roadName}`;
+          break;
+        case 1:
+          action = `沿${roadName || "当前道路"}`;
+          break;
+        case 2:
+          action = "右转";
+          break;
+        case 3:
+          action = "左转";
+          break;
+        case 4:
+          action = "向右前方转";
+          break;
+        case 5:
+          action = "向左前方转";
+          break;
+        case 6:
+          action = "向右后方转";
+          break;
+        case 7:
+          action = "向左后方转";
+          break;
+        case 8:
+          action = "到达终点";
+          if (roadName) action += `[${roadName}]`;
+          break;
+        case 9:
+          action = "左转掉头";
+          break;
+        case 10:
+          action = "右转掉头";
+          break;
+        default:
+          action = "继续前行";
+      }
+
+      // 处理特殊路况
+      let specialInfo = "";
+      if (step.gU === 1) specialInfo = ",过天桥";
+      if (step.gU === 2) specialInfo = ",过地下通道";
+      if (step.gU === 3) specialInfo = ",过扶梯";
+      if (step.jB === 1) specialInfo = ",到路口斜对面";
+
+      // 获取地点名称
+      let locationInfo = "";
+      if (point.lat && point.lng) {
+        try {
+          const locationName = await this.getLocationName(point);
+          if (locationName && locationName !== "未知位置") {
+            if (actionType === 0) {
+              locationInfo = `[起点: ${locationName}]`;
+            } else if (actionType === 8) {
+              locationInfo = `[终点: ${locationName}]`;
+            } else {
+              locationInfo = `[${locationName}]`;
+            }
+          }
+        } catch (e) {
+          console.error("获取地点名称失败:", e);
+        }
+      }
+
+      // 构造完整的导航指令
+      let instruction = `▸ ${action}`;
+      if (distance > 0) {
+        instruction += `走${
+          distance >= 1000 ? (distance / 1000).toFixed(1) + "公里" : distance + "米"
+        }`;
+      }
+      if (specialInfo) instruction += specialInfo;
+      if (nextStep && nextStep.Yg && nextStep.Yg !== roadName) {
+        instruction += `,${actionType >= 2 && actionType <= 7 ? "进入" : ""}${
+          nextStep.Yg
+        }`;
+      }
+      if (locationInfo) instruction += ` 到达${locationInfo}`;
+
+      return instruction;
+    },
+
+    // 新增方法：计算两点之间的方向
+    // 修复后的 getDirection 方法
+    getDirection(fromPoint, toPoint) {
+      if (!fromPoint || !toPoint) return "";
+
+      // 计算经度和纬度差
+      const lngDiff = toPoint.lng - fromPoint.lng;
+      const latDiff = toPoint.lat - fromPoint.lat;
+
+      // 计算角度（0-360度）
+      let angle = (Math.atan2(lngDiff, latDiff) * 180) / Math.PI;
+      if (angle < 0) angle += 360;
+
+      // 定义16个基本方向
+      const directions = [
+        "北",
+        "北北东",
+        "东北",
+        "东北东",
+        "东",
+        "东南东",
+        "东南",
+        "东南南",
+        "南",
+        "西南南",
+        "西南",
+        "西南西",
+        "西",
+        "西北西",
+        "西北",
+        "西北北",
+      ];
+
+      // 将角度映射到16个方向
+      const index = Math.round(angle / 22.5) % 16;
+      return directions[index];
+    },
+    // 新增方法：提取主要途经点
+    async extractWaypoints(results) {
+      if (!results || !results.Yl || results.Yl.length === 0) return [];
+
+      const waypoints = [];
+      const plan = results.Yl[0];
+
+      if (plan.ai && plan.ai.length > 0) {
+        const route = plan.ai[0];
+
+        // 提取关键转向点
+        if (route.ds && route.ds.length > 0) {
+          for (const step of route.ds) {
+            if (step.hk > 1 && step.hk < 8) {
+              // 只提取转向点
+              const name = await this.getLocationName(step.Zh);
+              waypoints.push({
+                name: name,
+                point: step.Zh,
+                action: this.getActionDescription(step.hk),
+                distance: step.If,
+              });
             }
           }
         }
       }
-      details.push("→ 终点");
-      return details;
+
+      return waypoints;
     },
 
+    // 新增方法：获取转向动作描述
+    getActionDescription(actionType) {
+      switch (actionType) {
+        case 2:
+          return "左转";
+        case 3:
+          return "右转";
+        case 4:
+          return "左前方转弯";
+        case 5:
+          return "右前方转弯";
+        case 6:
+          return "左后方转弯";
+        case 7:
+          return "右后方转弯";
+        case 9:
+          return "左转掉头";
+        case 10:
+          return "右转掉头";
+        default:
+          return "继续前行";
+      }
+    },
+    // 生成基础路线指引（当无法获取详细步骤时）
+    // 修改后的 generateBasicInstructions 方法
+    async generateBasicInstructions(points, details) {
+      if (!points || points.length < 2) return;
+
+      // 计算总距离
+      const totalDistance = this.calculatePathDistance(points);
+      details.push(`▸ 总距离: ${(totalDistance / 1000).toFixed(1)}公里`);
+
+      // 获取起点名称
+      const startName = await this.getLocationName(points[0]);
+      details.push(`▸ 起点: ${startName}`);
+
+      // 分析路线方向变化
+      let lastBearing = null;
+      let straightDistance = 0;
+      let straightStart = points[0];
+      let straightStartIndex = 0;
+
+      for (let i = 1; i < points.length; i++) {
+        const bearing = this.calculateBearing(points[i - 1], points[i]);
+        const distance = this.getDistance(points[i - 1], points[i]);
+
+        // 如果方向变化大于15度，认为是转向点
+        if (lastBearing !== null && Math.abs(bearing - lastBearing) > 15) {
+          const locationName = await this.getLocationName(points[i - 1]);
+          details.push(
+            `▸ 从 ${await this.getLocationName(
+              straightStart
+            )} 直行 ${straightDistance.toFixed(0)}米`
+          );
+          details.push(
+            `▸ 在 ${locationName} 处转向 ${bearing > lastBearing ? "右" : "左"}`
+          );
+          straightDistance = 0;
+          straightStart = points[i - 1];
+          straightStartIndex = i - 1;
+        }
+
+        straightDistance += distance;
+        lastBearing = bearing;
+      }
+
+      // 添加最后一段
+      const endName = await this.getLocationName(points[points.length - 1]);
+      details.push(
+        `▸ 从 ${await this.getLocationName(
+          straightStart
+        )} 直行 ${straightDistance.toFixed(0)}米`
+      );
+      details.push(`▸ 到达终点: ${endName}`);
+    },
+
+    // 计算两点之间的方位角（0-360度）
+    calculateBearing(start, end) {
+      const startLat = (start.lat * Math.PI) / 180;
+      const startLng = (start.lng * Math.PI) / 180;
+      const endLat = (end.lat * Math.PI) / 180;
+      const endLng = (end.lng * Math.PI) / 180;
+
+      const y = Math.sin(endLng - startLng) * Math.cos(endLat);
+      const x =
+        Math.cos(startLat) * Math.sin(endLat) -
+        Math.sin(startLat) * Math.cos(endLat) * Math.cos(endLng - startLng);
+      let bearing = (Math.atan2(y, x) * 180) / Math.PI;
+      return (bearing + 360) % 360;
+    },
+    // 计算路径总距离（简化版）
+    calculatePathDistance(points) {
+      let distance = 0;
+      for (let i = 1; i < points.length; i++) {
+        distance += this.getDistance(points[i - 1], points[i]);
+      }
+      return distance;
+    },
+
+    // 计算两点间距离（简化的球面距离公式）
+    getDistance(point1, point2) {
+      const rad = (d) => (d * Math.PI) / 180.0;
+      const lat1 = point1.lat;
+      const lng1 = point1.lng;
+      const lat2 = point2.lat;
+      const lng2 = point2.lng;
+
+      const radLat1 = rad(lat1);
+      const radLat2 = rad(lat2);
+      const a = radLat1 - radLat2;
+      const b = rad(lng1) - rad(lng2);
+
+      return (
+        2 *
+        6378137 *
+        Math.asin(
+          Math.sqrt(
+            Math.pow(Math.sin(a / 2), 2) +
+              Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)
+          )
+        )
+      );
+    },
+
+    // 获取路径中的关键点
+    getKeyPoints(points) {
+      if (!points || points.length <= 5) return points || [];
+
+      const interval = Math.floor(points.length / 5);
+      return [
+        points[0],
+        points[interval],
+        points[interval * 2],
+        points[interval * 3],
+        points[points.length - 1],
+      ];
+    },
     calculateRouteCost(results) {
       if (!results || results.getNumPlans() === 0) {
         this.routeCost = "无法获取费用";
@@ -367,6 +802,20 @@ export default {
       }
       this.routeDuration = results.getPlan(0).getDuration(true);
     },
+    displayDrivingRouteInfo(results) {
+      if (!results || !results.Yl || results.Yl.length === 0) {
+        this.routeDuration = "无法获取路线信息";
+        return;
+      }
+
+      const plan = results.Yl[0];
+      if (plan.If) {
+        const minutes = Math.ceil(plan.If / 60);
+        this.routeDuration = `${minutes}分钟`;
+      } else {
+        this.routeDuration = "时间未知";
+      }
+    },
     returnToCurrentLocation() {
       if (this.userPoint && this.map) {
         this.map.panTo(this.userPoint);
@@ -379,19 +828,48 @@ export default {
 
   mounted() {
     this.loadBaiduMap();
+    document.getElementById("map-container").addEventListener("touchstart", () => {
+      console.log("Touch event detected on map container");
+    });
   },
 };
 </script>
 
 <style scoped>
+.route-details {
+  background: #f8f8f8;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+.route-details h3 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+}
+.route-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.route-details li {
+  padding: 8px 0;
+  line-height: 1.6;
+  border-bottom: 1px dashed #eee;
+}
+.route-details li:last-child {
+  border-bottom: none;
+}
 #map-container {
   width: 100%;
-  height: 500px;
+  height: 500px; /* 确保高度足够 */
   margin-bottom: 20px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  overflow: hidden;
-  position: relative; /* 确保图标定位正确 */
+  overflow: visible; /* 确保溢出内容可见 */
+  position: relative; /* 确保定位正确 */
+  touch-action: auto; /* 确保触摸事件正常工作 */
 }
 .map-container {
   max-width: 1200px;
@@ -403,20 +881,29 @@ export default {
 }
 .search-bar {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  align-items: center; /* 垂直居中对齐 */
+  justify-content: center; /* 水平居中对齐 */
+  gap: 10px; /* 设置组件之间的间距 */
   margin-bottom: 20px;
-  gap: 10px;
+  flex-wrap: wrap; /* 允许换行 */
 }
-
-.search-bar input {
-  width: 300px;
+.search-input-container {
+  flex: 1; /* 输入框占据剩余空间 */
+  max-width: 400px; /* 最大宽度限制 */
+  min-width: 200px; /* 最小宽度限制 */
+}
+.destination-input {
+  width: 100%;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  margin-right: 10px;
+  box-sizing: border-box;
 }
-
+.button-group {
+  display: flex;
+  gap: 10px; /* 按钮之间的间距 */
+  align-items: center; /* 垂直居中对齐 */
+}
 .search-bar button,
 .search-bar select {
   padding: 10px 15px;
@@ -427,54 +914,38 @@ export default {
   cursor: pointer;
   transition: background 0.3s;
 }
-
 .search-bar button:hover,
 .search-bar select:hover {
   background: #0d77d9;
 }
-
-#map-container {
-  width: 100%;
-  height: 500px;
-  margin-bottom: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 .location-info {
   text-align: center;
   margin-bottom: 20px;
   font-size: 16px;
   color: #333;
 }
-
 .duration {
   font-weight: bold;
   color: #f60;
   text-align: center;
   margin-bottom: 10px;
 }
-
 .route-info {
   background: #fff;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
-
 .route-info h3 {
   margin-top: 0;
   font-size: 20px;
   color: #333;
 }
-
 .route-info ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-
 .route-info li {
   margin: 10px 0;
   padding-left: 20px;
@@ -482,7 +953,6 @@ export default {
   font-size: 14px;
   color: #555;
 }
-
 .route-info li:before {
   content: "";
   position: absolute;
@@ -493,5 +963,32 @@ export default {
   height: 8px;
   background: #1890ff;
   border-radius: 50%;
+}
+
+/* 响应式设计：手机端 */
+@media (max-width: 768px) {
+  .search-bar {
+    flex-direction: column; /* 将搜索栏从横向改为纵向 */
+    align-items: stretch; /* 让子元素铺满宽度 */
+  }
+  .search-bar input {
+    width: 100%; /* 输入框占满父容器宽度 */
+    margin-bottom: 10px; /* 增加输入框与按钮之间的间距 */
+  }
+  .button-group {
+    flex-direction: row; /* 按钮水平排列 */
+    justify-content: space-between; /* 按钮均匀分布 */
+  }
+  .search-bar button,
+  .search-bar select {
+    width: auto; /* 按钮宽度自适应内容 */
+    flex: 1; /* 每个按钮或下拉框均分宽度 */
+    margin-right: 5px; /* 按钮之间留出间距 */
+    padding: 10px; /* 统一按钮内边距 */
+  }
+  .search-bar button:last-child,
+  .search-bar select:last-child {
+    margin-right: 0; /* 最后一个按钮不需要右边距 */
+  }
 }
 </style>
