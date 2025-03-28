@@ -12,13 +12,15 @@ import ElementPlus from 'element-plus';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import './assets/styles/global.css'; // 引入全局样式
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
-
+import Vant from 'vant';
+import 'vant/lib/index.css'; //
 // 设置中文语言包
 
 const app = createApp(App)
 app.use(i18n);
 app.use(router)
 app.use(store)
+app.use(Vant); 
 // 使用 Element Plus 并设置中文语言
 app.use(ElementPlus, { locale: zhCn });
 // 在createApp之后立即执行
