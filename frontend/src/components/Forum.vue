@@ -1,20 +1,109 @@
 <template>
     <div class="forum-page">
       <!-- 顶部导航 -->
-      <el-menu mode="horizontal" :default-active="activeTopic" @select="handleTopicSelect">
-        <el-menu-item v-for="topic in topics" :key="topic.id" :index="topic.id">
-          {{ topic.name }}
-        </el-menu-item>
-      </el-menu>
+      <el-menu mode="horizontal" :default-active="activeTopic.toString()" @select="handleTopicSelect">
+            <!-- Topic Items -->
+            <el-menu-item v-for="topic in topics" :key="topic.id" :index="topic.id.toString()">
+                {{ topic.name }}
+            </el-menu-item>
+            <!-- Hot Posts Item -->
+            <el-menu-item index="hot">
+                <el-icon><HotWater /></el-icon> 热门帖子
+             </el-menu-item>
+        </el-menu>
+
   
       <!-- 主要内容区域 -->
-      <div class="main-content">
+      <div class="main-content">     
         <!-- 左侧帖子列表 -->
         <div class="post-list">
-          <div class="list-header">
-            <h2>{{ currentTopic?.name }} 讨论区</h2>
-            <div class="controls">
-            <div class="search-box">
+    <template v-if="isMobile && activeTopic === 'hot'">
+    <div class="hot-posts" >
+    <el-card class="hot-card">
+      <template #header>
+        <div class="hot-header">
+          <el-icon size="20" color="#F56C6C"><HotWater /></el-icon>
+          <h3>热门帖子 TOP 10</h3>
+        </div>
+      </template>
+      
+      <div class="hot-list">
+        <div 
+          v-for="(post, index) in hotPosts" 
+          :key="post.id"
+          class="hot-item"
+          @click="viewDetail(post)"
+        >
+          <div class="hot-index">
+            <el-tag :type="index < 3 ? 'danger' : 'info'" size="small">
+              {{ index + 1 }}
+            </el-tag>
+          </div>
+          <div class="hot-content">
+            <div class="hot-title">{{ post.title }}</div>
+            <div class="hot-stats">
+              <span class="stat-item">
+                <el-icon><ChatLineRound /></el-icon>
+                {{ post.comments?.length || 0 }}
+              </span>
+              <span class="stat-item">
+                <el-icon><View /></el-icon>
+                {{ post.viewCount || 0 }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+    
+<template v-if="!isMobile && activeTopic === 'hot'">
+    <div class="hot-posts" >
+    <el-card class="hot-card2">
+      <template #header>
+        <div class="hot-header">
+          <el-icon size="20" color="#F56C6C"><HotWater /></el-icon>
+          <h3>热门帖子 TOP 10</h3>
+        </div>
+      </template>
+      
+      <div class="hot-list">
+        <div 
+          v-for="(post, index) in hotPosts" 
+          :key="post.id"
+          class="hot-item"
+          @click="viewDetail(post)"
+        >
+          <div class="hot-index">
+            <el-tag :type="index < 3 ? 'danger' : 'info'" size="small">
+              {{ index + 1 }}
+            </el-tag>
+          </div>
+          <div class="hot-content">
+            <div class="hot-title">{{ post.title }}</div>
+            <div class="hot-stats">
+              <span class="stat-item">
+                <el-icon><ChatLineRound /></el-icon>
+                {{ post.comments?.length || 0 }}
+              </span>
+              <span class="stat-item">
+                <el-icon><View /></el-icon>
+                {{ post.viewCount || 0 }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<template v-else>
+    <div class="list-header">
+        <h2>{{ currentTopic?.name }} 讨论区</h2>
+        <div class="controls">
+        <div class="search-box">
     <el-input
       v-model="searchKeyword"
       placeholder="搜索帖子（支持标题、内容、作者）"
@@ -52,10 +141,9 @@
     </el-button>
   </div>
   </div>
+</div>
 
-          </div>
-  
-          <!-- 帖子列表 -->
+    <!-- 帖子列表 -->
     <div class="post-list-content-wrapper"> 
       <div v-if="loadingPosts" class="loading-state">
         <el-icon class="is-loading" :size="30"><Loading /></el-icon>
@@ -63,7 +151,6 @@
       </div>
       <el-alert v-else-if="error" :title="'加载论坛帖子失败: ' + error" type="error" show-icon :closable="false" class="full-width-alert"/>
 
-      <!-- Agenda Tabs -->
       <div v-else class="post-list-container">
             <el-empty 
             v-if="!allFilteredAndSortedPosts || allFilteredAndSortedPosts.length === 0" 
@@ -141,9 +228,12 @@
                 class="pagination-container"
              />
         </div>
+    </template>
     </div>
+
           <!-- 右侧热门帖子 -->
-  <div class="hot-posts" v-if="!isMobile">
+<div class="hot-posts desktop-sidebar" v-if="!isMobile  && activeTopic !== 'hot'">
+  <div class="hot-posts" >
     <el-card class="hot-card">
       <template #header>
         <div class="hot-header">
@@ -181,7 +271,7 @@
       </div>
     </el-card>
   </div>
-
+</div>
       </div>  
       <!-- 发帖对话框 -->
       <el-dialog v-model="createDialogVisible" title="发布新贴" width="90%">
@@ -246,7 +336,7 @@
           </div>
           <div class="comment-content"> {{ comment.content }} </div>
           <div class="comment-actions">
-            <el-tooltip content="回复" placement="top" :disabled="isMobile"> <!-- Disable tooltip on mobile potentially -->
+            <el-tooltip content="回复" placement="top" :disabled="isMobile"> 
                     <el-button
                         v-if="!currentPost?.isAgendaPost" 
                         size="small"
@@ -256,11 +346,10 @@
                         :disabled="!currentUser"
                         class="action-button reply-button" 
                     >
-                       {{ isMobile ? '' : '回复' }} <!-- Show text only on desktop -->
+                       {{ isMobile ? '' : '回复' }}
                     </el-button>
                 </el-tooltip>
 
-                <!-- Delete Button -->
                 <el-tooltip content="删除" placement="top" :disabled="isMobile">
                     <el-button
                         v-if="currentUser && comment.authorId === currentUser.uid"
@@ -372,6 +461,7 @@ const topics = ref([
   
   // 状态管理
   const activeTopic = ref(1)
+//   const showingHotPosts = ref(false); 
   const createDialogVisible = ref(false)
   const detailDialogVisible = ref(false)
   const currentPost = ref(null)
@@ -398,6 +488,9 @@ const sortOrder = ref('desc') // 默认降序
 const dynamicPageSize = computed(() => isMobile.value ? 3 :4)
 const generatedPosts = ref([]);
 const firestorePosts = ref([]);
+
+
+
 // 合并后的帖子数据
 const allPosts = computed(() => {
     const agendaPosts = generatedPosts.value.map(p => ({ ...p, isAgendaPost: true }));
@@ -436,7 +529,7 @@ const fetchAgendaAndGeneratePosts = async () => {
             day.sessions.forEach(session => {
                 let postContent = `会议时间: ${session.time_or_status || '待定'}\n地点: ${session.location || '待定'}\n`;
                  if(session.content && session.content.length > 0) {
-                     postContent += `主要议程见会议日程:\n`;
+                     postContent += `主要议程见会议日程\n`;
                      session.content.slice(0, 3).forEach(item => {
                          postContent += `- ${item.title} (${item.time})\n`;
                      });
@@ -712,7 +805,7 @@ const handleDeletePost = async (postId) => {
     }
 
     try {
-        await ElNotificationBox.confirm(
+        await ElMessageBox.confirm(
             '确定要删除这篇帖子吗？此操作无法撤销（评论也会丢失）。',
             '确认删除',
             { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
@@ -754,10 +847,16 @@ onMounted(async () => {
 });
 
 watch([activeTopic, sortType, sortOrder], () => {
-    console.log("Topic or sort changed, re-fetching Firestore posts...");
-    currentPage.value = 1; 
-    setupPostsListener();
-});
+    if (typeof activeTopic.value === 'number') {
+       console.log("Topic or sort changed, re-fetching Firestore posts for topic:", activeTopic.value);
+       currentPage.value = 1;
+       setupPostsListener();
+    } else {
+        console.log("Active selection is not a topic ID, skipping post fetch:", activeTopic.value);
+        loadingPosts.value = false; 
+        error.value = null;
+    }
+}, { immediate: true });
 
 watch(detailDialogVisible, (newValue) => {
     if (!newValue && unsubscribeComments) {
@@ -772,9 +871,13 @@ watch(allPosts, (newVal) => {
   console.log('合并后的帖子数据:', newVal);
 }, { deep: true });
 
-const handleTopicSelect = (selectedTopicId) => {
-  activeTopic.value = parseInt(selectedTopicId); // 将字符串转换为数字
-  currentPage.value = 1; // 切换主题时重置页码
+const handleTopicSelect = (selectedIndex) => {
+  // scroll to top when changing views
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  activeTopic.value = /^\d+$/.test(selectedIndex) ? parseInt(selectedIndex) : 'hot';
+
+currentPage.value = 1; // Reset pagination
+console.log("Selected view:", activeTopic.value);
 };
 
 const allFilteredAndSortedPosts = computed(() => {
@@ -817,8 +920,12 @@ const filteredPosts = computed(() => {
 
 const totalPosts = computed(() => allFilteredAndSortedPosts.value.length);
 
-const currentTopic = computed(() => topics.value.find(t => t.id === activeTopic.value));
-
+const currentTopic = computed(() => {
+    if (typeof activeTopic.value === 'number') {
+        return topics.value.find(t => t.id === activeTopic.value);
+    }
+    return null; 
+});
   // 方法
   const formatTime = (time) => dayjs(time).format('YYYY-MM-DD HH:mm')
   
@@ -948,7 +1055,7 @@ const handleDeleteComment = async (comment) => {
     }
 
     try {
-        await ElNotificationBox.confirm(
+        await ElMessageBox.confirm(
             '确定要删除这条评论吗？', '确认删除',
             { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
         );
@@ -1356,14 +1463,21 @@ el-select {
   }
 
   .hot-card {
-    width: 280px; /* 固定侧边栏宽度 */
-  margin-left: 20px; /* 增加间距 */
-  position: static !important; /* 移除sticky定位 */
-  height: fit-content; /* 高度自适应 */
-  max-height: 80vh; /* 防止过高 */
+  width: 330px;
+  margin-left: 20px;
+  position: static !important; 
+  height: fit-content; 
+  max-height: 105vh;
   overflow-y: auto;
 }
-
+.hot-card2 {
+  width:auto; 
+  margin:10px 20px; 
+  position: static !important; 
+  height: fit-content; 
+  max-height: 105vh;
+  overflow-y: auto;
+}
 .hot-header {
   display: flex;
   align-items: center;
@@ -1399,7 +1513,14 @@ el-select {
 .hot-content {
   flex: 1;
 }
-
+.hot-posts.desktop-sidebar {
+    width: 300px;
+    flex-shrink: 0; 
+    position: static !important;
+}
+.hot-posts.desktop-sidebar .hot-card {
+    margin-left: 0; 
+}
 .author-actions {
    margin-left: auto;
    display: flex;
@@ -1729,17 +1850,17 @@ el-select {
   }
   .hot-posts {
     order: 0;
-    margin-bottom: 1px;
-    padding: 0 8px;
+    margin-bottom: 2px;
+    padding: 2px 8px;
   }
 
   .hot-card {
-    padding: 5px; /* 减少卡片内边距 */
+    padding: 3px; /* 减少卡片内边距 */
     border-radius: 8px; /* 保持卡片圆角 */
   }
   .hot-list {
     gap: 0 !important; /* 完全消除列表项间距 */
-    margin: -2px 0; /* 反向补偿可能的外边距 */
+    margin: 2px 0; /* 反向补偿可能的外边距 */
   }
 
   .hot-item {
@@ -1756,15 +1877,14 @@ el-select {
   }
   .hot-content {
     padding: 2px 0; /* 仅保留必要内边距 */
-    transform: translateY(-1px); /* 微调垂直对齐 */
   }
   /* 压缩标题行高 */
   .hot-title {
-    line-height: 1.1 !important;  /* 最小行高 */
+    line-height: 1.4 !important;  /* 最小行高 */
     font-size: 13px !important;
-    margin: 0 -2px; /* 反向补偿可能缩进 */
-    padding: 1px 0; /* 最小内边距 */
-    letter-spacing: -0.2px; /* 略微紧缩字符间距 */
+    margin: 0 2px; /* 反向补偿可能缩进 */
+    padding: 2px 0; /* 最小内边距 */
+    letter-spacing: 0.2px; /* 略微紧缩字符间距 */
   }
   .hot-header {
     padding: 0 0 8px; /* 仅底部留间距 */
@@ -1772,6 +1892,40 @@ el-select {
   .hot-index {
     margin-top: 0px;
   }
+  .hot-posts.desktop-sidebar {
+        display: none;
+    }
+
+    .mobile-hot-posts-container { 
+      padding: 0 5px;
+      margin-bottom: 15px; 
+    }
+    .hot-list.mobile-list {
+      gap: 10px;
+    }
+    .hot-item.mobile-item {
+      padding: 10px 8px;
+      border: 1px solid #eee;
+      background-color: #fff;
+      transform: none !important;
+      flex-direction: row;
+      align-items: center;
+    }
+    .hot-item.mobile-item:hover {
+      background-color: #f9f9f9;
+    }
+    .hot-title.mobile-title {
+      font-size: 14px !important;
+      -webkit-line-clamp: 3;
+       white-space: normal;
+       margin-bottom: 6px;
+    }
+    .hot-stats.mobile-stats {
+       display: flex !important; 
+       gap: 15px;
+       font-size: 11px;
+       margin-top: 4px;
+     }
 
   .el-menu {
     padding: 0 8px;
