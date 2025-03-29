@@ -104,7 +104,7 @@
                     </span>
              <span class="view-count">
                     <el-icon class="view-icon"><ChatLineRound /></el-icon>
-                    {{  post.comments?.length || 0  }}
+                    {{  post.commentCount || 0  }}
             </span>
             <div class="author-actions"  v-if="!post.isAgendaPost && isAuthor(post)">
             <el-tooltip content="编辑" placement="top">
