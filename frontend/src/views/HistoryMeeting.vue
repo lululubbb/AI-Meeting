@@ -1869,172 +1869,56 @@ button:disabled {
 }
 /* 响应式设计 */
 @media (max-width: 768px) {
-  /* 通用调整 */
-  .history-container {
-    padding: 15px 10px;
-    width: 100%;
-    margin: 10px auto;
-    max-height: 95vh;
-  }
-
-  h2 {
-    font-size: 20px !important;
-    margin-bottom: 15px !important;
-  }
-
-  /* 搜索框 */
-  .input-wrapper {
-    max-width: 100%;
-  }
-
-  .search-container {
-    padding: 0 10px;
-    max-width: 100%;
-  }
-
-  .search-input {
-    padding: 10px 40px 10px 15px;
-    font-size: 14px;
-    width: 100%; /* 确保在小屏幕上宽度占满父容器 */
-  }
-  .search-icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* 会议列表 */
   .meeting-list li {
-    padding: 10px 12px;
-    margin-bottom: 10px;
+    flex-direction: column; /* Stack items vertically on mobile */
+    padding: 12px 15px;
   }
-
-  .meeting-list strong {
-    width: 80px;
+  
+  .meeting-info {
+    margin-right: 0;
+    width: 100%;
+  }
+  
+  /* Ensure each info item stays on its own line with increased spacing */
+  .meeting-info > * {
+    display: block;
+    margin-bottom: 8px; /* Increased from 5px */
+    line-height: 1.5; /* Added line height for better readability */
+  }
+  
+  /* Style for the full-width meeting show button */
+  .meeting-show-btn {
+    width: 100%; /* Full width */
+    margin-top: 10px; /* Increased spacing above button */
+    margin-left: 0;
+    padding: 10px 12px; /* Slightly larger padding */
     font-size: 14px;
+    text-align: center; /* Center button text */
+    box-sizing: border-box; /* Include padding in width calculation */
   }
-
-  .meeting-list li > br {
-    display: none;
-  }
-
-  /* 分页 */
-  .pagination {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .pagination button {
-    margin: 0 5px;
-    padding: 4px 8px;
-  }
-
-  /* 会议详情弹窗 */
-  .meeting-detail-modal {
-    width: 95%;
-    padding: 15px 10px;
-    max-height: 90vh;
-  }
-
-  #meetingDetails h3 {
-    font-size: 18px;
-    margin-bottom: 15px;
-  }
-
-  /* 功能按钮 */
-  .function-buttons button {
-    flex: 1 1 100%;
-    max-width: 100%;
-    margin: 5px 0;
-    padding: 10px 15px;
-    font-size: 14px;
-  }
-
-  /* 表格调整 */
-  .table-scrollable-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .participants-table {
-    font-size: 12px;
-  }
-
-  .participants-table th,
-  .participants-table td {
-    padding: 8px 10px;
-    min-width: 80px;
-  }
-
-  /* 评分说明弹窗 */
-  .modal-content {
-    width: 90%;
-    padding: 15px;
-  }
-
-  .modal-content h4 {
-    font-size: 18px;
-  }
-
-  /* 下载按钮 */
-  .download-btn img {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* 分享按钮 */
-  .share {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-
-  /* 关闭按钮 */
-  .close-btn img {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* 图表容器 */
-  .chart-container img {
-    max-width: 100%;
-  }
-
-  /* 文本内容 */
-  .section-content p {
-    font-size: 14px;
-  }
-
-  /* 参与度分析标题 */
-  .chat-record-container h3 {
-    font-size: 16px;
+  
+  /* Keep strong tags with their normal behavior */
+  .meeting-info strong {
+    display: inline;
+    width: auto;
   }
 }
 
+/* For very small screens, adjust font sizes */
 @media (max-width: 480px) {
-  /* 更小屏幕的额外调整 */
-  .meeting-list strong {
-    width: 70px;
-    font-size: 12px;
+  .meeting-info {
+    font-size: 14px; /* Slightly larger font for better readability */
   }
-
-  .participants-table {
-    font-size: 11px;
+  
+  .meeting-info > * {
+    margin-bottom: 10px; /* Even more spacing on very small screens */
   }
-
-  .function-buttons button {
+  
+  .meeting-show-btn {
     font-size: 13px;
-    padding: 8px 12px;
-  }
-  .search-input {
-    padding-left: 50px;
-    border-width: 1px;
-    border-radius: 20px;
-    width: 100%; /* 确保在更小屏幕上宽度占满父容器 */
-  }
-  #meetingDetails p {
-    font-size: 14px;
+    padding: 10px; /* Uniform padding */
   }
 }
-
 
 </style>
 
