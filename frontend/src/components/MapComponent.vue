@@ -1,3 +1,4 @@
+<!-- MapComponent.vue -->
 <template>
   <div class="map-container">
     <div class="search-bar">

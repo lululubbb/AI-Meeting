@@ -1108,7 +1108,148 @@ app.get('/api/downloadMaterial', (req, res) => {
       }); // 设置响应头
   });
 });
-// --- 2. 启动 Express 和 WebSocket 服务 ---
+
+// // --- 百度地图 Web 服务 API 代理 ---
+// const BAIDU_API_BASE = 'https://api.map.baidu.com';
+// const BAIDU_MAP_WEB_AK = process.env.BAIDU_MAP_AK; // 从环境变量获取 AK
+
+// if (!BAIDU_MAP_WEB_AK) {
+//     console.error("错误：未在环境变量中设置 BAIDU_MAP_AK！");
+//     // 在开发环境中可能不退出，但在生产环境中应考虑退出或抛出错误
+//     // process.exit(1);
+// }
+
+// /**
+//  * 统一的百度 Web API 代理请求处理器
+//  * @param {string} baiduEndpoint 目标百度 API 路径 (e.g., '/geocoding/v3/')
+//  * @param {import('express').Request} req Express 请求对象
+//  * @param {import('express').Response} res Express 响应对象
+//  */
+// async function handleBaiduApiProxy(baiduEndpoint, req, res) {
+//     if (!BAIDU_MAP_WEB_AK) {
+//         return res.status(500).json({ error: '服务器未配置百度地图 AK' });
+//     }
+
+//     // 1. 获取前端传递的查询参数
+//     const frontendQueryParams = req.query;
+//     console.log(`[Proxy][${baiduEndpoint}] Received params from frontend:`, frontendQueryParams);
+
+//     // 2. 准备请求百度的参数 (合并前端参数，并强制添加 AK 和 output=json)
+//     const baiduRequestParams = {
+//         ...frontendQueryParams,
+//         ak: BAIDU_MAP_WEB_AK, // 使用服务器端 AK
+//         output: 'json',     // 确保返回 JSON
+//         // 注意：coord_type 和 ret_coordtype 如果前端传了就用，没传用默认或由百度API决定
+//     };
+
+//     // 3. 构建请求百度的完整 URL
+//     const targetUrl = `${BAIDU_API_BASE}${baiduEndpoint}`;
+//     console.log(`[Proxy][${baiduEndpoint}] Requesting Baidu API: ${targetUrl}`);
+
+//     try {
+//         // 4. 使用 axios 从后端服务器发起请求
+//         const baiduResponse = await axios.get(targetUrl, {
+//             params: baiduRequestParams,
+//             timeout: 10000 // 设置 10 秒超时
+//         });
+
+//         console.log(`[Proxy][${baiduEndpoint}] Baidu API Response Status:`, baiduResponse.status);
+//         // 5. 将百度 API 的响应直接转发给前端
+//         // 设置响应头 Content-Type 为 application/json
+//         res.setHeader('Content-Type', 'application/json; charset=utf-8');
+//         res.status(baiduResponse.status).json(baiduResponse.data);
+
+//     } catch (error) {
+//         console.error(`[Proxy][${baiduEndpoint}] Error requesting Baidu API:`, error.message);
+//         // 处理请求百度 API 时的错误
+//         if (error.response) {
+//             // 请求成功发出，但百度服务器返回了错误状态码 (4xx, 5xx)
+//             console.error('[Proxy] Baidu API Error Response Data:', error.response.data);
+//             res.status(error.response.status).json({
+//                 error: `地图服务错误: ${error.response.statusText}`,
+//                 details: error.response.data // 可以选择性地将百度返回的错误细节也传回前端
+//             });
+//         } else if (error.request) {
+//             // 请求已发出，但没有收到响应 (网络问题, 超时)
+//             console.error('[Proxy] No response received from Baidu API:', error.request);
+//              res.status(504).json({ error: '无法连接到地图服务或请求超时' });
+//         } else {
+//             // 设置请求时发生错误
+//              console.error('[Proxy] Error setting up request to Baidu API:', error.message);
+//              res.status(500).json({ error: '代理服务器内部错误' });
+//         }
+//     }
+// }
+
+// // 地理编码代理接口 (地址 -> 坐标)
+// app.get('/api/map/geocode', async (req, res) => {
+//     // 验证前端是否传递了 address 参数
+//     if (!req.query.address) {
+//         return res.status(400).json({ error: '缺少 address 参数' });
+//     }
+//     await handleBaiduApiProxy('/geocoding/v3/', req, res);
+// });
+
+// // 逆地理编码代理接口 (坐标 -> 地址)
+// app.get('/api/map/reverse-geocode', async (req, res) => {
+//     // 验证前端是否传递了 location 参数 (格式: lat,lng)
+//     if (!req.query.location || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(req.query.location)) {
+//         return res.status(400).json({ error: '缺少或无效的 location 参数 (格式: lat,lng)' });
+//     }
+//     await handleBaiduApiProxy('/reverse_geocoding/v3/', req, res);
+// });
+
+// // 统一的路线规划代理接口
+// app.get('/api/map/plan-route', async (req, res) => {
+//     const { origin, destination, mode } = req.query;
+//     // 简单验证必要参数
+//     if (!origin || !destination || !mode) {
+//         return res.status(400).json({ error: '缺少 origin, destination 或 mode 参数' });
+//     }
+//     if (!/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(origin) || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(destination)) {
+//         return res.status(400).json({ error: '无效的 origin 或 destination 坐标格式 (应为: lat,lng)' });
+//     }
+
+//     let baiduEndpoint = '';
+//     switch (mode) {
+//         case 'driving': baiduEndpoint = '/directionlite/v1/driving'; break;
+//         case 'walking': baiduEndpoint = '/directionlite/v1/walking'; break;
+//         case 'riding': baiduEndpoint = '/directionlite/v1/riding'; break;
+//         case 'transit': baiduEndpoint = '/directionlite/v1/transit'; break;
+//         default:
+//             return res.status(400).json({ error: `不支持的 mode: ${mode}` });
+//     }
+//     // 将 mode 参数从 query 中移除，因为它已经用来确定 endpoint 了
+//     // 其他参数如 tactics, waypoints 等会通过 ...req.query 传递
+//     const { mode: removedMode, ...restQuery } = req.query;
+//     req.query = restQuery; // 更新 req.query 以传递给 handleBaiduApiProxy
+
+//     await handleBaiduApiProxy(baiduEndpoint, req, res);
+// });
+
+// // (可选) 批量算路代理接口 - 需要根据具体 API 实现
+// app.get('/api/map/bulk-route', async (req, res) => {
+//     // 获取参数 (例如 origins, destinations, mode)
+//     const { mode } = req.query;
+//     let baiduEndpoint = '';
+//     // 根据 mode 选择合适的百度批量 API 端点
+//     switch (mode) {
+//          case 'driving': baiduEndpoint = '/routematrix/v2/driving'; break; // 示例：驾车距离矩阵
+//          // case 'walking': baiduEndpoint = '/routematrix/v2/walking'; break;
+//          // case 'riding': baiduEndpoint = '/routematrix/v2/riding'; break;
+//         default:
+//              return res.status(400).json({ error: `批量计算不支持的 mode: ${mode}` });
+//     }
+//     // 验证其他必要参数...
+//     if (!req.query.origins || !req.query.destinations) {
+//          return res.status(400).json({ error: '批量计算缺少 origins 或 destinations 参数' });
+//     }
+
+//     const { mode: removedMode, ...restQuery } = req.query;
+//     req.query = restQuery;
+
+//     await handleBaiduApiProxy(baiduEndpoint, req, res);
+// });
 
 // 2.1 启动 Express 应用 (并获取 HTTP 服务器对象)
 const server = app.listen(PORT, '0.0.0.0', () => {
