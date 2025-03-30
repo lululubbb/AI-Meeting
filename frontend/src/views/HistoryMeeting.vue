@@ -1869,6 +1869,22 @@ button:disabled {
 }
 /* 响应式设计 */
 @media (max-width: 768px) {
+  /* 全局字体调整 */
+  .history-container,
+  .meeting-list li,
+  .meeting-info,
+  .section-content,
+  .function-buttons button,
+  .participants-table th,
+  .participants-table td {
+    font-size: 18px; /* 手机端字体增大 */
+  }
+
+  /* 特殊区域字体调整 */
+  .meeting-info strong {
+    font-size: 19px; /* 强调文字字体增大 */
+  }
+
   .meeting-list li {
     flex-direction: column; /* Stack items vertically on mobile */
     padding: 12px 15px;
@@ -1877,6 +1893,7 @@ button:disabled {
   .meeting-info {
     margin-right: 0;
     width: 100%;
+    font-size: 18px; 
   }
   
   /* Ensure each info item stays on its own line with increased spacing */
@@ -1892,7 +1909,7 @@ button:disabled {
     margin-top: 10px; /* Increased spacing above button */
     margin-left: 0;
     padding: 10px 12px; /* Slightly larger padding */
-    font-size: 14px;
+    font-size: 16px;
     text-align: center; /* Center button text */
     box-sizing: border-box; /* Include padding in width calculation */
   }
@@ -1902,12 +1919,44 @@ button:disabled {
     display: inline;
     width: auto;
   }
+
+  /* 表格字体调整 */
+  .participants-table th,
+  .participants-table td {
+    font-size: 16px; /* 表格内文字字体增大 */
+  }
+
+   /* 调整会议详情的字体大小 */
+   #meetingDetails h2 {
+    font-size: 22px; /* 标题字体增大 */
+  }
+
+  #meetingDetails p {
+    font-size: 18px; /* 普通段落字体增大 */
+  }
+
+  #meetingDetails strong {
+    font-size: 19px; /* 强调文字字体稍大一些 */
+  }
 }
 
 /* For very small screens, adjust font sizes */
 @media (max-width: 480px) {
+   /* 进一步增大字体 */
+   .history-container,
+  .meeting-list li,
+  .meeting-info,
+  .section-content,
+  .function-buttons button,
+  .participants-table th,
+  .participants-table td {
+    font-size: 20px; /* 更小屏幕字体进一步增大 */
+  }
   .meeting-info {
-    font-size: 14px; /* Slightly larger font for better readability */
+    font-size: 18px; /* Slightly larger font for better readability */
+  }
+  .meeting-info strong {
+    font-size: 19px; /* 强调文字字体进一步增大 */
   }
   
   .meeting-info > * {
@@ -1915,9 +1964,23 @@ button:disabled {
   }
   
   .meeting-show-btn {
-    font-size: 13px;
+    font-size: 18px;
     padding: 10px; /* Uniform padding */
   }
+
+  /* 进一步增大会议详情字体 */
+  #meetingDetails h2 {
+    font-size: 24px; /* 更小屏幕标题字体进一步增大 */
+  }
+
+  #meetingDetails p {
+    font-size: 18px; /* 普通段落字体进一步增大 */
+  }
+
+  #meetingDetails strong {
+    font-size: 19px; /* 强调文字字体进一步增大 */
+  }
+
 }
 
 </style>
