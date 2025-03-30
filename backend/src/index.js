@@ -26,6 +26,7 @@ import pdfPoppler from 'pdf-poppler';
 import fs from 'fs';
 import path from 'path';
 import { Client } from './trans.js'; // 引入翻译模块 (确保路径正确)
+import crypto from 'crypto';
 
 
 import pdfParse from 'pdf-parse';
@@ -1070,6 +1071,79 @@ const getMaterials = (dirPath, relativePath = '') => {
   }
   return result;
 };
+
+// 为智能体API创建代理路由
+app.post('/api/proxy/agent/execute', async (req, res) => {
+  try {
+    // 从请求体中获取所有参数
+    const { id, input, sid, stream } = req.body;
+    
+    // 获取appKey和appSecret
+    const APP_KEY = process.env.APP_KEY || "hengnaoyam8i78QnY8j0HkOyT0f";
+    const APP_SECRET = process.env.APP_SECRET || "uu3rcxiwlkupwo493b4g5exdwvwsvya5";
+    const BASE_URL = process.env.BASE_URL || "https://www.das-ai.com";
+    
+    // 生成签名
+    const timestamp = Date.now();
+    const data = `${timestamp}\n${APP_SECRET}\n${APP_KEY}`;
+    const hmacSha256 = crypto.createHmac('sha256', APP_SECRET);
+    hmacSha256.update(data);
+    const sign = `${timestamp}${hmacSha256.digest('base64')}`;
+    
+    // 设置请求头
+    const headers = {
+      'appKey': APP_KEY,
+      'sign': sign,
+      'Content-Type': 'application/json'
+    };
+    
+    if (stream) {
+      headers['Accept'] = 'text/event-stream';
+    }
+    
+    // 准备请求体
+    const payload = { id, input, sid, stream };
+    
+    // 转发请求到智能体API
+    const apiUrl = `${BASE_URL}/open/api/v2/agent/execute`;
+    
+    if (stream) {
+      // 处理流式响应
+      const response = await axios({
+        method: 'post',
+        url: apiUrl,
+        data: payload,
+        headers: headers,
+        responseType: 'stream'
+      });
+      
+      // 设置响应头
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      
+      // 将流式数据转发给客户端
+      response.data.pipe(res);
+    } else {
+      // 处理非流式响应
+      const response = await axios({
+        method: 'post',
+        url: apiUrl,
+        data: payload,
+        headers: headers
+      });
+      
+      // 将响应数据发送给客户端
+      res.json(response.data);
+    }
+  } catch (error) {
+    console.error('代理请求失败:', error);
+    res.status(500).json({
+      error: error.response ? error.response.data : '代理请求失败'
+    });
+  }
+});
+
 
 app.get('/api/materials', (req, res) => {
   const materialsDir = path.join(__dirname, 'public', 'materials'); // 正确！

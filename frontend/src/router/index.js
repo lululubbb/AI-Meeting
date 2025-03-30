@@ -31,6 +31,8 @@ import NewsCenter from '../components/NewsCenter.vue';
 import FeaturedEvents from '../components/FeaturedEvents.vue';     
 import Guests from '../components/Guests.vue';  
 import ExhibitorShowcase from '../components/ExhibitorShowcase.vue';  
+import AIBot from '../components/AIBot.vue'  // 确保路径正确
+import crypto from 'crypto';
 // 定义路由规则
 const routes = [
   {
@@ -163,6 +165,12 @@ const routes = [
   { path: '/events', name: 'FeaturedEvents', component: FeaturedEvents, meta: { requiresAuth: true } },
   { path: '/exhibitors', name: 'ExhibitorShowcase', component: ExhibitorShowcase, meta: { requiresAuth: true } },
   { path: '/guests', name: 'Guests', component: Guests, meta: { requiresAuth: true } }, 
+  { 
+    path: '/aibot',
+    name: 'AIBot', 
+    component: AIBot,
+    meta: { requiresAuth: true }  // 最新手机版 AIBOT的路由
+  },
   // 处理未定义的路径
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
