@@ -656,6 +656,7 @@ const config = reactive({
     return user.name || user.email || '请输入用户名';
   }).value,
   sessionPasscode: '',
+  sessionIntro: '',
   expirationSeconds: 7200,
   meetingId: '',  // 新增：用于 update
   hostId: ''      // 新增：用于记录会议的 host
@@ -771,13 +772,15 @@ async function checkRouteParams() {
     videoSDKJWT,
     expirationSeconds,
     hostId,       // 新增
-    meetingId     // 新增
+    meetingId,     // 新增
+    sessionIntro
   } = route.query;
 
   if (sessionName && userName && roleParam !== undefined && videoSDKJWT) {
     config.sessionName = sessionName;
     config.userName = userName;
     config.sessionPasscode = sessionPasscode || '';
+    config.sessionIntro = sessionIntro || ''; // 新增
     config.expirationSeconds = expirationSeconds ? parseInt(expirationSeconds, 10) : 7200;
     role.value = parseInt(roleParam, 10);
     config.videoSDKJWT = videoSDKJWT;
