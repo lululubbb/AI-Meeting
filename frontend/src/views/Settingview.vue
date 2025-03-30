@@ -75,7 +75,6 @@ const handleNotificationsChange = (value) => {
 
 <style scoped>
 .settings-container {
-  font-family: Arial, sans-serif;
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;

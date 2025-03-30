@@ -1,5 +1,12 @@
-import { db } from './FirebaseService.js';
-import { collection, addDoc, query, orderBy, onSnapshot, Timestamp, doc, updateDoc, getDoc, getDocs, setDoc, where, deleteDoc } from 'firebase/firestore';
+import { db,auth } from './FirebaseService.js';
+import {
+  collection, addDoc, query, orderBy, onSnapshot, Timestamp, doc,
+  updateDoc, getDoc, getDocs, setDoc, where, deleteDoc,
+  writeBatch, // Needed for deleting subcollections potentially
+  increment, // For atomic increments
+  limit, // For pagination
+  startAfter // For pagination
+} from 'firebase/firestore';
 import { ElMessage } from 'element-plus'; // 导入 ElMessage
 
 class FirestoreService {
@@ -373,6 +380,253 @@ async updateActivity(userId, activity) {
       throw error;
   }
 }
+
+async createPost(postData) {
+  const user = auth.currentUser;
+  if (!user) {
+      ElMessage.error('用户未登录，无法发帖');
+      throw new Error('User not authenticated');
+  }
+  try {
+      const postToAdd = {
+          topicId: postData.topicId,
+          title: postData.title,
+          content: postData.content,
+          authorId: user.uid, 
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+          viewCount: 0,
+          commentCount: 0,
+      };
+      const docRef = await addDoc(collection(db, 'forum_posts'), postToAdd);
+      console.log('Post created with ID:', docRef.id);
+      ElMessage.success('发帖成功');
+      return { id: docRef.id, ...postToAdd }; // Return the created post with ID
+  } catch (error) {
+      console.error('创建帖子失败:', error);
+      ElMessage.error('发帖失败，请稍后重试');
+      throw error;
+  }
+}
+
+listenToPosts(topicId, sortBy, sortOrder, callback) {
+  try {
+      const postsRef = collection(db, 'forum_posts');
+      let q = query(postsRef, where('topicId', '==', topicId));
+
+      let sortField = 'createdAt'; 
+      if (sortBy === 'comments') {
+          sortField = 'commentCount';
+      }
+
+      q = query(q, orderBy(sortField, sortOrder));
+      console.log(`Listening to posts for topic ${topicId}, sort: ${sortField} ${sortOrder}`);
+
+      const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+          const posts = [];
+          querySnapshot.forEach((doc) => {
+              posts.push({
+                  id: doc.id,
+                  ...doc.data(),
+              });
+          });
+          console.log(`Fetched ${posts.length} posts`);
+          callback(posts);
+      }, (error) => {
+          console.error("监听帖子失败:", error);
+          ElMessage.error('加载帖子列表失败');
+          callback([]); 
+      });
+
+      return unsubscribe; 
+  } catch (error) {
+      console.error("设置帖子监听失败:", error);
+      ElMessage.error('无法设置帖子监听');
+      return () => {};
+  }
+}
+
+async getPostById(postId) {
+    try {
+        const postRef = doc(db, 'forum_posts', postId);
+        const docSnap = await getDoc(postRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() };
+        } else {
+            console.warn('Post not found:', postId);
+            return null;
+        }
+    } catch (error) {
+        console.error('获取帖子失败:', postId, error);
+        ElMessage.error('加载帖子详情失败');
+        throw error;
+    }
+}
+
+async updatePost(postId, updatedData) {
+    const user = auth.currentUser;
+    if (!user) {
+        ElMessage.error('用户未登录，无法编辑');
+        throw new Error('User not authenticated');
+    }
+    try {
+        const postRef = doc(db, 'forum_posts', postId);
+        await updateDoc(postRef, {
+            ...updatedData, 
+            updatedAt: Timestamp.now(),
+        });
+        console.log('Post updated:', postId);
+        ElMessage.success('帖子更新成功');
+    } catch (error) {
+        console.error('更新帖子失败:', postId, error);
+        ElMessage.error('更新帖子失败');
+        throw error;
+    }
+}
+
+async deletePost(postId) {
+    const user = auth.currentUser;
+    if (!user) {
+         ElMessage.error('用户未登录，无法删除');
+         throw new Error('User not authenticated');
+    }
+    try {
+        const postRef = doc(db, 'forum_posts', postId);
+        await deleteDoc(postRef);
+        console.log('Post deleted (document only):', postId);
+        ElMessage.success('帖子已删除');
+    } catch (error) {
+        console.error('删除帖子失败:', postId, error);
+        ElMessage.error('删除帖子失败');
+        throw error;
+    }
+}
+
+async incrementViewCount(postId) {
+    try {
+        const postRef = doc(db, 'forum_posts', postId);
+        await updateDoc(postRef, {
+            viewCount: increment(1)
+        });
+        console.log('View count incremented for post:', postId);
+    } catch (error) {
+        console.warn('Failed to increment view count for post:', postId, error);
+    }
+}
+
+async createComment(postId, commentData) {
+    const user = auth.currentUser;
+    if (!user) {
+        ElMessage.error('用户未登录，无法评论');
+        throw new Error('User not authenticated');
+    }
+    try {
+        const commentToAdd = {
+            postId: postId,
+            content: commentData.content,
+            authorId: user.uid,
+            createdAt: Timestamp.now(),
+            parentId: commentData.parentId || null,
+            depth: commentData.depth || 0,
+            replyToAuthorId: commentData.replyToAuthorId || null,
+        };
+        const commentsRef = collection(db, 'forum_posts', postId, 'comments');
+        const docRef = await addDoc(commentsRef, commentToAdd);
+        console.log('Comment created with ID:', docRef.id, 'for post:', postId);
+
+        const postRef = doc(db, 'forum_posts', postId);
+        await updateDoc(postRef, {
+            commentCount: increment(1)
+        });
+
+        ElMessage.success('评论成功');
+        return { id: docRef.id, ...commentToAdd };
+    } catch (error) {
+        console.error('创建评论失败:', error);
+        ElMessage.error('评论失败，请稍后重试');
+        throw error;
+    }
+}
+
+listenToComments(postId, callback) {
+   try {
+       const commentsRef = collection(db, 'forum_posts', postId, 'comments');
+       const q = query(commentsRef, orderBy('createdAt', 'asc'));
+
+       const unsubscribe = onSnapshot(q, (querySnapshot) => {
+           const comments = [];
+           querySnapshot.forEach((doc) => {
+               comments.push({
+                   id: doc.id,
+                   ...doc.data(),
+               });
+           });
+           console.log(`Fetched ${comments.length} comments for post ${postId}`);
+           callback(comments);
+       }, (error) => {
+           console.error(`监听评论失败 (post ${postId}):`, error);
+           ElMessage.error('加载评论失败');
+           callback([]);
+       });
+
+       return unsubscribe;
+   } catch (error) {
+       console.error(`设置评论监听失败 (post ${postId}):`, error);
+       ElMessage.error('无法设置评论监听');
+       return () => {};
+   }
+}
+
+async deleteComment(postId, commentId) {
+   const user = auth.currentUser;
+   if (!user) {
+       ElMessage.error('用户未登录，无法删除评论');
+       throw new Error('User not authenticated');
+   }
+   try {
+       const commentRef = doc(db, 'forum_posts', postId, 'comments', commentId);
+       await deleteDoc(commentRef);
+       console.log('Comment deleted:', commentId, 'from post:', postId);
+
+       const postRef = doc(db, 'forum_posts', postId);
+       await updateDoc(postRef, {
+           commentCount: increment(-1)
+       });
+
+       ElMessage.success('评论已删除');
+   } catch (error) {
+       console.error('删除评论失败:', commentId, error);
+       ElMessage.error('删除评论失败');
+       throw error;
+   }
+}
+async getUserProfile(uid) {
+  if (!uid) {
+      console.warn("getUserProfile called with invalid UID:", uid);
+      return { id: uid, name: '访客', avatarUrl: defaultAvatar }; 
+  }
+  try {
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+           const userData = userDocSnap.data();
+          return {
+              id: userDocSnap.id,
+              name: userData.name || '用户',
+              avatarUrl: userData.avatarUrl || defaultAvatar, 
+          };
+      } else {
+          console.log('No user profile found for UID:', uid);
+          return { id: uid, name: '未知用户', avatarUrl: defaultAvatar }; 
+      }
+  } catch (error) {
+      console.error('获取用户资料失败 (by UID):', uid, error);
+      return { id: uid, name: '加载出错', avatarUrl: defaultAvatar };
+  }
+}
+
+
 
 }
 

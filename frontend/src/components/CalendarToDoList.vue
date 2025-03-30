@@ -153,15 +153,11 @@ const calendarOptions = computed(() => ({
   timeZone: 'UTC',
   events: userTodoList.value.map(todo => ({
     title: [(todo.text || ''), (todo.title || '')].filter(Boolean).join('\n'),
-    //start: todo.date,
     start: todo.date + 'T00:00:00', // 明确指定时间
     allDay: true,
     display: 'block', // 确保全天事件正确显示
     display: 'background',
-    
   })),
-
-  
   dateClick: (info) => {
     // 使用UTC日期
     selectedDate.value = info.date.toISOString().split('T')[0];
@@ -270,7 +266,8 @@ dayCellContent: (args) => {
   return { domNodes: [container] };
 },
 }));
-// Methods
+
+
 const handleDateClick = (info) => {
   selectedDate.value = info.dateStr;
   openAddTodoDialog();
@@ -372,15 +369,21 @@ const updateTodo =async (todo) => {
   color: white !important;
   padding: 3px 6px;
   border-radius: 4px;
-  font-size: 0.8em;
+  font-size: 10px;
   line-height: 1.2;
   word-break: break-word;
   white-space: normal !important;
   cursor: pointer;
   transition: opacity 0.2s;
-  font-size: 0.85em !important; /* 调整数字改变大小 */
-  transition: text-decoration 0.3s; /* 平滑过渡效果 */
 }
+
+:deep(.fc-button) {
+   font-size:15px !important;
+   padding: 5px 10px !important; 
+   background-color: #84befd;
+   border:none;
+}
+
 /* 样式保持不变 */
 .calendar-todolist {
   display: flex;
@@ -388,6 +391,7 @@ const updateTodo =async (todo) => {
   align-items: center;
   justify-content: center;
   width: 95%; 
+  margin: 10px; 
   margin-left: 5px;
   max-width: 100%;
   padding: 5px;
@@ -397,7 +401,6 @@ const updateTodo =async (todo) => {
 }
 
 .calendar {
-/* box-shadow: rgba(35, 56, 85, 0.15) 0px 20px 40px; */
 box-shadow: var(--global-box-shadow); /* 应用全局边框阴影 */
 border-radius: 8px; 
 width:90%;
@@ -427,7 +430,7 @@ scrollbar-width: none; /* Firefox */
   margin-top: 15px;
   margin-bottom: 10px;
   max-width: 100%;
-  padding: 20px;
+  padding:30px;
   border-radius: 10px;
   max-height: 380px;  /* 新增最大高度限制 */
   scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
@@ -439,19 +442,18 @@ scrollbar-width: none; /* Firefox */
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  /* justify-content: space-between;  */
-  padding: 10px 0;
+  padding: 5px 0;
   border-bottom: 1px solid #ccc;
   position: relative;
 }
 
 .todo-list li input[type="checkbox"] {
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   position: relative;
   margin-right: 20px;
-  margin-left: -35px;
+  margin-left: 0px;
 }
 
 .todo-list li .todo-text {
@@ -462,12 +464,12 @@ scrollbar-width: none; /* Firefox */
   flex-grow: 1;
   white-space: nowrap;
   flex-shrink: 0;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .todo-list li .todo-text div {
   color: var(--text-color);
-  font-size: 17px;
+  font-size: 16px;
   margin-right: 10px;
   white-space: nowrap;
 }
@@ -478,9 +480,8 @@ scrollbar-width: none; /* Firefox */
 }
 
 .todo-list li .todo-text .date {
-  font-size: 12px;
   color: var(--text-color);
-  font-size: 16px;
+  font-size: 15px;
   margin-top: 2px; 
 }
 
@@ -577,29 +578,78 @@ font-size: 16px;
   .calendar-todolist {
     margin-top: 20px;
     padding: 10px;
-    padding-bottom: 40px; /* 移动端适当减少下边距 */
+    padding-bottom: 40px; 
   }
 
   .calendar {
     width: 100%;
     height: 400px;
-    margin-bottom: 15px;
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+  :deep(.fc-toolbar-title) {
+  font-size: 15px !important; 
+}
+
+:deep(.calendar-date-number) {
+  font-size: 0.85em !important;
+      margin: 1px !important;
+      padding: 1px 3px !important;
+   }
+
+:deep(.fc-button) {
+   font-size:10px !important;
+   padding: 5px 10px !important; 
+   background-color: #84befd;
+   border:none;
+}
+  :deep(.fc-button .fc-icon) {
+    font-size:14px
+  }
+  :deep(.fc-daygrid-day-frame) {
+    min-height: 10px !important; 
+    padding: 1px !important;
   }
 
+  :deep(.fc-daygrid-day-number) {
+    font-size: 0.9em !important;
+    padding: 1px 1px !important; 
+    margin-left: 0 !important;
+  }
+
+
   .todo-list {
-    width: 100%;
+    width: 95%;
     padding: 15px;
   }
+
+  .todo-list h2 {
+  margin-top: 0px;
+  margin-bottom: 1px;
+  margin-left: 0px;
+  font-size: 16px;
+}
+
+.todo-list h3 {
+  margin-top: 10px;
+  color: var(--text-color);
+  margin-left: 0px;
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 520;
+}
 
   .todo-list li {
     flex-direction: row; /* 恢复为水平排列 */
     align-items: center;
     gap: 8px;
+    font-size: 14px;
   }
 
   .todo-list li .todo-text {
     flex-direction: column;
     align-items: flex-start;
+    font-size: 14px;
   }
 
   .todo-dialog {
@@ -611,9 +661,27 @@ font-size: 16px;
     padding: 15px;
   }
 
-  input[type="checkbox"] {
-    margin-left: 0;
-  }
+  .todo-list li input[type="checkbox"] {
+  width:15px;
+  height: 15px;
+  cursor: pointer;
+  position: relative;
+  margin-right: 10px;
+  margin-left: 0px;
+}
+
+.todo-list li .todo-text div {
+  color: var(--text-color);
+  font-size: 13px;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+
+.todo-list li .todo-text .date {
+  color: var(--text-color);
+  font-size: 13px;
+  margin-top: 2px; 
+}
 
   .button-container {
     margin-top: 0; /* 调整按钮容器的上边距 */
@@ -642,18 +710,8 @@ font-size: 16px;
     height: 300px;
   }
 
-  .header h2 {
-    font-size: 20px;
-    margin-top: 20px;
-  }
-
-  .header h3 {
-    font-size: 14px;
-    margin-left: 15px;
-  }
-
   .todo-list li .todo-text div {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .todo-list li .date {
@@ -661,7 +719,7 @@ font-size: 16px;
   }
 
   .edit-button {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .delete-button {
@@ -674,16 +732,16 @@ font-size: 16px;
   }
 
   .dialog-actions button {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   input {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   button {
     padding: 8px;
-    font-size: 14px;
+    font-size: 12px;
   }
   /* 添加/修改以下样式 */
 :deep(.fc-daygrid-day-top) {

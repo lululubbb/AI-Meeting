@@ -873,7 +873,6 @@ export default {
   touch-action: auto; /* 确保触摸事件正常工作 */
 }
 .map-container {
-  font-family: Arial, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;

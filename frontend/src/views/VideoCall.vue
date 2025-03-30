@@ -2527,6 +2527,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   font-size: 20px;
   cursor: pointer;
   color: #666;
+  transition: transform 0.3s;
 }
 
 .closeBtn:hover {
@@ -2542,11 +2543,13 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   max-width: 500px;
   width: 100%;
   position: relative;
+  margin: 50px auto; /* Center the container */
 }
 
 #action-flow h1 {
   margin-bottom: 20px;
   color: #333;
+  font-size: 1.8rem;
 }
 
 .input-group {
@@ -2559,16 +2562,55 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   margin-bottom: 8px;
   font-weight: bold;
   color: #444;
+  font-size: 0.95rem;
 }
 
 .input-group input,
 .input-group select {
-  width: 100%;
+  width: 95%;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 1rem;
+  min-height: 25px;
+  transition: border-color 0.3s;
 }
+
+.input-group input:focus,
+.input-group select:focus {
+  border-color: #409eff;
+  outline: none;
+}
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+.button-container > * {
+  flex: 1;
+  max-width: 220px;
+  min-width: 150px;
+  text-align: center;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 10;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #999;
+  transition: transform 0.3s;
+}
+
+.closeBtn:hover {
+  transform: rotate(90deg);
+}
+
 /* 模式切换按钮样式 */
 .mode-switch {
   text-align: center;
@@ -2879,9 +2921,54 @@ canvas.video-element.share-video {
   }
 
   #action-flow {
-    max-width: 100%;
-    margin-top: 20px;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
   }
+
+  #action-flow h1 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+
+  .input-group {
+    margin-bottom: 15px;
+  }
+
+  .input-group label {
+    font-size: 0.9rem;
+  }
+
+  .input-group input,
+  .input-group select {
+    width: 95%; 
+    min-height: 25px;
+  }
+
+  .button-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 25px;
+    width: 100%;
+  }
+
+  .button-container > * {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .closeBtn {
+    top: 12px;
+    right: 12px;
+    font-size: 1.2rem;
+  }
+
 
   .video-and-transcription {
     flex-direction: column;
@@ -2949,10 +3036,24 @@ canvas.video-element.share-video {
 }
 
 @media (max-width: 480px) {
+  #action-flow {
+    padding: 15px;
+  }
+
+  #action-flow h1 {
+    font-size: 1.4rem;
+    margin-bottom: 18px;
+  }
+  .input-group {
+    margin-bottom: 12px;
+  }
+
   .input-group input,
   .input-group select {
     font-size: 14px;
     padding: 8px;
+    width: 95%;       
+    min-height: 25px; 
   }
 
   #transcriptionContainer {
@@ -3319,9 +3420,54 @@ canvas.video-element.share-video {
   }
 
   #action-flow {
-    max-width: 100%;
-    margin-top: 20px;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
   }
+
+  #action-flow h1 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+
+  .input-group {
+    margin-bottom: 15px;
+  }
+
+  .input-group label {
+    font-size: 0.9rem;
+  }
+
+  .input-group input,
+  .input-group select {
+    min-height: 25px;
+    width: 95%;       
+  }
+
+  .button-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 25px;
+    width: 100%;
+  }
+
+  .button-container > * {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .closeBtn {
+    top: 12px;
+    right: 12px;
+    font-size: 1.2rem;
+  }
+
 
   .video-and-transcription {
     flex-direction: column;
@@ -3428,11 +3574,32 @@ canvas.video-element.share-video {
 }
 
 @media (max-width: 480px) {
+  #action-flow {
+    padding: 15px;
+  }
+
+  #action-flow h1 {
+    font-size: 1.4rem;
+    margin-bottom: 18px;
+  }
+  .input-group {
+    margin-bottom: 12px;
+  }
+  .input-group label {
+    font-size: 0.85rem;
+  }
+
   .input-group input,
   .input-group select {
-    font-size: 14px;
-    padding: 8px;
+    font-size: 0.95rem;
+    min-height: 25px;
   }
+
+  .button-container > * {
+    min-height: 42px;
+    font-size: 0.95rem;
+  }
+
 
   #transcriptionContainer {
     height: 250px;

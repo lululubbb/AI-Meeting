@@ -69,7 +69,6 @@ export default {
   text-align: center;
   color: var(--text-color);
   font-size: 16px;
-  font-family: "Poppins", sans-serif;
   font-weight: 600;
   margin-bottom: 20px;
 }

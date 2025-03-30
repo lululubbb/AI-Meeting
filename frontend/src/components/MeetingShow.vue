@@ -834,7 +834,6 @@ onUnmounted(() => {
 <style scoped>
 .transcription-page {
   padding: 30px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   color: #343a40;
   margin: 0;

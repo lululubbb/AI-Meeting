@@ -267,7 +267,11 @@ body {
   scrollbar-width: thin;  /* 现代浏览器滚动条优化 */
   scrollbar-color: #eeeeef rgba(242, 242, 242, 0.1); /* 滚动条颜色 */
   border: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  line-height: 1.5; /* 优化行高 */
+  letter-spacing: 0.5px;
 }
+
 
 a {
   color: inherit;
@@ -316,6 +320,10 @@ a {
   .content {
     padding-top: 0;
     min-height: 100vh;
+  }
+  body {
+    font-size: 14px; /* 手机端更小字号 */
+    line-height: 1.6;
   }
 }
 </style>
