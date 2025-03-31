@@ -99,7 +99,7 @@
             <div v-if="!someoneIsSharing" class="speaker-placeholder">
               <p>当前无人共享</p>
             </div>
-        </video-player-container>s
+        </video-player-container>
       
             <!-- 字幕容器 -->
     <div class="subtitle-container" v-if="subtitles">
@@ -2483,8 +2483,9 @@ onUnmounted(() => {
 });
 </script>
 
+
 <style scoped>
-/* 基础样式 */
+/* 基础样式 (PC端样式) */
 main {
   display: flex;
   justify-content: center;
@@ -2493,6 +2494,7 @@ main {
   background-color: #f7f7f7;
   position: relative;
   margin: 0;
+  /* 注意：移动端会覆盖 padding */
 }
 .return-icon-button {
    position: absolute;
@@ -2509,7 +2511,7 @@ main {
   align-items: center; /*  垂直居中 */
   justify-content: center; /*  水平居中 */
    cursor: pointer;
-   font-size: 40px; /* 移除 */
+   /* font-size: 40px; */ /* 移除 */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
    z-index: 1002;
 transition: background-color 0.3s;  /* 添加过渡效果 */
@@ -2518,7 +2520,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   opacity: 1; /* 鼠标悬停时完全不透明 */
 }
 /* .video-call-container.minimized .return-icon-button {
-  bottom: 20px;  
+  bottom: 20px;
   left: 20px;
 } */
 
@@ -2606,20 +2608,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   text-align: center;
 }
 
-.closeBtn {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  z-index: 10;
-  cursor: pointer;
-  font-size: 1.5rem;
-  color: #999;
-  transition: transform 0.3s;
-}
-
-.closeBtn:hover {
-  transform: rotate(90deg);
-}
+/* .closeBtn defined earlier */
 
 /* 模式切换按钮样式 */
 .mode-switch {
@@ -2633,6 +2622,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   display: flex;
   justify-content: center;
   gap: 20px;
+  /* 注意：移动端会覆盖部分样式 */
 }
 .controls button {
   background-color: #333;
@@ -2645,6 +2635,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   transition: background-color;
   width:60px; /* 根据需求调整宽度 */
   height: 60px; /* 根据需求调整高度 */
+  /* 注意：移动端会覆盖部分样式 */
 }
 
 .controls button img {
@@ -2652,6 +2643,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
     height: 90px; /* 根据需求调整高度 */
     transform: scale(2); /* 放大1.5倍 */
     vertical-align: middle; /* 使图标在按钮中垂直居中 */
+    /* 注意：移动端会覆盖部分样式 */
 }
 
 .switch-button {
@@ -2676,24 +2668,26 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   background-color: #5aaaff; /* 点击时背景颜色更深 */
   transform: translateY(0); /* 点击时恢复原位 */
 }
-/* 会议布局 */
+/* 会议布局 (PC端样式) */
 .meeting-layout {
   width: 90%;
   height: 90vh;
   background: #fff;
-  max-height: calc(100vh - 90px); 
+  max-height: calc(100vh - 90px);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  /* 注意：移动端会覆盖这些样式 */
 }
 
 .meeting-content {
   display: flex;
   width: 100%;
   height: 100%;
+  /* 注意：移动端会覆盖 flex-direction */
 }
 
 .meeting-loading {
@@ -2730,6 +2724,7 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   background: #f0f0f0;
   position: relative;
   min-width: 70%; /* 确保左侧面板占据主要空间 */
+  /* 注意：移动端会调整 flex 和 min-width */
 }
 
 .participants-row {
@@ -2740,11 +2735,11 @@ transition: background-color 0.3s;  /* 添加过渡效果 */
   align-items: center;
   overflow-x: auto;
   padding: 8px;
+  /* 注意：移动端会调整 height */
 }
 .participant-tile {
   width: 140px;  /* 或者你希望的值 */
   height: 80px; /* 或者你希望的值 */
-  /* 其他样式... */
   position: relative; /* 可能需要, 用于定位 username-label */
   overflow: hidden;  /*  重要! 防止内容溢出 */
 }
@@ -2804,24 +2799,13 @@ video-player-container.speaker-area {
 /* 让共享的画面只在 .speaker-area 区域内等比例缩放 */
 video.video-element.share-video,
 canvas.video-element.share-video {
-
-  width: 100%;       
+  width: 100%;
   height: auto;
   object-fit: contain;
   overflow: auto;
-
 }
 
-.controls {
-  flex-shrink: 0;
-  background: #1a1a1a;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-
-
+/* .controls defined earlier */
 
 .controls button.active {
   background-color: #1a73e8;
@@ -2835,80 +2819,20 @@ canvas.video-element.share-video {
   background-color: #555;
 }
 
-/* 群聊窗口 */
-/* .chat-container {
-    position: absolute;
-    bottom: 100px;
-    right: 20px;
-    width: 300px; 
-    max-height: 400px;
-    display: flex;
-    flex-direction: column;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    z-index: 99;
-     } */      /* 样式修改 */
-
+/* 群聊窗口 (由 ChatContainer.vue 控制主要样式) */
+/* 仅保留 videocall.vue 中影响其布局的部分 */
 .chat-container {
-  flex: 1;
-  /* 占据剩余空间 */
-  max-width: 400px;
-  /* 可选：设置最大宽度 */
+  flex: 1; /* 占据剩余空间 (PC端水平布局) */
+  max-width: 400px; /* 可选：设置最大宽度 (PC端) */
   display: flex;
   flex-direction: column;
   background: #f9f9f9;
-  border-left: 1px solid #ddd;
-  /* 与左侧面板分隔 */
-  /* 其他样式保持不变 */
+  border-left: 1px solid #ddd; /* 与左侧面板分隔 (PC端) */
+  /* 注意：移动端会覆盖 max-width 和 border-left */
 }
 
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  background: #1a73e8;
-  color: #fff;
-}
+/* 其他聊天内部样式在 ChatContainer.vue 中 */
 
-.close-chat {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  background-color: #fafafa;
-}
-
-.chat-message {
-  margin-bottom: 8px;
-}
-
-.chat-input {
-  display: flex;
-  border-top: 1px solid #ccc;
-}
-
-.chat-input input {
-  flex: 1;
-  border: none;
-  padding: 10px;
-}
-
-.chat-input button {
-  background-color: #1a73e8;
-  color: #fff;
-  border: none;
-  padding: 10px 16px;
-  cursor: pointer;
-  border-bottom-right-radius: 5px;
-}
 .analyze-button {
     background-color: #1890ff; /* 蓝色 */
     color: white;
@@ -2923,168 +2847,7 @@ canvas.video-element.share-video {
   background-color: #40a9ff;
 }
 
-/* 响应式样式 */
-@media (max-width: 768px) {
-  main {
-    flex-direction: column;
-    padding: 20px;
-  }
-
-  #action-flow {
-    margin: 0;
-    padding: 20px;
-    min-height: 100vh;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  #action-flow h1 {
-    font-size: 1.6rem;
-    margin-bottom: 20px;
-  }
-
-  .input-group {
-    margin-bottom: 15px;
-  }
-
-  .input-group label {
-    font-size: 0.9rem;
-  }
-
-  .input-group input,
-  .input-group select {
-    width: 95%; 
-    min-height: 25px;
-  }
-
-  .button-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    margin-top: 25px;
-    width: 100%;
-  }
-
-  .button-container > * {
-    flex: none;
-    width: 100%;
-    max-width: none;
-    min-height: 44px;
-    font-size: 1rem;
-  }
-
-  .closeBtn {
-    top: 12px;
-    right: 12px;
-    font-size: 1.2rem;
-  }
-
-
-  .video-and-transcription {
-    flex-direction: column;
-    margin-top: 20px;
-  }
-
-  #sessionContainer {
-    width: 100%;
-    height: 400px;
-  }
-  .controls {
-        flex-wrap: wrap; /* 使按钮在空间不足时换行 */
-        justify-content: center; /* 按钮左对齐 */
-        padding: 5px; /* 减少内边距 */
-        gap: 20px; /* 减少按钮间距 */
-    }
-  .controls button {
-        padding: 10px 12px; /* 调整按钮内边距 */
-        font-size: 12px; /* 减小字体大小 */
-        width: 40px; /* 根据需求调整宽度 */
-        height: 40px; /* 根据需求调整高度 */
-    }
-  .controls button img {
-    width: 16px; /* 减小图标宽度 */
-    height: 16px; /* 减小图标高度 */
-    vertical-align: middle; /* 使图标在按钮中垂直居中 */
-    }
-
-    .subtitle {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
-  color: #fff;
-  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
-  border-radius: 8px; /* 稍微增大圆角，更美观 */
-  max-width: 90%; /* 增大最大宽度，适应更多内容 */
-  text-align: center;
-  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
-  white-space: normal; /* 自动换行，无需强制保留空白符 */
-  word-break: break-word; /* 更好的长单词断行处理 */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
-  z-index: 100; /* 确保字幕在其他内容之上 */
-}
-
-  #transcriptionContainer {
-    width: 100%;
-    margin-left: 0;
-    margin-top: 10px;
-    height: 300px;
-  }
-
-  /* 响应式布局调整 */
-  .meeting-content {
-    flex-direction: column;
-  }
-
-  .chat-container {
-    max-width: none;
-    /* 移除最大宽度限制 */
-    border-left: none;
-    /*移除边框*/
-  }
-}
-
-@media (max-width: 480px) {
-  #action-flow {
-    padding: 15px;
-  }
-
-  #action-flow h1 {
-    font-size: 1.4rem;
-    margin-bottom: 18px;
-  }
-  .input-group {
-    margin-bottom: 12px;
-  }
-
-  .input-group input,
-  .input-group select {
-    font-size: 14px;
-    padding: 8px;
-    width: 95%;       
-    min-height: 25px; 
-  }
-
-  #transcriptionContainer {
-    height: 250px;
-  }
-}
-  .controls {
-        flex-wrap: wrap; /* 使按钮在空间不足时换行 */
-        justify-content:center; /* 按钮左对齐 */
-        padding: 10px; /* 减少内边距 */
-        gap: 15px; /* 减少按钮间距 */
-    }
-  .controls button {
-        padding: 10px 10px; /* 调整按钮内边距 */
-        font-size: 10px; /* 减小字体大小 */
-        width: 12%; /* 根据需求调整宽度 */
-    }
-  .controls button img {
-        width: 10px; /* 减小图标宽度 */
-        height: 10px; /* 减小图标高度 */
-    }
+/* 服务质量弹窗样式 (保持不变) */
 .service-quality-overlay {
   position: fixed;
   top: 50%;
@@ -3109,7 +2872,7 @@ canvas.video-element.share-video {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #e2e4e9, #bec3c9);  
+  background: linear-gradient(135deg, #e2e4e9, #bec3c9);
   color: #000000;
   padding: 20px;
   border-radius: 16px 16px 0 0;
@@ -3136,6 +2899,7 @@ canvas.video-element.share-video {
   padding: 10px;
   overflow-y: auto;
   flex: 1;
+  /* 移动端会覆盖 grid */
 }
 
 .chart-container {
@@ -3147,10 +2911,9 @@ canvas.video-element.share-video {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   border-radius: 12px;
-  grid-column: span 2;
+  /* 移动端会覆盖 grid */
 }
 
-/* == 新增: 文字表格样式，可自行调整美观 == */
 .stats-text {
   margin-top: 20px;
 }
@@ -3188,42 +2951,57 @@ canvas.video-element.share-video {
   background: #f3f4f8;
 }
 
-.button-container {
-  display: flex;
-  justify-content: center; /* 按钮居中 */
-  gap: 10px; /* 按钮之间的间距 */
-  margin-top: 20px; /* 调整与上方内容的间距 */
-}
-
-.button-container > * {
-  flex: 1; /* 让按钮宽度均等 */
-  max-width: 200px; /* 限制按钮最大宽度 */
-  text-align: center;
-}
-/* 
-字幕的样式
-.subtitle {
+/* 字幕样式 (保持不变，但移动端需调整位置) */
+.subtitle-container { /* 新增容器用于定位 */
   position: absolute;
-  bottom: 60px;
+  bottom: 80px; /* PC端位置 */
   left: 0;
   right: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  z-index: 100; /* 确保字幕在其他内容之上 */
+  pointer-events: none; /* 允许点击穿透 */
+  /* 注意：移动端会覆盖 bottom */
+}
+.subtitle {
+  /* 从绝对定位改为相对定位或静态定位，由父容器控制 */
+  background-color: rgba(0, 0, 0, 0.7); /* 增加透明度 */
   color: #fff;
-  padding: 5px 10px;
-  border-radius: 5px;
+  padding: 10px 20px; /* 增大内边距，提升视觉效果 */
+  border-radius: 8px; /* 稍微增大圆角，更美观 */
+  max-width: 90%; /* 增大最大宽度，适应更多内容 */
   text-align: center;
-  font-size: 16px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  z-index: 10;
+  font-size: clamp(16px, 3vw, 24px); /* 动态字体大小，适配不同屏幕 */
+  white-space: normal; /* 自动换行，无需强制保留空白符 */
+  word-break: break-word; /* 更好的长单词断行处理 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* 添加阴影，增强层次感 */
+  pointer-events: auto; /* 字幕本身可以响应事件 */
+}
 
-*/
-/* 新增：聊天部分样式 */
+.subtitle-item {
+    margin-bottom: 5px; /* 条目间距 */
+}
+.subtitle-user {
+    font-weight: bold;
+    margin-right: 5px;
+}
+.subtitle-text {
+    /* 原始文本样式 */
+}
+.subtitle-translation {
+    font-style: italic;
+    color: #ccc; /* 翻译文本颜色稍浅 */
+    margin-left: 5px;
+}
+
+
+/* 新增：聊天部分样式 (保持不变) */
 .chat-controls {
   display: flex;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #ddd;
+  /* 注意：移动端会覆盖 */
 }
 
 .chat-controls label {
@@ -3250,7 +3028,7 @@ canvas.video-element.share-video {
   background-color: #3d85c6;
 }
 
-/* 下载按钮样式 */
+/* 下载按钮样式 (保持不变) */
 .download-button {
   background-color: #4CAF50;
   /* 绿色 */
@@ -3267,7 +3045,7 @@ canvas.video-element.share-video {
   background-color: #367c39;
 }
 
-/*新增: 调整录音指示器的位置和样式*/
+/*新增: 调整录音指示器的位置和样式 (保持不变) */
 .recording-indicator {
   /* display: inline-block; */
   margin-left: 5px;
@@ -3284,14 +3062,13 @@ canvas.video-element.share-video {
   margin: 0 2px;
 }
 
-/* 字幕为空时的提示, 可以选择显示或移除 */
+/* 字幕为空时的提示 (保持不变) */
  .subtitle-placeholder {
+    /* 样式保持不变 */
     position: absolute;
     bottom: 70px;
      left: 0;
     right: 0;
-    /* left: 50%; */
-   /* transform: translateX(-50%); */
     color: #999;
     font-size: 14px;
      text-align: center
@@ -3308,7 +3085,7 @@ canvas.video-element.share-video {
     opacity: 1;
   }
 }
-/* 上传进度样式 */
+/* 上传进度样式 (保持不变) */
 .upload-progress {
   padding: 10px;
   background-color: #f0f0f0;
@@ -3320,13 +3097,7 @@ canvas.video-element.share-video {
   height: 100vh;
 }
 
-.transcription-float {
-  position: absolute;
-  bottom: 80px;    /* 根据原有布局调整 */
-  right: 30px;
-  z-index: 88;   /* 确保覆盖其他元素 */
-  width: 300px;    /* 根据需要调整 */
-}
+/* 移除 .transcription-float，因为它可能不再需要 */
 
 .video-call-container {
   position: absolute; /*  重要 */
@@ -3342,7 +3113,7 @@ canvas.video-element.share-video {
   transition: all 0.3s ease; /* 平滑过渡 */
 }
 
-/* 关闭按钮样式 */
+/* 关闭按钮样式 (保持不变) */
 .close-button {
   position: absolute;
   top: 10px;
@@ -3353,7 +3124,7 @@ canvas.video-element.share-video {
   z-index: 1001; /* 确保在最上层 */
 }
 
-/*  自定义的 MessageBox 样式 (可选, 根据需要调整) */
+/*  自定义的 MessageBox 样式 (保持不变) */
 .close-videocall-confirm {
     border-radius: 8px; /* 圆角 */
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);  /* 阴影 */
@@ -3403,17 +3174,17 @@ canvas.video-element.share-video {
   border-color: #c6cbd1;
 }
 
-/* 最小化时的样式 */
+/* 最小化时的样式 (保持不变) */
 .video-call-container.minimized {
-  top: 90px; 
-  left: 20px;  
-  bottom: auto; 
-  right: auto;  
+  top: 90px;
+  left: 20px;
+  bottom: auto;
+  right: auto;
   width: 320px; /* 缩小后的宽度 */
   height: 180px; /* 缩小后的高度 */
   border-radius: 8px;  /* 圆角 */
 }
-/* 当 isMaximized 为 true 时的样式 */
+/* 当 isMaximized 为 true 时的样式 (保持不变) */
 .video-call-container.maximized {
     top: 0;  /* 或者你希望的值 */
     left: 0;
@@ -3421,20 +3192,28 @@ canvas.video-element.share-video {
     height: 100%; ; /* 根据你的页头高度调整 */
     border-radius: 0; /* 取消圆角 */
 }
-/* 响应式设计 (根据需要添加更多断点) */
-/* 响应式样式 */
+
+/* ================================================ */
+/* ========== 移动端响应式样式 (< 768px) ========== */
+/* ================================================ */
 @media (max-width: 768px) {
+  /* 让 main 元素内容充满屏幕，移除内边距 */
   main {
-    flex-direction: column;
-    padding: 20px;
+    /* flex-direction: column; */ /* 不再需要，因为 meeting-layout 会充满屏幕 */
+    padding: 0; /* 移除内边距 */
+    align-items: stretch; /* 让子元素充满高度 */
   }
 
   #action-flow {
     margin: 0;
-    padding: 20px;
-    min-height: 100vh;
+    padding: 20px; /* 保留内部边距 */
+    min-height: 100vh; /* 仍然充满屏幕高度 */
     border-radius: 0;
     box-shadow: none;
+    max-width: 100%; /* 确保充满宽度 */
+    display: flex; /* 使用 flex 垂直居中内容 */
+    flex-direction: column;
+    justify-content: center;
   }
 
   #action-flow h1 {
@@ -3452,8 +3231,9 @@ canvas.video-element.share-video {
 
   .input-group input,
   .input-group select {
-    min-height: 25px;
-    width: 95%;       
+    min-height: 40px; /* 增大触摸区域 */
+    width: 100%; /* 输入框充满容器宽度 */
+    box-sizing: border-box; /* 包含 padding 和 border */
   }
 
   .button-container {
@@ -3473,121 +3253,178 @@ canvas.video-element.share-video {
   }
 
   .closeBtn {
-    top: 12px;
-    right: 12px;
-    font-size: 1.2rem;
+    top: 15px; /* 调整关闭按钮位置 */
+    right: 15px;
+    font-size: 1.4rem;
   }
 
-
-  .video-and-transcription {
-    flex-direction: column;
-    margin-top: 20px;
+  /* --- 核心修改：会议界面全屏化 --- */
+  .meeting-layout {
+    width: 100%;           /* 强制全屏宽 */
+    height: 100vh;          /* 强制全屏高 */
+    max-height: none;       /* 移除最大高度限制 */
+    border-radius: 0;       /* 移除圆角 */
+    box-shadow: none;        /* 移除阴影 */
+    border: none;          /* 移除边框 */
+    background: #f0f0f0;  /* 设置统一背景色 */
+    position: static;     /* 恢复正常文档流定位 */
+    margin: 0;             /* 移除外边距 */
+    padding: 0;            /* 移除内边距 */
+    display: flex;        /* 确保内部 flex 布局生效 */
+    /* align-items: stretch;  会让 meeting-content 充满 */
   }
 
-  #sessionContainer {
-    width: 100%;
-    height: 400px;
-  }
-  .controls {
-        flex-wrap: wrap; /* 使按钮在空间不足时换行 */
-        justify-content: center; /* 按钮左对齐 */
-        padding: 5px; /* 减少内边距 */
-        gap: 20px; /* 减少按钮间距 */
-    }
-  .controls button {
-        padding: 10px 12px; /* 调整按钮内边距 */
-        font-size: 12px; /* 减小字体大小 */
-        width: 40px; /* 根据需求调整宽度 */
-        height: 40px; /* 根据需求调整高度 */
-    }
-  .controls button img {
-    width: 16px; /* 减小图标宽度 */
-    height: 16px; /* 减小图标高度 */
-    vertical-align: middle; /* 使图标在按钮中垂直居中 */
-    }
-
-  .subtitle {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    max-width: 80%;
-    text-align: center;
-    font-size: 20px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
-
-  #transcriptionContainer {
-    width: 100%;
-    margin-left: 0;
-    margin-top: 10px;
-    height: 300px;
-  }
-
-  /* 响应式布局调整 */
   .meeting-content {
+    flex-direction: column; /* 强制垂直堆叠 */
+    height: 100%;          /* 确保内容充满父容器 */
+  }
+
+  /* 调整视频区域和聊天区域的占比 */
+  .left-panel {
+    flex: 1; /* 主要视频区域占据更多空间 */
+    min-height: 0; /* 允许收缩 */
+    width: 100%; /* 确保宽度 */
+    background: #f0f0f0; /* 保持背景色 */
+    display: flex; /* 内部元素垂直排列 */
     flex-direction: column;
+    position: relative; /* 为了 controls 定位 */
   }
 
   .chat-container {
-    max-width: none;
-    /* 移除最大宽度限制 */
-    border-left: none;
-    /*移除边框*/
+    flex: 0 0 40vh; /* 聊天区域固定占据约 40% 的视口高度，可调整 */
+    max-width: none; /* 移除 PC 端的最大宽度限制 */
+    border-left: none; /* 移除 PC 端的左边框 */
+    border-top: 1px solid #ddd; /* 在视频区和聊天区之间添加分隔线 */
+    height: 40vh; /* 显式设置高度 */
+    overflow: hidden; /* 防止内部元素溢出 */
+    display: flex; /* 确保内部 flex 布局生效 */
+    flex-direction: column;
   }
 
-  .chat-controls {
+  /* 参与者行调整 */
+  .participants-row {
+    height: 90px; /* 可以适当减小高度 */
+    flex-shrink: 0;
+    overflow-x: auto; /* 保持水平滚动 */
+  }
+  .participant-tile {
+    width: 100px; /* 减小缩略图尺寸 */
+    height: 70px;
+  }
+  video-player-container.participant-tile {
+      width: 100px;
+      height: 70px;
+  }
+
+
+  /* 演讲者区域 */
+  video-player-container.speaker-area {
+    flex: 1; /* 占据 left-panel 内的剩余空间 */
+    min-height: 0; /* 允许收缩 */
+  }
+
+  /* 控制栏调整 */
+  .controls {
+        flex-wrap: wrap; /* 保持换行 */
+        justify-content: center; /* 居中按钮 */
+        padding: 8px 5px; /* 调整内边距 */
+        gap: 15px; /* 按钮间距 */
+        background: #1a1a1a; /* 确保背景色 */
+        flex-shrink: 0; /* 防止被压缩 */
+        /* position: absolute; */ /* 不再需要绝对定位 */
+        /* bottom: 0; */
+        width: 100%; /* 充满宽度 */
+        z-index: 10; /* 确保在视频之上 */
+  }
+  .controls button {
+        padding: 0; /* 移除内边距，让图标居中 */
+        font-size: 10px; /* 减小文字大小（如果按钮内有文字） */
+        width: 48px; /* 固定按钮宽度 */
+        height: 48px; /* 固定按钮高度 */
+        display: flex; /* 使用 flex 居中图标 */
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%; /* 圆形按钮 */
+  }
+  .controls button img {
+    width: 24px; /* 调整图标大小 */
+    height: 24px;
+    transform: scale(1); /* 恢复正常大小 */
+    vertical-align: middle;
+  }
+  .controls button span { /* 如果按钮内有文字，隐藏它 */
+      display: none;
+  }
+
+  /* 字幕位置调整 */
+  .subtitle-container {
+    bottom: 65px; /* 根据 controls 的新高度调整 */
+    /* 其他样式继承或保持不变 */
+    z-index: 5; /* 低于 controls */
+  }
+
+  /* 服务质量弹窗调整 */
+  .service-quality-overlay {
+    width: 95%; /* 弹窗宽度适应屏幕 */
+    max-width: 400px; /* 但不要过宽 */
+  }
+  .service-quality-content {
+    /* grid-template-columns: 1fr; */ /* 不再需要 grid */
+    /* 可按需调整内部元素布局 */
+  }
+  .chart-container {
+    /* grid-column: span 1; */
+    height: 200px; /* 图表高度 */
+  }
+  /* 聊天控制栏调整 */
+   .chat-controls {
     flex-wrap: wrap;
     padding: 8px;
   }
 
   .chat-controls label {
     margin-bottom: 5px;
+    font-size: 14px; /* 调整字体大小 */
   }
 
   .receiver-select {
     margin-bottom: 5px;
-    width: 100%;
+    width: 100%; /* 选择框占满整行 */
+    padding: 8px; /* 增大内边距 */
   }
 
-  .send-file-bitton {
-    width: 100%;
+  .send-file-bitton { /* 注意类名拼写 */
+    width: 100%; /* 按钮占满整行 */
     margin-top: 5px;
+    padding: 10px; /* 增大内边距 */
+     font-size: 14px; /* 调整字体大小 */
   }
 
-  .download-button {
-    width: 100%;
+  /* 下载按钮等调整 */
+  .download-button, .analyze-button {
+    /* width: 100%; */ /* 文件列表中的按钮不需要占满整行 */
     margin-left: 0;
     margin-top: 5px;
+    padding: 6px 12px; /* 调整内边距 */
+    font-size: 13px; /* 调整字体大小 */
   }
 
   .recording-indicator {
     margin-top: 5px;
   }
-  .service-quality-overlay {
-    width: 90%;
-  }
-  
-  .service-quality-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .chart-container {
-    grid-column: span 1;
-    height: 200px;
+  .upload-progress {
+    font-size: 13px; /* 调整字体大小 */
   }
 }
 
+/* ================================================ */
+/* ======= 更小屏幕的响应式样式 (< 480px) ========= */
+/* ================================================ */
 @media (max-width: 480px) {
+  /* action-flow 的调整 */
   #action-flow {
     padding: 15px;
   }
-
   #action-flow h1 {
     font-size: 1.4rem;
     margin-bottom: 18px;
@@ -3598,42 +3435,76 @@ canvas.video-element.share-video {
   .input-group label {
     font-size: 0.85rem;
   }
-
   .input-group input,
   .input-group select {
     font-size: 0.95rem;
-    min-height: 25px;
+    min-height: 38px; /* 保持合适的触摸高度 */
   }
-
   .button-container > * {
     min-height: 42px;
     font-size: 0.95rem;
   }
 
-
-  #transcriptionContainer {
-    height: 250px;
+  /* 会议界面进一步微调 */
+  .participants-row {
+    height: 80px; /* 进一步减小参与者行高度 */
   }
+   .participant-tile {
+    width: 90px;
+    height: 60px;
+  }
+  video-player-container.participant-tile {
+      width: 90px;
+      height: 60px;
+  }
+
+  .controls {
+        gap: 10px; /* 进一步减少按钮间距 */
+        padding: 6px 4px;
+  }
+  .controls button {
+        width: 44px; /* 稍微减小按钮尺寸 */
+        height: 44px;
+  }
+  .controls button img {
+        width: 22px; /* 相应调整图标大小 */
+        height: 22px;
+  }
+
+  .subtitle-container {
+    bottom: 60px; /* 根据 controls 调整 */
+  }
+  .subtitle {
+      font-size: clamp(14px, 3vw, 18px); /* 调整字体范围 */
+      padding: 8px 15px;
+  }
+
+  /* 聊天区域 */
+  .chat-container {
+      flex: 0 0 45vh; /* 在非常小的屏幕上，聊天区域可以稍微多占一点空间 */
+      height: 45vh;
+  }
+   /* 聊天控制栏调整 */
   .chat-controls {
     padding: 6px;
   }
 
   .chat-controls label {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .receiver-select {
-    padding: 4px 6px;
+    padding: 6px 8px; /* 调整内边距 */
   }
 
-  .send-file-bitton {
-    padding: 4px 8px;
-    font-size: 14px;
+  .send-file-bitton { /* 注意类名拼写 */
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
-  .download-button {
-    padding: 4px 8px;
-    font-size: 14px;
+  .download-button, .analyze-button {
+    padding: 5px 10px;
+    font-size: 12px;
   }
 
   .recording-indicator .dot {
