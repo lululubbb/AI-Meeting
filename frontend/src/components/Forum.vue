@@ -2,11 +2,9 @@
     <div class="forum-page">
       <!-- 顶部导航 -->
       <el-menu mode="horizontal" :default-active="activeTopic.toString()" @select="handleTopicSelect">
-            <!-- Topic Items -->
             <el-menu-item v-for="topic in topics" :key="topic.id" :index="topic.id.toString()">
                 {{ topic.name }}
             </el-menu-item>
-            <!-- Hot Posts Item -->
             <el-menu-item index="hot">
                 <el-icon><HotWater /></el-icon> 热门帖子
              </el-menu-item>
@@ -58,7 +56,7 @@
   </div>
 </template>
     
-<template v-if="!isMobile && activeTopic === 'hot'">
+<template v-else-if="!isMobile && activeTopic === 'hot'">
     <div class="hot-posts" >
     <el-card class="hot-card2">
       <template #header>
@@ -223,7 +221,7 @@
                 :total="totalPosts"
                 :page-size="dynamicPageSize"
                 :current-page="currentPage"
-                :pager-count="isMobile ? 3 : 5" 
+                :pager-count="isMobile ? 3 : 4" 
                 @current-change="handlePageChange"
                 class="pagination-container"
              />
@@ -424,7 +422,7 @@
             />
           </el-form-item>
         </el-form>
-         <div v-else>加载中...</div> <!-- Optional: loading state -->
+         <div v-else>加载中...</div>
         <template #footer>
           <el-button @click="editDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="submitEdit">保存修改</el-button>
@@ -461,7 +459,6 @@ const topics = ref([
   
   // 状态管理
   const activeTopic = ref(1)
-//   const showingHotPosts = ref(false); 
   const createDialogVisible = ref(false)
   const detailDialogVisible = ref(false)
   const currentPost = ref(null)
@@ -485,11 +482,9 @@ let postIdCounter = 10;
 const searchKeyword = ref('');
 const sortType = ref('time') // 默认按时间排序
 const sortOrder = ref('desc') // 默认降序
-const dynamicPageSize = computed(() => isMobile.value ? 3 :4)
+const dynamicPageSize = computed(() => isMobile.value ? 4 :3)
 const generatedPosts = ref([]);
 const firestorePosts = ref([]);
-
-
 
 // 合并后的帖子数据
 const allPosts = computed(() => {
@@ -563,7 +558,7 @@ const fetchAgendaAndGeneratePosts = async () => {
                  let topicId = findTopicIdByName(session.forum);
 
                 tempGenerated.push({
-                    id: `agenda_${localPostIdCounter++}`, // Prefix agenda IDs
+                    id: `agenda_${localPostIdCounter++}`, 
                     topicId: topicId,
                     title: session.title,
                     content: postContent,
@@ -825,8 +820,6 @@ const handleDeletePost = async (postId) => {
     }
 };
 
-    
-
 const isAuthor = (post) => {
     if (!post || post.isAgendaPost) return false;
     return currentUser.value && post.authorId === currentUser.value.uid;
@@ -872,7 +865,6 @@ watch(allPosts, (newVal) => {
 }, { deep: true });
 
 const handleTopicSelect = (selectedIndex) => {
-  // scroll to top when changing views
   window.scrollTo({ top: 0, behavior: 'smooth' });
   activeTopic.value = /^\d+$/.test(selectedIndex) ? parseInt(selectedIndex) : 'hot';
 
@@ -1193,7 +1185,7 @@ onUnmounted(() => {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    height: 140vh;
+    height: 110vh;
     border: none;
   }
 
@@ -1464,7 +1456,7 @@ el-select {
 
   .hot-card {
   width: 330px;
-  margin-left: 20px;
+  margin-left: 0px;
   position: static !important; 
   height: fit-content; 
   max-height: 105vh;
@@ -1517,6 +1509,7 @@ el-select {
     width: 300px;
     flex-shrink: 0; 
     position: static !important;
+    margin-left: 0;
 }
 .hot-posts.desktop-sidebar .hot-card {
     margin-left: 0; 
@@ -1558,11 +1551,11 @@ el-select {
 }
 
 .el-pagination {
-  margin-top: auto; /* 使分页始终保持在底部 */
+  margin-top: auto;
   padding: 16px 0;
   background: transparent;
   position: sticky;
-  bottom: 0;
+  bottom: 15px;
   z-index: 100;
 }
 

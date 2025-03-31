@@ -12,7 +12,15 @@
             @schedule-meeting="navigateToScheduleMeeting"
             @history-meeting="navigateToHistoryMeeting" 
           />
+          <MeetingRecommendation
+            :history-meetings="historyMeetings"
+            :upcoming-agenda="upcomingAgendaItems"
+            :is-loading="isLoadingAgenda"
+            :max-recommendations="5"
+            style="margin-top: 15px;" 
+         />
         </div>
+        
       </div>
 
       <!-- 中间部分 -->
@@ -25,8 +33,14 @@
       <div class="right-section">
         <DataSummary/> 
         <RecentActivity />
-        
-        
+        <MeetingRecommendation
+            :history-meetings="historyMeetings"
+            :upcoming-agenda="upcomingAgendaItems"
+            :is-loading="isLoadingAgenda"
+            :max-recommendations="5"
+            style="margin-top: 20px;"
+        />
+        <el-alert v-if="agendaError" :title="'议程加载失败: ' + agendaError" type="warning" show-icon :closable="false" style="margin-top: 15px;"/>
       </div>
     </main>
 
@@ -40,7 +54,7 @@
         <UserProfileCard v-if="isUserCardVisible" @close="toggleUserCardVisibility" />
       </header>
 
-       <!-- 移动端主体 -->
+      <!-- 移动端主体 -->
         <main class="mobile-main-content">
 
           <div class="options">
@@ -51,7 +65,15 @@
             @history-meeting="navigateToHistoryMeeting" 
           />
         </div>
-       </main>
+        <MeetingRecommendation
+            :history-meetings="historyMeetings"
+            :upcoming-agenda="upcomingAgendaItems"
+            :is-loading="isLoadingAgenda"
+            :max-recommendations="5"
+            style="margin-top: 15px;" 
+        />
+        <el-alert v-if="agendaError" :title="'议程加载失败: ' + agendaError" type="warning" show-icon :closable="false" style="margin-top: 15px;"/>
+      </main>
 
       <!-- <footer class="mobile-footer">
             <button @click="navigateToHome">
@@ -98,6 +120,18 @@ import Home from '../views/Home.vue';
 import MeetingData from '../components/DataSummary.vue';
 import Tools from '../components/Tools.vue';
 import AIFloatingChat from '../components/AIFloatingChat.vue';
+import MeetingRecommendation from '../components/MeetingRecommendation.vue';
+const agendaError = ref(null); 
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import customParseFormat from 'dayjs/plugin/customParseFormat'; // Needed for "M月D日"
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'; // Also needed here if parseChineseDate uses dayjs()
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+dayjs.extend(isSameOrAfter);
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -119,10 +153,6 @@ const checkIsMobile = () => {
   isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
 };
 
-onMounted(() => {
-  checkIsMobile();
-  window.addEventListener('resize', checkIsMobile);
-});
 
 // 控制用户信息卡片的显示与隐藏
 const isUserCardVisible = ref(false);
@@ -195,6 +225,151 @@ const navigateToUserProfile = () => {
     router.push({name:'UserProfile'}) // 你需要创建一个名为 'UserProfile' 的路由
 }
 
+const rawAgendaData = ref(null); 
+const upcomingAgendaItems = ref([]);
+const isLoadingAgenda = ref(true); 
+const historyMeetings = computed(() => {
+    const meetings = store.getters.getMeetings;
+    console.log("Home.vue - Computed historyMeetings - Vuex getter returned:", meetings);
+    if (Array.isArray(meetings) && meetings.length > 0) {
+         console.log(`Home.vue - Computed historyMeetings - Length: ${meetings.length}`);
+    } else {
+         console.log("Home.vue - Computed historyMeetings - Returning empty or invalid data.");
+    }
+    return meetings || [];
+});
+
+const parseChineseDate = (dateStr) => {
+    const currentYear = dayjs().year();
+    const match = dateStr.match(/(\d+)月(\d+)日/);
+    if (match && match.length === 3) {
+        const month = parseInt(match[1], 10);
+        const day = parseInt(match[2], 10);
+        return dayjs().year(currentYear).month(month - 1).date(day).startOf('day');
+    }
+    return null;
+};
+
+const flattenAgendaData = (rawData) => {
+    const flattened = [];
+    if (!Array.isArray(rawData)) return flattened;
+
+    rawData.forEach(dateObj => {
+        const baseDate = parseChineseDate(dateObj.date);
+        if (!baseDate || !baseDate.isValid()) {
+            console.warn(`Could not parse date: ${dateObj.date}`);
+            return;
+        }
+
+        dateObj.sessions.forEach(session => {
+            if (Array.isArray(session.content)) {
+                 session.content.forEach((contentItem, index) => {
+                     const timeMatch = contentItem.time?.match(/^(\d{2}:\d{2})/);
+                     const startTimeStr = timeMatch ? timeMatch[1] : null;
+
+                     let fullDateTime = null;
+                     if (startTimeStr) {
+                          const [hours, minutes] = startTimeStr.split(':').map(Number);
+                          if (!isNaN(hours) && !isNaN(minutes)) {
+                              fullDateTime = baseDate.hour(hours).minute(minutes).second(0);
+                          }
+                     }
+
+                     if (!fullDateTime || !fullDateTime.isValid()) {
+                         console.warn(`Could not parse time for item: ${contentItem.title} on ${dateObj.date}, using base date.`);
+                         fullDateTime = baseDate;
+                     }
+
+                    const id = `${dateObj.date}-${session.title?.replace(/\s+/g, '-') || 'session'}-${index}`; // More robust ID
+
+                    flattened.push({
+                        id: id,
+                        dateStr: dateObj.date,
+                        sessionTitle: session.title,
+                        forum: session.forum,
+                        location: session.location,
+                        title: contentItem.title,
+                        time: contentItem.time, 
+                        fullDateTime: fullDateTime ? fullDateTime.toISOString() : null, // Use ISO string
+                        names: contentItem.names || [],
+                        descriptions: contentItem.descriptions || [],
+                        searchText: `${contentItem.title || ''} ${session.title || ''} ${contentItem.descriptions?.join(' ') || ''} ${contentItem.names?.join(' ') || ''} ${session.forum || ''} ${session.location || ''}` // Added more fields
+                    });
+                });
+            }
+        });
+    });
+    return flattened;
+};
+
+
+async function loadUpcomingAgenda() {
+  console.log("Home.vue - Starting to load upcoming agenda...");
+  isLoadingAgenda.value = true;
+  agendaError.value = null;
+  try {
+    const response = await fetch('/data/agenda.json');
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}, ${response.statusText}`);
+    }
+    const data = await response.json(); 
+
+    rawAgendaData.value = data;
+
+    console.log("Home.vue - BEFORE flattening. upcomingAgendaItems length:", upcomingAgendaItems.value.length);
+    const processedItems = flattenAgendaData(data); 
+    console.log(`Home.vue - Flattened data created. Length: ${processedItems.length}`);
+    if (processedItems.length > 0) {
+         console.log(`Home.vue - First flattened item PRE-ASSIGN:`, JSON.stringify(processedItems[0]));
+    }
+
+    upcomingAgendaItems.value = processedItems; 
+
+    console.log("Home.vue - AFTER assigning to ref. upcomingAgendaItems.value length:", upcomingAgendaItems.value.length);
+    if (upcomingAgendaItems.value.length > 0) {
+        console.log(`Home.vue - First item IN REF:`, JSON.stringify(upcomingAgendaItems.value[0]));
+    }
+     console.log(`Home.vue - Successfully loaded raw data for ${rawAgendaData.value?.length || 0} days.`); // Use optional chaining
+     console.log(`Home.vue - Processed into ${upcomingAgendaItems.value.length} upcoming agenda items.`);
+
+
+  } catch (e) {
+    console.error("Home.vue - 无法加载或处理议程数据:", e);
+    agendaError.value = e.message || '未知错误';
+    upcomingAgendaItems.value = [];
+    rawAgendaData.value = null; // Reset raw data on error too
+  } finally {
+    isLoadingAgenda.value = false;
+    console.log("Home.vue - Agenda loading finished. isLoading:", isLoadingAgenda.value);
+  }
+}
+
+onMounted(() => {
+  checkIsMobile();
+  window.addEventListener('resize', checkIsMobile);
+
+  loadUpcomingAgenda();
+
+  if (!store.getters.getUser?.uid) {
+      console.log("Home.vue mounted, user not logged in, watching for login...");
+       const unwatch = store.watch(
+        (state, getters) => getters.getUser,
+        (newUser) => {
+          if (newUser?.uid) {
+            console.log("User logged in after Home mounted.");
+            unwatch();
+          }
+        }
+      );
+  } else {
+       console.log("Home.vue mounted, user logged in.");
+  }
+
+});
+
+
+
+
 </script>
 
 <style scoped>
@@ -202,7 +377,7 @@ const navigateToUserProfile = () => {
 .home-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 110vh;
   width: 100%;
   /* background-color: #ffffff; */
   background-color: var(--background-color); /* 使用全局背景颜色 */
