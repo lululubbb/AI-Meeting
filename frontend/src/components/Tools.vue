@@ -1,7 +1,6 @@
 <template>
   <div class="tools-page">
     <el-row :gutter="16" justify="start">
-      <!-- :xs="12"  在xs屏幕下改为占据12列(一行两个) -->
       <el-col :xs="12" :sm="8" :md="6" :lg="4" v-for="tool in tools" :key="tool.name" class="tool-card-wrapper">
          <el-card shadow="hover" class="tool-card" @click="navigateTo(tool.route)">
           <div class="tool-icon-wrapper">
@@ -149,15 +148,21 @@ const navigateTo = (routeName) => {
 </script>
 
 <style scoped>
+
+
 .tools-page {
   padding: 16px; /* 减小整体 padding */
-  background-color: #f8f8f8;
+  background-color:var(--background-color);
+  box-sizing: border-box;
+  min-height: 100vh;
+  position: relative;
+  margin-bottom: 70px;
 }
 
 .tool-card-wrapper {
-  margin-bottom: 16px; /* 减小卡片间距 */
-  display: flex; /* 添加 display: flex */
-  justify-content: center; /* 水平居中 */
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
 }
 
 .tool-card {
@@ -168,12 +173,15 @@ const navigateTo = (routeName) => {
   flex-direction: column;
   height: 100%;
  width: 100%; /* 添加 width: 100% */
-  max-width: 200px; /* 设置最大宽度 */
+  max-width: 250px; /* 设置最大宽度 */
+  display: flex;
+  margin-bottom: 20px;
+  background-color:var(--background-color);
 }
 
 .tool-card:hover {
   transform: translateY(-4px); /* 减小上浮幅度 */
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); /* 减小阴影 */
+  box-shadow: var(--global-box-shadow);
 }
 
 .tool-icon-wrapper {
@@ -187,7 +195,7 @@ const navigateTo = (routeName) => {
 }
 
 .tool-content {
-   padding: 10px 16px;
+  padding: 10px 16px;
   text-align: center;
   flex-grow: 1;
   display: flex;
@@ -199,11 +207,10 @@ const navigateTo = (routeName) => {
   font-size: 16px; /* 减小标题字体大小 */
   font-weight: bold;
   margin-bottom: 4px; /* 减小标题下边距 */
-  color: #333;
-}
+  color: var(--text-color);}
 
 .tool-description {
-  font-size: 12px; /* 减小描述字体大小 */
+  font-size: 14px; /* 减小描述字体大小 */
   color: #777;
   line-height: 1.3; /* 减小行高 */
   margin: 0;
@@ -214,7 +221,10 @@ const navigateTo = (routeName) => {
   .tool-title {
     font-size: 14px;
   }
-
+  .tool-card{
+     max-width: 300px; /* 设置最大宽度 */
+     margin-bottom: 5px;
+}
   .tool-description {
     font-size: 11px;
   }
@@ -222,11 +232,11 @@ const navigateTo = (routeName) => {
 
 @media (max-width: 576px) {
 .tool-card-wrapper{
-     justify-content: flex-start;
-
+    justify-content: flex-start;
 }
 .tool-card{
-     max-width: 300px; /* 设置最大宽度 */
+     max-width: 250px; /* 设置最大宽度 */
+     margin-bottom: 5px;
 }
   .tool-icon-wrapper {
     padding: 8px; /* 进一步减小 padding */

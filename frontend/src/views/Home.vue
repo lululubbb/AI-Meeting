@@ -377,7 +377,7 @@ onMounted(() => {
 .home-container {
   display: flex;
   flex-direction: column;
-  height: 110vh;
+  min-height: 100vh;
   width: 100%;
   /* background-color: #ffffff; */
   background-color: var(--background-color); /* 使用全局背景颜色 */
@@ -473,15 +473,16 @@ footer {
 .mobile-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
   background-color: var(--background-color);
   overflow: hidden;
+  margin-bottom: 60px;
 }
 
 .mobile-header {
     display: flex;
-    justify-content: space-between; /* 两端对齐 */
+    justify-content:flex-end; 
     align-items: center;
     background-color: var(--header-background-color);
     padding: 10px;

@@ -62,7 +62,7 @@ const navItems = ref([
   { name: 'Meetings', path: '/meetings', label: '会议', icon: 'fas fa-users' },
   { name: 'Reservations', path: '/reservations', label: '预约', icon: 'fas fa-calendar-alt' },
   { name: 'Files', path: '/files', label: '文件', icon: 'fas fa-file-alt' },
-  // { name: 'Chat', path: '/chat', label: '聊天', icon: 'fas fa-comments' },
+  { name: 'Tools', path: '/tools', label: '工具', icon: 'fas fa-tools' },
   // { name: 'More', path: '/more', label: '更多', icon: 'fas fa-ellipsis-h' },
 ]);
 

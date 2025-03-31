@@ -344,37 +344,33 @@ const handleReservation = async () => {
 
     console.log("Submitting Meeting Data:", meetingData);
 
-    // Firestore operations
     const meetingId = await FirestoreService.addToMeetingHistory(userId.value, config.sessionName, meetingData);
 
-    // Add to Todo list
     const todo = {
       text: `预约会议: ${config.sessionName}`,
-      date: startTime.toISOString().split("T")[0], // Use YYYY-MM-DD format for todo date
+      date: startTime.toISOString().split("T")[0], 
       isCompleted: false,
-      meetingId: meetingId // Link todo to the meeting
+      meetingId: meetingId 
     };
     await FirestoreService.addTodoItem(userId.value, todo);
 
     ElMessage.success("已将会议添加至待办事项");
-    emitMeetingScheduled({ ...meetingData, meetingId }); // Notify parent/App
+    emitMeetingScheduled({ ...meetingData, meetingId });
     ElMessage.success("预约成功!");
-    goHome(); // Navigate away after success
+    goHome(); 
 
   } catch (error) {
     console.error("Reservation failed:", error);
     ElMessage.error(`预约失败: ${error.message || '请稍后重试'}`);
   } finally {
-    isJoining.value = false; // Hide loading indicator
+    isJoining.value = false
   }
 };
 
-// --- Utility Functions ---
 const generateInvitationContent = () => {
-    const userDisplay = config.userName || '主持人'; // Default to主持人 if somehow empty
+    const userDisplay = config.userName || '主持人'; 
     let meetingTime = '(请先选择会议时间)';
 
-    // Use the same formatter as the display computed property
     if (meetingDateRange.value && meetingDateRange.value.length === 2) {
       const [start, end] = meetingDateRange.value;
        if (start instanceof Date && !isNaN(start) && end instanceof Date && !isNaN(end)) {
@@ -386,10 +382,19 @@ const generateInvitationContent = () => {
           } catch (e) { /* Keep default '请选择...' */ }
        }
     }
+    let meetingInfo = `用户 ${userDisplay} 向您发来一个会议邀请~\n会议名称: ${config.sessionName || '(未填写)'}\n会议时间: ${meetingTime}\n`;
 
-    const meetingInfo = `用户 ${userDisplay} 向您发来一个会议邀请~\n会议名称: ${config.sessionName || '(未填写)'}\n会议时间: ${meetingTime}\n会议密码: ${config.sessionPasscode || '无'}\n复制该文本打开“慧议”系统点击“加入会议”按钮可直接入会！`;
+    // 仅当密码存在时才添加密码行
+    if (config.sessionPasscode) {
+      meetingInfo += `\n会议密码: ${config.sessionPasscode}`;
+    }
 
-    return meetingInfo;
+    if (config.sessionIntro) {
+      meetingInfo += `\n会议简介: ${config.sessionIntro}`;
+    }
+
+    meetingInfo += '\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！';
+  return meetingInfo;
 };
 
 const copyInvitationToClipboard = async () => {

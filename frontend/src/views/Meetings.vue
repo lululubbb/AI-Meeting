@@ -1,7 +1,7 @@
 <!-- src/views/Meetings.vue -->
 <!-- src/views/Chat.vue -->
 <template>
-  <div class="home-container">
+  <div class="home-container" v-if="!isMobile">
  <!-- 主体布局 -->
  <main class="main-layout">
       <!-- 左侧区域 -->
@@ -22,14 +22,46 @@
       </div>
     </main>
 
-    <footer>
+    <footer v-if="!isMobile">
         <p>&copy; 慧议先锋.</p>
     </footer>
   </div>
+   <!-- 移动端布局 -->
+   <div class="mobile-layout" v-else>
+      <header class="mobile-header">
+        <button class="icon-button" @click="showUserProfile">
+          <i class="fa-solid fa-user"></i>
+        </button>
+        <!-- 显示用户信息卡片 -->
+        <UserProfileCard v-if="isUserCardVisible" @close="toggleUserCardVisibility" />
+      </header>
+
+      <!-- 移动端主体 -->
+        <main class="mobile-main-content">
+
+          <div class="options">
+          <MeetingOption 
+            @new-meeting="navigateToCreateMeeting" 
+            @join-meeting="navigateToJoinMeeting" 
+            @schedule-meeting="navigateToScheduleMeeting"
+            @history-meeting="navigateToHistoryMeeting" 
+          />
+        </div>
+        <MeetingRecommendation
+            :history-meetings="historyMeetings"
+            :upcoming-agenda="upcomingAgendaItems"
+            :is-loading="isLoadingAgenda"
+            :max-recommendations="5"
+            style="margin-top: 15px;" 
+        />
+        <el-alert v-if="agendaError" :title="'议程加载失败: ' + agendaError" type="warning" show-icon :closable="false" style="margin-top: 15px;"/>
+      </main>
+      </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';  // 如果你使用 vuex 来管理状态
 import MeetingOption from '../components/MeetingOption.vue'; 
 import CustomButton from '../components/CustomButton.vue';
@@ -37,25 +69,47 @@ import CalendarTodoList from '../components/CalendarToDoList.vue';
 import Mood from '../components/Mood.vue';
 import HistoryMeeting from '../views/HistoryMeeting.vue'
 import RecentActivity from '../components/RecentActivityCard.vue';
+import MeetingRecommendation from '../components/MeetingRecommendation.vue';
+import UserProfileCard from '../components/UserProfileCard.vue';  // 引入用户信息卡片组件
 
 // 获取路由实例
 const router = useRouter();
 
 // 获取 Vuex store 实例
 const store = useStore();
-  
-  
+// 控制用户信息卡片的显示与隐藏
+const isUserCardVisible = ref(false);
+
+// 显示用户信息卡片
+const showUserProfile = () => {
+  isUserCardVisible.value = true;
+};
+// 切换用户卡片的显示状态
+const toggleUserCardVisibility = () => {
+  isUserCardVisible.value = !isUserCardVisible.value;
+  console.log('isUserCardVisible:', isUserCardVisible.value);
+};
+const isMobile = ref(false);
+
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
+};
+
+onMounted(() => {
+  checkIsMobile();
+  window.addEventListener('resize', checkIsMobile);
+})
 </script>
   
 <style scoped>
 .home-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   width:100%;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
-  margin:10px
+  margin:10px;
 }
 
 .main-layout {
@@ -105,6 +159,104 @@ footer {
   border-top: 1px solid #ddd;
   box-shadow: 0 -2px 4px rgba(0,0,0,0.08);
 }
+/*----- 移动端样式 -----*/
+.icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-size: 1.25rem; /* 20px */
+  color: #000;
+}
+
+.icon-button:hover {
+  color: #434040;
+  transform: translateY(-5px); /* 点击时上移 */
+}
+
+.mobile-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-bottom: 60px;
+  width: 100%;
+  background-color: var(--background-color);
+  overflow: hidden;
+}
+
+.mobile-header {
+    display: flex;
+    justify-content:flex-end; 
+    align-items: center;
+    background-color: var(--header-background-color);
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+.user-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+.mobile-buttons {
+  display: flex;
+  flex-wrap: wrap; /* 允许按钮换行 */
+  justify-content: space-around;  /* 分散对齐 */
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 0;
+}
+
+.mobile-buttons button {
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  border: none;
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  flex: 1;   /* 使按钮平均分配空间 */
+    max-width: 45%; /* 防止按钮过宽 */
+
+}
+
+.mobile-main-content{
+  flex: 1;
+  overflow: auto;
+  padding:10px;
+   display: flex;            /* 使用 Flexbox */
+    flex-direction: column; /* 垂直排列子元素 */
+}
+
+.mobile-footer {
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--footer-background-color);
+    padding: 10px 0;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+
+.mobile-footer button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+}
+.footer-icon {
+     width: 24px; /* 根据需要调整图标大小 */
+     height: 24px;
+     margin-bottom: 5px; /* 图标与文字之间的间距 */
+}
+
+.mobile-footer button span {
+    font-size: 12px; /* 根据需要调整文字大小 */
+}
 
 /* 公共移动端样式 */
 @media screen and (max-width: 768px) {
@@ -135,7 +287,6 @@ footer {
     max-height: 200px;
     object-fit: contain;
   }
-  
 }
 
 @media screen and (max-width: 480px) {

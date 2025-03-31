@@ -369,7 +369,7 @@ const updateTodo =async (todo) => {
   color: white !important;
   padding: 3px 6px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.2;
   word-break: break-word;
   white-space: normal !important;
@@ -617,7 +617,12 @@ font-size: 16px;
     margin-left: 0 !important;
   }
 
-
+/* 紫色事件框样式 */
+:deep(.purple-event-box) {
+  font-size: 10px;
+  line-height: 1.1;
+  transition: opacity 0.2s;
+}
   .todo-list {
     width: 95%;
     padding: 15px;

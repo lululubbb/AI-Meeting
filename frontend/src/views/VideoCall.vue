@@ -540,6 +540,9 @@ const defaultUserName = computed(() => {
   return user.name || user.email || '请输入用户名';
 });
 
+
+
+
 //复制预约会议信息
 const generateInvitationContent = () => {
   // const meetingInfo = `用户${config.userName}向您发来一个会议邀请~\n会议名称: ${config.sessionName}\n会议时间: ${new Date().toLocaleString()}\n会议密码:${config.sessionPasscode}\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！`;
@@ -549,6 +552,10 @@ const generateInvitationContent = () => {
   // 仅当密码存在时才添加密码行
   if (config.sessionPasscode) {
     content += `\n会议密码: ${config.sessionPasscode}`;
+  }
+
+  if (config.sessionIntro) {
+    content += `\n会议简介: ${config.sessionIntro}`;
   }
 
   content += '\n复制该文本打开“慧议”系统点击“加入会议”可直接入会！';
