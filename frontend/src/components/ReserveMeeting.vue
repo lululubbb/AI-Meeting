@@ -422,37 +422,135 @@ const goHome = () => {
 
 <style scoped>
 /* --- Base Styles --- */
-.reserve-container { padding: 20px; width: 100%; max-width: 900px; min-height: 80vh; margin: 50px auto; position: relative; overflow-y: auto; background-color: var(--background-color, #f4f7f6); box-sizing: border-box; }
-#reservation-form { background-color: var(--surface-color, #fff); padding: 30px; text-align: center; box-shadow: var(--global-box-shadow, 0 4px 12px rgba(0,0,0,0.1)); width: 100%; border-radius: 15px; box-sizing: border-box; position: relative; }
-.close-btn-wrapper { position: absolute; top: 15px; right: 20px; z-index: 10; }
-.close-btn { background-color: transparent; border: none; cursor: pointer; transition: transform 0.3s; padding: 8px; }
-.close-btn img { width: 30px; height: 30px; display: block; }
-.close-btn:hover { transform: rotate(90deg); }
-h1 { margin-bottom: 25px; color: var(--text-color, #333); font-size: 1.8rem; }
-.input-group { margin-bottom: 20px; text-align: left; }
-.input-group label { display: block; margin-bottom: 8px; color: var(--text-color-secondary, #555); font-weight: bold; font-size: 0.95rem; }
-.input-group input, .input-group select, :deep(.el-date-editor.el-input__wrapper), .flatpickr-trigger /* Add trigger */ { width: 100% !important; padding: 10px 12px; border: 1px solid #cccccc; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; box-sizing: border-box; background-color: #fff; min-height: 42px; line-height: normal; color: #303133; }
-.input-group input[disabled] { background-color: #f5f7fa; cursor: not-allowed; }
-.input-group input:focus, .input-group select:focus, :deep(.el-date-editor.el-input__wrapper.is-focus), .flatpickr-trigger:focus /* Add focus */ { border-color: #409eff; outline: none; }
-:deep(.el-date-editor--datetimerange.el-input__wrapper) { display: flex; align-items: center; padding: 0 10px !important; }
-:deep(.el-date-editor .el-range-input) { flex: 1; padding: 0 5px; font-size: inherit; width: auto; text-align: center; height: 100%; border: none; background: transparent; color: inherit; }
-:deep(.el-date-editor .el-range-separator) { padding: 0 4px; flex-shrink: 0; line-height: 40px; color: #909399; }
-.button-container { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; /* Allow wrapping on small screens */ }
-.button-container > * { flex: 1; max-width: 220px; min-width: 150px; /* Prevent buttons becoming too small */ text-align: center; }
+.reserve-container {
+  padding: 20px;
+  width: 100%;
+  max-width: 900px;
+  min-height: 80vh;
+  margin: 50px auto;
+  position: relative;
+  overflow-y: auto;
+  background-color: var(--background-color, #f4f7f6);
+  box-sizing: border-box;
+}
+#reservation-form {
+  background-color: var(--surface-color, #fff);
+  padding: 30px;
+  text-align: center;
+  box-shadow: var(--global-box-shadow, 0 4px 12px rgba(0, 0, 0, 0.1));
+  width: 100%;
+  border-radius: 15px;
+  box-sizing: border-box;
+  position: relative;
+}
+.close-btn-wrapper {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 10;
+}
+.close-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s;
+  padding: 8px;
+}
+.close-btn img {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+.close-btn:hover {
+  transform: rotate(90deg);
+}
+h1 {
+  margin-bottom: 25px;
+  color: var(--text-color, #333);
+  font-size: 1.8rem;
+}
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-color-secondary, #555);
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+.input-group input, .input-group select, :deep(.el-date-editor.el-input__wrapper), .flatpickr-trigger /* Add trigger */ {
+  width: 100% !important;
+  padding: 10px 12px;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+  background-color: #fff;
+  min-height: 42px;
+  line-height: normal;
+  color: #303133;
+}
+.input-group input[disabled] {
+  background-color: #f5f7fa;
+  cursor: not-allowed;
+}
+.input-group input:focus, .input-group select:focus, :deep(.el-date-editor.el-input__wrapper.is-focus), .flatpickr-trigger:focus /* Add focus */ {
+  border-color: #409eff;
+  outline: none;
+}
+:deep(.el-date-editor--datetimerange.el-input__wrapper) {
+  display: flex;
+  align-items: center;
+  padding: 0 10px !important;
+}
+:deep(.el-date-editor .el-range-input) {
+  flex: 1;
+  padding: 0 5px;
+  font-size: inherit;
+  width: auto;
+  text-align: center;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+:deep(.el-date-editor .el-range-separator) {
+  padding: 0 4px;
+  flex-shrink: 0;
+  line-height: 40px;
+  color: #909399;
+}
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+.button-container > * {
+  flex: 1;
+  max-width: 220px;
+  min-width: 150px; /* Prevent buttons becoming too small */
+  text-align: center;
+}
 
 /* --- Flatpickr Trigger Styles --- */
 .flatpickr-trigger {
-  display: flex;             /* Use flex to align text and arrow */
+  display: flex; /* Use flex to align text and arrow */
   justify-content: space-between; /* Push arrow to the right */
-  align-items: center;       /* Vertically center content */
-  cursor: pointer;           /* Indicate it's clickable */
-  line-height: 1.5;          /* Match calculated line height */
-  color: #606266;            /* Default text color */
+  align-items: center; /* Vertically center content */
+  cursor: pointer; /* Indicate it's clickable */
+  line-height: 1.5; /* Match calculated line height */
+  color: #606266; /* Default text color */
 }
 /* Placeholder text style */
 .flatpickr-trigger:empty::before,
-.flatpickr-trigger:has(:empty)::before { /* More robust empty check */
-  content: '请选择会议时间';
+.flatpickr-trigger:has(:empty)::before {
+  /* More robust empty check */
+  content: "请选择会议时间";
   color: #a8abb2; /* Placeholder color like Element Plus */
   flex-grow: 1; /* Allow placeholder to take space */
 }
@@ -465,43 +563,130 @@ h1 { margin-bottom: 25px; color: var(--text-color, #333); font-size: 1.8rem; }
 }
 
 /* --- Loading Indicator --- */
-.loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 1.2rem; }
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  color: white;
+  font-size: 1.2rem;
+}
 
 /* --- Mobile Styles --- */
 @media (max-width: 767px) {
-  .reserve-container { margin: 0; padding: 0; min-height: 100vh; }
-  #reservation-form { margin: 10px; padding: 20px 15px; box-shadow: none; border-radius: 10px; height: auto; max-height: none; }
-  h1 { font-size: 1.6rem; margin-bottom: 20px; }
-  .input-group { margin-bottom: 15px; }
-  .input-group label { font-size: 0.9rem; }
-  .input-group input, .input-group select, :deep(.el-date-editor.el-input__wrapper), .flatpickr-trigger { min-height: 44px; }
-  .button-container { flex-direction: column; align-items: stretch; gap: 12px; margin-top: 25px; width: 100%; }
-  .button-container > * { flex: none; width: 100%; max-width: none; min-height: 44px; font-size: 1rem; }
-  .close-btn-wrapper { top: 12px; right: 12px; }
-  .close-btn img { width: 26px; height: 26px; }
+  .reserve-container {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+  #reservation-form {
+    margin: 10px;
+    padding: 20px 15px;
+    box-shadow: none;
+    border-radius: 10px;
+    height: auto;
+    max-height: none;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+  .input-group {
+    margin-bottom: 15px;
+  }
+  #reservation-form .input-group label {
+    font-size: 18px;
+  }
+  #reservation-form .input-group input {
+    font-size: 17px;
+    padding: 8px;
+    height: 45px;
+  }
+  #reservation-form .input-group select {
+    font-size: 17px;
+    width: 100%;
+    height: 45px;
+    min-height: 25px;
+    max-width: 100%; /* 防止超出父容器 */
+    box-sizing: border-box; /* 包括 padding 和 border 在内计算宽度 */
+  }
+  :deep(.el-date-editor.el-input__wrapper),
+  .flatpickr-trigger {
+    min-height: 44px;
+  }
+  .button-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 25px;
+    width: 100%;
+    font-size: 20px;
+  }
+  .button-container > * {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    font-size: 18px;
+  }
+
+  #reservation-form .button-container button {
+    font-size: 17px; /* 设置按钮字体大小 */
+  }
+  .close-btn-wrapper {
+    top: 12px;
+    right: 12px;
+  }
+  .close-btn img {
+    width: 26px;
+    height: 26px;
+  }
 }
 @media (max-width: 480px) {
-  #reservation-form { margin: 5px; padding: 15px 10px; border-radius: 8px; }
-  h1 { font-size: 1.4rem; margin-bottom: 18px; }
-  .input-group { margin-bottom: 12px; }
-  .input-group label { font-size: 0.85rem; }
-  .input-group input, .input-group select, .flatpickr-trigger, :deep(.el-date-editor.el-input__wrapper) /* Ensure consistency */ { font-size: 0.95rem; min-height: 42px; }
-  .button-container > * { min-height: 42px; font-size: 0.95rem; }
+  #reservation-form {
+    margin: 5px;
+    padding: 15px 10px;
+    border-radius: 8px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 18px;
+  }
+  .input-group {
+    margin-bottom: 12px;
+  }
+  .input-group label {
+    font-size: 0.85rem;
+  }
+  .input-group input, .input-group select, .flatpickr-trigger, :deep(.el-date-editor.el-input__wrapper) /* Ensure consistency */ {
+    font-size: 0.95rem;
+    min-height: 42px;
+  }
+  .button-container > * {
+    min-height: 42px;
+    font-size: 0.95rem;
+  }
 }
 
 /* --- Global Flatpickr Styles --- */
 /* Use :global() because flatpickr appends to body */
 :global(.flatpickr-calendar) {
-    z-index: 10050 !important; /* High z-index for mobile overlay, ensure higher than any other overlays */
-    background-color: white !important; /* Ensure background */
-    /* Add any other global overrides needed */
+  z-index: 10050 !important; /* High z-index for mobile overlay, ensure higher than any other overlays */
+  background-color: white !important; /* Ensure background */
+  /* Add any other global overrides needed */
 }
 /* Adjust width/max-width on small screens */
 @media (max-width: 480px) {
   :global(.flatpickr-calendar.open) {
-      max-width: 96vw; /* Prevent exceeding screen width */
-      left: 2vw !important; /* Center roughly */
-      right: 2vw !important;
+    max-width: 96vw; /* Prevent exceeding screen width */
+    left: 2vw !important; /* Center roughly */
+    right: 2vw !important;
   }
 }
 </style>
