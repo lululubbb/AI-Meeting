@@ -111,6 +111,10 @@ import FirestoreService from '../services/FirestoreService.js';
 import ZoomVideoService from '../services/ZoomVideoService.js';
 import { ElMessage } from 'element-plus';
 import ANSWER_TEMPLATES from './answerTemplates.js';
+
+// 导入知识库
+import productFeatures from './productFeatures.json';
+
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -177,6 +181,7 @@ data() {
         downloadPromises: new Map(), // 用于存储 msgId 和 Promise 的映射
         fileAnalyzed: false,  // 新增标志, 记录文件是否已经被分析过 (下载并转换为 Base64)
         fileBase64: '',
+        knowledgeBase: productFeatures, 
     };
 },
 computed: {
@@ -210,7 +215,6 @@ computed: {
   this.aiSummary = '';
   this.aiConversation = []; // 清空问答历史
   this.messages = [];      //  清空普通消息
-
   try {
     const cancelDownload = await ZoomVideoService.downloadFile(
       this.fileMsgId,
@@ -271,6 +275,38 @@ fillInput(question) {
     return new Promise(resolve => setTimeout(resolve, ms));
   },
 
+
+  // 嵌入文本向量
+  async embedText(text) {
+       try {
+           const response = await axios.post('/api/embed', { text });
+           return response.data.embedding;
+       } catch (error) {
+           console.error('无法生成文本嵌入:', error);
+           return null;
+       }
+   },
+    //  RAG：检索相关知识
+    async retrieveRelevantKnowledge(query) {
+        try {
+           //1. 将用户的问题向量化
+            const queryEmbedding = await this.embedText(query);
+            if (!queryEmbedding) {
+              console.warn("无法为查询生成嵌入.");
+              return null;
+            }
+            const response = await axios.post('/api/search', {
+                 queryEmbedding: queryEmbedding,
+            });
+            console.log("响应数据:", response.data);
+            return response.data.results;
+
+        } catch (error) {
+             console.error("检索相关知识出错:", error);
+            return [];
+        }
+    },
+
 // 发送消息到AI 
 async sendMessage() {
       if (this.showWelcome) {
@@ -304,13 +340,18 @@ async sendMessage() {
     this.isLoading = true;
     console.log('发送消息到AI:', message);
 
-    const requestData = {
-      model: 'lite',
-      user: this.getUserEmail(),
-      messages: [
-        {
-          role: 'system',
-  content: `您是一个专业的智能会议助理。请严格遵循以下规则处理用户请求：
+    const relevantKnowledge = await this.retrieveRelevantKnowledge(message);
+        console.log("检索到的相关知识:", relevantKnowledge);
+
+// 构建Prompt
+let ragContent = "";
+if (relevantKnowledge && relevantKnowledge.length > 0) {
+  ragContent = `\n相关知识：\n${relevantKnowledge
+    .map((item, index) => `[${index + 1}] ${item.title}: ${item.content}`)
+    .join("\n")}\n`;
+}
+
+const systemPrompt = `您是一个专业的智能会议助理，负责帮助用户解答关于慧议先锋平台的问题。请根据以下检索到的相关知识，结合您的知识和理解，来生成答案。如果检索到的知识与用户问题不相关，请直接使用你的知识和理解回答。${ragContent}请严格遵循以下规则处理用户请求：
   1. 当用户表达创建会议意图时（例如："创建会议"、"新建一个会"、"请帮我建立XXX会议"等类似表述），立即触发会议创建流程
   2. 会议名称提取规则：
   - 若用户明确说明名称（如"创建『项目讨论会』"），直接使用说明的名称
@@ -339,11 +380,19 @@ async sendMessage() {
   - 使用自然语言友好回复
   - 不要使用JSON格式  
   请严格遵循以下规则回答用户问题：
-# 通用规则
-1. 当用户问题完全匹配上述问题时，必须使用对应模板
-2. 回答时保留模板中的符号体系（编号/箭头/图标）
-3. 非预设问题时正常进行AI对话
-4. 功能类问题最后必须引导查看帮助中心`
+  # 通用规则
+  1. 当用户问题完全匹配上述问题时，必须使用对应模板
+  2. 回答时保留模板中的符号体系（编号/箭头/图标）
+  3. 非预设问题时正常进行AI对话
+  4. 功能类问题最后必须引导查看帮助中心`;
+
+    const requestData = {
+      model: 'lite',
+      user: this.getUserEmail(),
+      messages: [
+        {
+          role: 'system',
+  content: systemPrompt.trim()
 },
     {
       role: 'user',
