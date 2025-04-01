@@ -77,6 +77,9 @@ const isMobile = ref(false);
 
 const checkIsMobile = () => {
   isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
+  if (isMobile.value && router.currentRoute.value.name !== 'Home') {
+    router.push({ name: 'Home' });
+  }
 };
 // 控制用户信息卡片的显示与隐藏
 const isUserCardVisible = ref(false);

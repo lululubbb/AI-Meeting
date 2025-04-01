@@ -236,6 +236,9 @@ const toggleUserCardVisibility = () => {
 
   const checkIsMobile = () => {
     isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
+    if (isMobile.value && router.currentRoute.value.name !== 'Home') {
+    router.push({ name: 'Home' });
+  }
   };
 
   // 进度条颜色

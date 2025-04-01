@@ -33,14 +33,6 @@
       <div class="right-section">
         <DataSummary/> 
         <RecentActivity />
-        <MeetingRecommendation
-            :history-meetings="historyMeetings"
-            :upcoming-agenda="upcomingAgendaItems"
-            :is-loading="isLoadingAgenda"
-            :max-recommendations="5"
-            style="margin-top: 20px;"
-        />
-        <el-alert v-if="agendaError" :title="'议程加载失败: ' + agendaError" type="warning" show-icon :closable="false" style="margin-top: 15px;"/>
       </div>
     </main>
 
@@ -150,7 +142,10 @@ const store = useStore();
 const isMobile = ref(false);
 
 const checkIsMobile = () => {
-  isMobile.value = window.innerWidth <= 768; // Adjust the breakpoint as needed
+  isMobile.value = window.innerWidth <= 768; 
+  if (isMobile.value && router.currentRoute.value.name !== 'Home') {
+    router.push({ name: 'Home' });
+  }
 };
 
 
