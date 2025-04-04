@@ -1,5 +1,5 @@
 <template>
-  <div class="help-container">
+  <div class="help-container elegant-theme">
     <h1 class="help-title">帮助页面</h1>
     <p class="help-intro">这里有详细的常见问题解答和使用指南，助力您高效使用我们的产品，畅享会议体验。</p>
 
@@ -228,13 +228,14 @@
 <style scoped>
 /* 全局样式 */
 .help-container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
   line-height: 1.6;
-  background-color: #f9f9f9;
+  background-color:  var(--background-color);
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  min-height: 100vh;
 }
 
 .help-title {
@@ -259,7 +260,9 @@
   border-radius: 8px;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
 }
-
+.help-section:hover {
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
 .section-title {
   color: #007BFF;
   border-bottom: 2px solid #007BFF;

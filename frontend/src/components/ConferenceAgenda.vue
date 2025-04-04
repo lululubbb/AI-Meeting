@@ -140,7 +140,7 @@ onMounted(async () => {
 
 <style scoped>
 /* --- Base & Page Styles --- */
-.agenda-background { background-color: #f8f9fc; }
+.agenda-background { background-color:  var(--background-color)}
 .guide-page { padding: 25px 15px; min-height: 100vh; }
 .page-content-container {
   max-width: 980px; /* Adjusted width for agenda clarity */
@@ -160,9 +160,19 @@ onMounted(async () => {
 }
 .page-header h1 { font-size: 26px; font-weight: 600; color: #2c3e50; margin: 0 0 8px 0; }
 .page-header p { font-size: 15px; color: #7f8c8d; margin: 0; }
-
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  color: #909399;
+  font-size: 16px;
+}
+.loading-state .el-icon {
+  margin-right: 8px;
+  color: #669bff;
+}
 .loading-state, .el-empty { padding: 70px 0; }
-.loading-state .el-icon { margin-bottom: 12px; color: var(--el-color-primary); }
 .loading-state span { font-size: 14px; color: #666; }
 .full-width-alert { margin-bottom: 25px; }
 :deep(.el-empty__description p) { color: #999; }

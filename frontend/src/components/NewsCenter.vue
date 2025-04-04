@@ -166,7 +166,7 @@ onMounted(async () => {
 /* --- General Page Styles --- */
 .news-center-page {
   padding: 20px;
-  background-color: #f8f9fa;
+  background-color: var(--background-color);
 }
 
 .page-card {
@@ -174,7 +174,8 @@ onMounted(async () => {
   margin: 0 auto;
   border: none;
   background-color: transparent; /* Make card background transparent */
-  box-shadow: none; /* Remove default card shadow */
+  padding: 20px; 
+  /* box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); */
 }
 .page-card :deep(.el-card__header) {
     border-bottom: none; /* Remove header border */
@@ -184,29 +185,21 @@ onMounted(async () => {
     padding: 0; /* Remove body padding if row handles spacing */
 }
 
-
-.card-header h1 {
-  margin-bottom: 5px;
-  font-size: 24px;
-  font-weight: bold;
-  color:#303133;
-}
-.card-header p {
-  margin: 0;
-  color: #606266;
-  font-size: 14px;
-}
+.card-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* Centered Header */
+.card-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
+.card-header p { font-size: 15px; color: #8492a6; margin: 0; }
 
 .loading-state {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content:center;
+  align-items:center;
   padding: 60px 0;
   color: #909399;
   font-size: 16px;
 }
 .loading-state .el-icon {
   margin-right: 8px;
+  color: #669bff;
 }
 
 /* --- News List Grid Styles --- */

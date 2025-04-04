@@ -4,7 +4,7 @@ body.light {
     --text-color: #333333;
     --primary-color: #409eff;
     --secondary-color: #67c23a;
-    --global-box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+    --global-box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
   }
   
   /* 深色主题 */

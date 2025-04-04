@@ -182,8 +182,18 @@
   .page-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
   .page-header p { font-size: 15px; color: #8492a6; margin: 0; }
   
-  .loading-state, .el-empty { padding: 80px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .loading-state .el-icon { margin-bottom: 10px; }
+  .loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  color: #909399;
+  font-size: 16px;
+}
+.loading-state .el-icon {
+  margin-right: 8px;
+  color: #669bff;
+}
   .full-width-alert { margin-bottom: 20px; }
   
   /* --- Exhibitor Flex Layout --- */
@@ -203,7 +213,6 @@
     transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
     overflow: hidden;
     width: 180px; /* Base width */
-    /* height can be auto or fixed based on design */
     display: flex; /* To potentially stack logo and name */
     flex-direction: column;
     align-items: center;
@@ -212,12 +221,14 @@
   .exhibitor-item-wrapper:hover {
     transform: translateY(-6px) scale(1.02); /* Slightly more pronounced hover */
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.09);
+    box-shadow: var(--global-box-shadow);
     border-color: #dce0e6;
   }
   
   .exhibitor-logo-container {
-    padding: 20px; /* Padding around the logo */
-    height: 110px; /* Fixed height for logo area */
+    padding: 15px; /* Padding around the logo */
+    height: 150px; /* Fixed height for logo area */
+    padding-top: 0;
     width: 100%;
     display: flex;
     justify-content: center;

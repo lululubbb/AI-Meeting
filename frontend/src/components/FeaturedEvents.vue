@@ -203,7 +203,18 @@ onMounted(async () => {
 }
 
 .loading-state, .el-empty { padding: 90px 0; }
-.loading-state .el-icon { margin-bottom: 15px; color: var(--el-color-primary); }
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  color: #909399;
+  font-size: 16px;
+}
+.loading-state .el-icon {
+  margin-right: 8px;
+  color: #669bff;
+}
 .loading-state span { font-size: 15px; color: #555; }
 .full-width-alert { margin-bottom: 25px; }
 :deep(.el-empty__description p) { color: #999; }
