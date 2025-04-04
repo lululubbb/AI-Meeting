@@ -67,7 +67,7 @@
 
     <!-- 介绍区域 (仅在较大屏幕上显示) -->
     <div class="intro-section" v-if="!isMobile">
-      <img src="@/assets/intro3.png" alt="Illustration of modern meeting" class="intro-image animate-subtle-slide" />
+      <img src="@/assets/intro1.png" alt="Illustration of modern meeting" class="intro-image animate-subtle-slide" />
       <div class="intro-text">
         <h3 class="intro-title">智能化会议，尽在慧议先锋</h3>
         <p class="intro-description">实时转录、智能摘要、多语言支持，开启高效协作新篇章。</p>
@@ -1010,11 +1010,13 @@ export default {
 }
 
 .intro-image {
-    max-width: 90%;
-    max-height: 80%;
+    max-width: 80%;
+    max-height: 70%;
     border-radius: 1rem;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     animation: float 5s ease-in-out infinite;
+    background:#fff;
+    border: solid #d7f3ff 10px;
 }
 .intro-text{
     text-align: center;

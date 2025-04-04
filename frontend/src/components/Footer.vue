@@ -1,18 +1,22 @@
 <template>
   <footer class="mobile-footer">
-    <button @click="navigateToHome">
+    <button @click="navigateToHome"
+    :class="getActiveClass('/home')">
       <i class="fa-solid fa-house"></i>
       <span>主页</span>
     </button>
-    <button @click="navigateToAIBot">
+    <button @click="navigateToAIBot"
+    :class="getActiveClass('/aibot')">
       <i class="fa-solid fa-robot"></i>
       <span>AI功能</span>
     </button>
-    <button @click="navigateToForum">
+    <button @click="navigateToForum"
+    :class="getActiveClass('/forum')">
       <i class="fa-solid fa-database"></i>
       <span>会议论坛</span>
     </button>
-    <button @click="navigateToTools">
+    <button @click="navigateToTools"
+    :class="getActiveClass('/tools')">
       <i class="fa-solid fa-toolbox"></i>
       <span>工具栏</span>
     </button>
@@ -20,13 +24,23 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
-
+import { useRoute, useRouter  } from 'vue-router';
+import { ref, watch } from 'vue';
 const router = useRouter();
+const route = useRoute();
+const currentTab = ref(route.path); 
+// 监听路由变化更新选中状态
+watch(() => route.path, (newPath) => {
+  currentTab.value = newPath;
+});
+
+const getActiveClass = (path) => {
+  return currentTab.value === path ? 'active' : '';
+};
 
 const navigateToHome = () => router.push('/home');
 const navigateToAIBot = () => router.push('/aibot'); // 已修改为指向AIBot页面
-const navigateToForum = () => router.push('/Forum');
+const navigateToForum = () => router.push('/forum');
 const navigateToTools = () => router.push('/tools');
 </script>
 
@@ -55,35 +69,21 @@ i {
   font-size: 20px;
   margin-bottom: 5px;
 }
-.footer-button {
-  background: none;
-  border: none;
-  font-size: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  color: #333; /* 默认文字颜色 */
-  text-decoration: none; /* 去掉 a 标签下划线 */
-  padding: 5px 10px; /* 可选：给按钮一些内边距 */
-  flex: 1; /* 让按钮均匀分布 */
-  text-align: center; /* 确保文字居中 */
+button.active {
+  position: relative;
+  background: linear-gradient(to right, #044DB4, #1492A0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.footer-button i {
-  font-size: 20px;
-  margin-bottom: 5px;
+button.active::after {
+  bottom: 5px;
 }
 
-/* 活动状态的样式 */
-.footer-button.active-gradient {
-  background: linear-gradient(to right, #044DB4, #1492A0); /* 从左到右的渐变 */
-  color: white; /* 修改文字颜色以确保在渐变背景上可见 */
-  border-radius: 5px; /* 可选：添加圆角 */
+/* 移除原有hover的伪元素样式 */
+button:hover::after {
+  display: none;
 }
 
-/* 可选：为活动状态的图标也设置颜色 */
-.footer-button.active-gradient i {
-  color: white;
-}
 </style>
