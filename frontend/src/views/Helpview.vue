@@ -240,7 +240,12 @@
 
 .help-title {
   text-align: center;
-  color: #007BFF;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
+  margin-bottom: 20px;
   margin-bottom: 20px;
   font-size: 32px;
 }
@@ -264,7 +269,12 @@
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 }
 .section-title {
-  color: #007BFF;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
+  margin-bottom: 20px;
   border-bottom: 2px solid #007BFF;
   padding-bottom: 10px;
   margin-bottom: 20px;
@@ -277,9 +287,9 @@
 }
 
 .module-title {
-  color: #007BFF;
   font-size: 20px;
   margin-bottom: 15px;
+  color:#006BA2;
 }
 
 /* 功能列表样式 */

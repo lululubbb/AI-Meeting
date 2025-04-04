@@ -609,7 +609,7 @@ export default {
 .login-wrapper {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4ff 0%, #d8e7ff 100%);
+  background: linear-gradient(135deg, #F3FCF9 0%, #C8E7F9 100%);
 }
 
 /* 登录区域 */
@@ -643,6 +643,7 @@ export default {
   justify-content: center;
 }
 
+
 .title-icon {
   margin-right: 0.5rem;
   font-size: 3rem; /* 图标大小 */
@@ -651,7 +652,11 @@ export default {
 .subtitle {
   font-size: 1.25rem; /* 副标题大小 */
   font-weight: 600;
-  color: #3498db;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   margin-top: 0.5rem;
 }
 
@@ -877,7 +882,7 @@ export default {
 .action-button {
   width: 100%;
   padding: 0.875rem; /* 调整内边距 */
-  background: linear-gradient(to right, #3498db, #2980b9);
+  background: linear-gradient(to right, #5398e1, #83d6c2);
   color: white;
   font-size: 1rem; /* 按钮字号 */
   font-weight: 600;
@@ -1019,6 +1024,12 @@ export default {
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: .5rem;
+    background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
+  margin-bottom: 20px;
 }
 .intro-description{
     font-size: .875;

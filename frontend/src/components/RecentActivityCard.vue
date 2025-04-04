@@ -185,7 +185,11 @@ export default {
 .title {
   font-size: 20px;
   font-weight: bold;
-  color: var(--text-color);
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   margin-bottom: 20px;
 }
 
@@ -265,6 +269,11 @@ z-index: 9999; /* 保证内容区域也在顶层 */
 .dialog-content h3 {
   margin-bottom: 10px;
   text-align: center;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
 }
 
 .form-fields {
@@ -296,7 +305,7 @@ z-index: 9999; /* 保证内容区域也在顶层 */
   max-width: 120px; /* 限制最大宽度 */
   background-color: #b9ddfe;
   border: solid 1px #95cbfe;
-  color: #000000;
+  color:#0B6BAB;
   cursor: pointer;
 }
 

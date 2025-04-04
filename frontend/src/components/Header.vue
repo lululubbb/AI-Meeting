@@ -107,13 +107,12 @@ const logout = async () => {
   top: 0;
   left: 0;
   width: 100%;
-  background-color: #dfe3e8; /* 与按钮底部边框颜色一致 */
-  background: linear-gradient(135deg, #dce0e5, #eceff3);  
+  background: linear-gradient(135deg, #ffffff, #ffffff);  
 
   padding: 1.25rem 2.25rem 0.1875rem 2.25rem; /* 20px 36px 3px 36px */
   box-sizing: border-box;
   z-index: 1000;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1); /* 0 2px 4px rgba(0, 0, 0, 0.1) */
+  box-shadow: 0 0.13rem 0.3rem rgba(5, 5, 5, 0.258); /* 0 2px 4px rgba(0, 0, 0, 0.1) */
 }
 
 .header-container {
@@ -134,7 +133,11 @@ const logout = async () => {
 }
 
 .title {
-  color: #000;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   font-size: 1.5rem; /* 24px */
   line-height: 1.5;
   font-weight: bold;
@@ -142,44 +145,15 @@ const logout = async () => {
 }
 
 .subtitle {
-  color: #000;
-  font-size: 1rem; /* 24px */
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
+  font-size: 0.9rem; /* 24px */
   line-height: 1;
   font-weight: 400;
   white-space: pre-line;
-}
-
-.search-bar {
-  position: relative;
-  width: 17rem; /* 271px */
-  height: 2.0rem; /* 29px */
-  background-color: #f7f7f7;
-  border-radius: 1rem; /* 16px */
-  display: flex;
-  align-items: center;
-  padding-left: 0.5rem; /* 12px */
-}
-
-.search-icon {
-  color: #949494;
-  margin-right: 0.5rem; /* 8px */
-  font-size: 1rem; /* 16px */
-}
-
-.search-bar input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 0.875rem; /* 14px */
-  color: #515151;
-  outline: none;
-}
-
-.search-divider {
-  width: 0.0625rem; /* 1px */
-  height: 1.125rem; /* 18px */
-  background-color: #dfe3e8;
-  margin-left: 0.5rem; /* 8px */
 }
 
 /* ---------------------- */
@@ -207,7 +181,11 @@ const logout = async () => {
   flex-direction: column;
   align-items: center;
   text-decoration: none;
-  color: #434040;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   font-size: 1.5rem; /* 24px */
   position: relative;
   transition: color 0.3s, transform 0.3s;
@@ -236,12 +214,11 @@ const logout = async () => {
   left: 0;
   width: 100%;
   height: 0.125rem; /* 2px */
-  background-color: #434040;
+  background-color: #0B6BAB;
   border-radius: 0.125rem; /* 2px */
 }
 
 .nav-link:hover {
-  color: #000;
   transform: scale(1.05);
 }
 
@@ -261,11 +238,14 @@ const logout = async () => {
   cursor: pointer;
   transition: color 0.3s;
   font-size: 1.25rem; /* 20px */
-  color: #000;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
 }
 
 .icon-button:hover {
-  color: #434040;
   transform: translateY(-5px); /* 点击时上移 */
 }
 

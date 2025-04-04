@@ -357,7 +357,7 @@ const updateTodo =async (todo) => {
 /* 日历事件删除线样式 */
 :deep(.fc-event-title) {
   text-decoration: none !important; /* 重置默认样式 */
-}
+  }
 
 :deep(.completed-event) {
   text-decoration: line-through !important;
@@ -398,6 +398,7 @@ const updateTodo =async (todo) => {
   margin-top: 30px;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
+  color: #000000;
 }
 
 .calendar {
@@ -407,6 +408,7 @@ width:90%;
 font-size: 14px;
 scrollbar-width: none; /* Firefox */
 -ms-overflow-style: none; /* IE/Edge */
+
 }
 
 .todo-list h2 {
@@ -414,11 +416,20 @@ scrollbar-width: none; /* Firefox */
   margin-bottom: 1px;
   margin-left: 0px;
   font-size: 20px;
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
 }
 
 .todo-list h3 {
   margin-top: 10px;
-  color: var(--text-color);
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   margin-left: 0px;
   margin-bottom: 10px;
   font-size: 16px;
@@ -521,6 +532,7 @@ z-index: 9999; /* 设置一个高的 z-index 值，确保对话框位于最上�
 
 .dialog-content {
 background: white;
+color:#0B6BAB;
 padding: 20px;
 border-radius: 10px;
 text-align: center;
@@ -546,9 +558,7 @@ z-index: 9999; /* 保证内容区域也在顶层 */
   flex: 1; /* 等宽按钮 */
   max-width: 120px; /* 限制最大宽度 */
   background-color: #b9ddfe;
-  border: solid 1px #95cbfe;
-  color: #000000;
-  cursor: pointer;
+  border: solid 1px #95cbfe;  cursor: pointer;
 }
 
 button:hover {
@@ -633,11 +643,16 @@ font-size: 16px;
   margin-bottom: 1px;
   margin-left: 0px;
   font-size: 16px;
+  
 }
 
 .todo-list h3 {
   margin-top: 10px;
-  color: var(--text-color);
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   margin-left: 0px;
   margin-bottom: 5px;
   font-size: 14px;
