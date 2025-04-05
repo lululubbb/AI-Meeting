@@ -27,7 +27,11 @@
       <div class="middle-section">
         <!-- 中间区域的组件 -->
         <CalendarTodoList />
-        <PiiTestTool style="margin-bottom: 20px;"/>
+            <!-- PII 测试工具 -->
+             <PiiTestTool style="margin-bottom: 20px;"/>
+
+        <!-- 新增：内容安全检查工具 -->
+        <ContentSafetyTestTool style="margin-bottom: 20px;"/>
       </div>
 
       <!-- 右侧部分 -->
@@ -114,6 +118,7 @@ import MeetingData from '../components/DataSummary.vue';
 import Tools from '../components/Tools.vue';
 import AIFloatingChat from '../components/AIFloatingChat.vue';
 import MeetingRecommendation from '../components/MeetingRecommendation.vue';
+import ContentSafetyTestTool from '../components/ContentSafetyTestTool.vue';
 const agendaError = ref(null); 
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
