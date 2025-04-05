@@ -293,7 +293,13 @@ onMounted(async () => {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer shadow */
   overflow: hidden; /* Ensure children respect border-radius */
 }
-
+h1{
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
+}
 .page-content-card :deep(.el-card__body) {
     padding: 30px 35px; /* Generous padding */
 }

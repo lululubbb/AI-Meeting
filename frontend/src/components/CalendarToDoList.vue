@@ -365,7 +365,7 @@ const updateTodo =async (todo) => {
 }
 /* 紫色事件框样式 */
 :deep(.purple-event-box) {
-  background: #b9c0e4;
+  background: linear-gradient(to right, #468df0c7,#84cbfa, #96e7f3);
   color: white !important;
   padding: 3px 6px;
   border-radius: 4px;
@@ -380,8 +380,9 @@ const updateTodo =async (todo) => {
 :deep(.fc-button) {
    font-size:15px !important;
    padding: 5px 10px !important; 
-   background-color: #84befd;
+   background: #5c9bee;
    border:none;
+   color:#000000;
 }
 
 /* 样式保持不变 */
@@ -394,7 +395,6 @@ const updateTodo =async (todo) => {
   margin: 10px; 
   margin-left: 5px;
   max-width: 100%;
-  min-height: 100vh;
   padding: 5px;
   margin-top: 30px;
   scrollbar-width: none; /* Firefox */
@@ -409,7 +409,6 @@ width:90%;
 font-size: 14px;
 scrollbar-width: none; /* Firefox */
 -ms-overflow-style: none; /* IE/Edge */
-
 }
 
 .todo-list h2 {
@@ -582,6 +581,7 @@ padding: 10px;
 border: none;
 cursor: pointer;
 font-size: 16px;
+
 }
 
 

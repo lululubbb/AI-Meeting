@@ -82,7 +82,7 @@ const handleHistoryMeeting = () => {
 
 .icon-wrapper1,
 .icon-wrapper {
-  background-color: #D3D6F5; /* 新会议图标背景色 */
+  background: linear-gradient(to right, #bdf0e8,#a4d9fc, #5796edc7); /* 新会议图标背景色 */
   padding: 15px; /* 增大内边距 */
   border-radius: 50%;
   transition: background-color 0.2s ease; /* 背景色过渡效果 */
@@ -91,7 +91,8 @@ const handleHistoryMeeting = () => {
 
 .icon-wrapper {
   border-radius: 50%;
-  background-color: #c6e0ff; /* 其他按钮图标背景色 */
+  background: linear-gradient(to right, #E4F5FC,#B5E1FC, #9bd9fc); /* 新会议图标背景色 */
+
 }
 
 .icon-wrapper:hover {
@@ -132,11 +133,8 @@ const handleHistoryMeeting = () => {
 span {
   margin-top: 10px;
   font-size: 24px;
-  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
-  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
-  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
-  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
-  color: transparent;  
+  color: var(--text-color); 
+
   font-weight: bold;
   transition: color 0.2s ease; /* 文字颜色过渡效果 */
 }

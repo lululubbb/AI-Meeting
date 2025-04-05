@@ -576,7 +576,6 @@ const performSearch = () => {
      background-color: var(--background-color);
      display: flex;
      min-height: 100vh;
-     margin-bottom:60px;
  }
    
    /* 主内容区 */
@@ -589,7 +588,6 @@ const performSearch = () => {
      position: relative;
      /* background-color: #f8f9fa; */
      background-color: var(--background-color);
-     min-height: 80vh; /* 增加最小高度 */
      scrollbar-width: none; /* Firefox */
    -ms-overflow-style: none; /* IE/Edge */
    }
@@ -932,6 +930,7 @@ const performSearch = () => {
        height: auto;
        /* 移除可能导致水平滚动的内边距 */
        padding: 0;
+       margin-bottom:60px;
      }
    
      .main-content {

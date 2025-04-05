@@ -28,10 +28,10 @@
         <!-- 中间区域的组件 -->
         <CalendarTodoList />
             <!-- PII 测试工具 -->
-             <PiiTestTool style="margin-bottom: 20px;"/>
+             <!-- <PiiTestTool style="margin-bottom: 20px;"/> -->
 
         <!-- 新增：内容安全检查工具 -->
-        <ContentSafetyTestTool style="margin-bottom: 20px;"/>
+        <!-- <ContentSafetyTestTool style="margin-bottom: 20px;"/> -->
       </div>
 
       <!-- 右侧部分 -->
@@ -380,7 +380,6 @@ onMounted(() => {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  /* background-color: #ffffff; */
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 
   scrollbar-width: none; /* Firefox */

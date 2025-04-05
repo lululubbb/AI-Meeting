@@ -381,7 +381,6 @@ function formatDateForComparison(date) {
     border-radius: 8px;
     padding: 15px;
     background-color: var(--background-color);  /* 全局背景 */
-    min-height: 100vh;
     margin:5px;
   }
   
@@ -418,6 +417,7 @@ function formatDateForComparison(date) {
         padding-right: 15px;
         padding-top: 25px;
         padding-bottom: 25px;
+        margin-bottom:60px;
     }
     .guide-page {
         /* 手机端页面边距也可微调 */

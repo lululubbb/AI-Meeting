@@ -195,13 +195,13 @@ const logout = async () => {
 
 .nav-link i {
   margin-bottom: 0.3125rem; /* 图标与文字间的距离 5px */
-  font-size: 1rem;      /* 18px */
+  font-size: 20px;      /* 18px */
   color: inherit;           /* 继承父元素的颜色 */
 }
 
 /* 避免中文断行成竖排, 额外在文字上也可加 white-space */
 .nav-label {
-  font-size: 20px;
+  font-size: 22px;
   white-space: nowrap; /* 防止中文换行 */
 }
 
@@ -237,7 +237,7 @@ const logout = async () => {
   border: none;
   cursor: pointer;
   transition: color 0.3s;
-  font-size: 1.25rem; /* 20px */
+  font-size: 22px; /* 20px */
   background: var(--text-gradient); /* 1. 应用渐变作为背景 */
   -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
   background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */

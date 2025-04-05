@@ -3,7 +3,7 @@
     <el-card shadow="hover" class="materials-card">
       <template #header>
         <div class="card-header">
-          <h2 class="card-title">会议资料下载</h2>
+          <h1 class="card-title">会议资料下载</h1>
           <p class="card-description">请选择您需要的资料进行下载：</p>
           <el-breadcrumb separator="/" v-if="path.length > 0" class="breadcrumb">
             <el-breadcrumb-item :to="{ path: '/materials' }" @click="resetPath">全部资料</el-breadcrumb-item>
@@ -167,13 +167,9 @@ onMounted(() => {
 }
 
 /* 卡片头部 */
-.card-header {
-  border-bottom: 1px solid #ebeef5;
-  padding: 0px 20px;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 10px;
-}
+.card-header{ margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* Centered Header */
+  .card-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
+  .card-header p { font-size: 15px; color: #8492a6; margin: 0; }
 
 .card-title {
   font-size: 22px;
@@ -181,6 +177,13 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
+h1{
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
+}
 .card-description {
   font-size: 14px;
   color: #777;
@@ -196,6 +199,10 @@ onMounted(() => {
   align-items: center; /* 垂直居中 */
 }
 
+.loading-container .el-icon {
+  margin-right: 8px;
+  color: #669bff;
+}
 /* 列表容器 */
 .list-container {
     padding: 10px;
