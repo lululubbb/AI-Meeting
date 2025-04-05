@@ -8,28 +8,41 @@
         <p>了解本次大会的重要嘉宾与演讲者</p>
       </div>
 
+      <!-- 搜索框 -->
+      <div class="search-bar-container">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索嘉宾姓名或简介..."
+          :prefix-icon="Search"
+          clearable
+          size="large"
+        />
+      </div>
+
       <!-- 加载和错误状态 -->
       <div v-if="isLoading" class="loading-state">
         <el-icon class="is-loading" :size="30"><Loading /></el-icon>
         <span>加载嘉宾信息中...</span>
       </div>
       <el-alert v-else-if="error" :title="'加载嘉宾信息失败: ' + error" type="error" show-icon :closable="false" class="full-width-alert"/>
-      <el-empty v-else-if="!guestData || (!guestData.expert_committee?.length && !guestData.speakers?.length)" description="嘉宾信息暂未公布" />
+      <!-- 更新空状态逻辑：当非加载、无错误，且两个过滤后列表都为空时显示 -->
+      <el-empty v-else-if="(!filteredExpertCommittee || !filteredExpertCommittee.length) && (!filteredSpeakers || !filteredSpeakers.length)"
+                :description="searchQuery ? '没有找到匹配的嘉宾信息' : '嘉宾信息暂未公布'" />
 
       <!-- 主要内容区域 -->
       <div v-else class="sections-container">
 
-        <!-- Section: 专家委员会 -->
-        <section v-if="guestData.expert_committee && guestData.expert_committee.length > 0" class="content-section">
+        <!-- Section: 专家委员会 - 使用 filteredExpertCommittee -->
+        <section v-if="filteredExpertCommittee && filteredExpertCommittee.length > 0" class="content-section">
           <div class="section-title">
-            <el-icon><Reading /></el-icon> <!-- 使用合适的图标 -->
-            <h2>专家委员会</h2> <!-- 固定标题或从JSON读取（如果未来有） -->
+            <el-icon><Reading /></el-icon>
+            <h2>专家委员会</h2>
           </div>
           <!-- 嘉宾卡片网格 -->
           <el-row :gutter="20" class="guest-grid">
             <el-col
               :xs="12" :sm="8" :md="6" :lg="4"
-              v-for="(expert, index) in guestData.expert_committee" :key="expert.name || index"
+              v-for="(expert) in filteredExpertCommittee" :key="`expert-${expert.name || expert.id || index}`" 
               class="guest-col"
             >
               <el-card shadow="hover" class="guest-card" body-style="padding:0;">
@@ -45,19 +58,21 @@
             </el-col>
           </el-row>
         </section>
-        <el-divider v-if="guestData.expert_committee?.length && guestData.speakers?.length" class="section-divider"/>
 
-        <!-- Section: 演讲嘉宾 -->
-        <section v-if="guestData.speakers && guestData.speakers.length > 0" class="content-section">
+        <!-- 分隔线 - 当两个过滤后列表都有内容时显示 -->
+        <el-divider v-if="filteredExpertCommittee?.length > 0 && filteredSpeakers?.length > 0" class="section-divider"/>
+
+        <!-- Section: 演讲嘉宾 - 使用 filteredSpeakers -->
+        <section v-if="filteredSpeakers && filteredSpeakers.length > 0" class="content-section">
           <div class="section-title">
-            <el-icon><Microphone /></el-icon> <!-- 使用合适的图标 -->
-            <h2>演讲嘉宾</h2> <!-- 固定标题或从JSON读取（如果未来有） -->
+            <el-icon><Microphone /></el-icon>
+            <h2>演讲嘉宾</h2>
           </div>
            <!-- 嘉宾卡片网格 -->
           <el-row :gutter="20" class="guest-grid">
             <el-col
               :xs="12" :sm="8" :md="6" :lg="4"
-              v-for="(speaker, index) in guestData.speakers" :key="speaker.name || index"
+              v-for="(speaker) in filteredSpeakers" :key="`speaker-${speaker.name || speaker.id || index}`"   
               class="guest-col"
             >
               <el-card shadow="hover" class="guest-card" body-style="padding:0;">
@@ -67,11 +82,9 @@
                 </el-image>
                 <div class="guest-info">
                    <h3 class="guest-name">{{ speaker.name || '嘉宾姓名' }}</h3>
-                   <!-- 使用 blurb 或 description -->
                    <p v-if="speaker.blurb || speaker.description" class="guest-description">
                        {{ speaker.blurb || speaker.description }}
                    </p>
-                   <!-- 可选：显示参与的议程 -->
                    <div v-if="speaker.participation && speaker.participation.length > 0" class="guest-participation">
                        <el-popover placement="top-start" :width="300" trigger="hover">
                            <template #reference>
@@ -99,18 +112,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { ElCard, ElRow, ElCol, ElImage, ElIcon, ElAlert, ElEmpty, ElDivider, ElTag, ElPopover } from 'element-plus';
-import { Loading, Reading, Microphone, User, Calendar } from '@element-plus/icons-vue'; // 引入新图标
+// 引入 computed 和 Search 图标
+import { ref, onMounted, computed } from 'vue';
+// 引入 ElInput
+import { ElCard, ElRow, ElCol, ElImage, ElIcon, ElAlert, ElEmpty, ElDivider, ElTag, ElPopover, ElInput } from 'element-plus';
+// 引入 Search 图标
+import { Loading, Reading, Microphone, User, Calendar, Search } from '@element-plus/icons-vue';
 
-const guestData = ref(null);
+const guestData = ref({ expert_committee: [], speakers: [] }); // 初始化为空数组结构
 const isLoading = ref(true);
 const error = ref(null);
 
+// --- 新增搜索状态 ---
+const searchQuery = ref('');
+
 // 默认头像，如果 JSON 中缺少图片
-const defaultAvatar = ref('url-to-your-default-avatar.png'); // 替换为你的默认头像图片 URL 或 Base64
+const defaultAvatar = ref('/path/to/your/default-avatar.png'); // <<<--- 务必替换为你的默认头像图片真实 URL 或 Base64
 
 onMounted(async () => {
+  isLoading.value = true; // 开始加载前设置为 true
+  error.value = null;
   try {
     const response = await fetch('/data/guests.json'); // 确认 JSON 文件路径
     if (!response.ok) {
@@ -118,20 +139,60 @@ onMounted(async () => {
     }
     const data = await response.json();
     // 校验数据结构是包含 expert_committee 或 speakers 数组的对象
-    if (typeof data === 'object' && data !== null && (Array.isArray(data.expert_committee) || Array.isArray(data.speakers))) {
-       guestData.value = data;
+    if (typeof data === 'object' && data !== null ) {
+       // 确保即使字段不存在，也是空数组，防止后续 computed 出错
+       guestData.value = {
+           expert_committee: Array.isArray(data.expert_committee) ? data.expert_committee : [],
+           speakers: Array.isArray(data.speakers) ? data.speakers : []
+       };
     } else {
-      console.warn("Fetched guest data is not in expected format:", data);
-      guestData.value = { expert_committee: [], speakers: [] }; // 赋空数组以避免渲染错误
-      throw new Error("嘉宾数据格式不正确");
+      console.warn("Fetched guest data is not in expected format or is null:", data);
+      guestData.value = { expert_committee: [], speakers: [] }; // 保持空数组结构
+      // 可以选择是否抛出错误，取决于业务逻辑是否允许数据格式不完全符合预期
+      // throw new Error("嘉宾数据格式不正确");
     }
   } catch (e) {
     console.error("无法加载嘉宾数据:", e);
     error.value = e.message;
+    guestData.value = { expert_committee: [], speakers: [] }; // 出错时也保证空数组结构
   } finally {
     isLoading.value = false;
   }
 });
+
+// --- 计算属性过滤嘉宾列表 ---
+const filteredExpertCommittee = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  if (!query) {
+    return guestData.value.expert_committee; // 无搜索词则返回原始列表
+  }
+  if (!guestData.value.expert_committee) return []; // 如果原始数据就没这个字段，返回空
+
+  return guestData.value.expert_committee.filter(expert => {
+    const nameMatch = expert.name?.toLowerCase().includes(query);
+    const descMatch = expert.description?.toLowerCase().includes(query);
+    return nameMatch || descMatch;
+  });
+});
+
+const filteredSpeakers = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  if (!query) {
+    return guestData.value.speakers; // 无搜索词则返回原始列表
+  }
+   if (!guestData.value.speakers) return []; // 如果原始数据就没这个字段，返回空
+
+  return guestData.value.speakers.filter(speaker => {
+    const nameMatch = speaker.name?.toLowerCase().includes(query);
+    const descMatch = speaker.description?.toLowerCase().includes(query);
+    const blurbMatch = speaker.blurb?.toLowerCase().includes(query); // 也检查 blurb
+    // 可以根据需要添加更多搜索字段，例如参与的议程标题
+    // const participationMatch = speaker.participation?.some(p => p.title?.toLowerCase().includes(query));
+    return nameMatch || descMatch || blurbMatch /* || participationMatch */;
+  });
+});
+
+
 </script>
 
 <style scoped>
@@ -141,189 +202,100 @@ onMounted(async () => {
   background-color: #f9fafb;
 }
 .page-content-container {
-  max-width: 1350px; 
+  max-width: 1350px;
   margin: 0 auto;
-  padding: 20px 30px;
+  padding: 20px 30px 40px 30px; /* 增加底部 padding */
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.page-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* Centered Header */
+.page-header { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* 调整间距 */
 .page-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
 .page-header p { font-size: 15px; color: #8492a6; margin: 0; }
-  
 
-.loading-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 60px 0;
-  color: #909399;
-  font-size: 16px;
+/* --- 搜索框样式 --- */
+.search-bar-container {
+  margin-bottom: 35px; /* 搜索框和下方内容的间距 */
 }
-.loading-state .el-icon {
-  margin-right: 8px;
-  color: #669bff;
+:deep(.search-bar-container .el-input__prefix .el-icon) {
+  color: #a8abb2;
 }
+
+
+.loading-state { display: flex; justify-content: center; align-items: center; padding: 60px 0; color: #909399; font-size: 16px; }
+.loading-state .el-icon { margin-right: 8px; color: #669bff; }
 .full-width-alert { margin-bottom: 20px; }
 
 /* --- 嘉宾页面特定样式 --- */
 .sections-container { display: flex; flex-direction: column; gap: 0; }
 .content-section { padding-top: 10px; }
-.section-title {
-    display: flex;
-    align-items: center;
-    margin-bottom: 30px; /* 标题和网格间距加大 */
-    color: #1f2d3d;
-}
-.section-title .el-icon {
-    font-size: 24px;
-    margin-right: 12px;
-    color: var(--el-color-primary);
-}
+.section-title { display: flex; align-items: center; margin-bottom: 30px; color: #1f2d3d; }
+.section-title .el-icon { font-size: 24px; margin-right: 12px; color: var(--el-color-primary); }
 .section-title h2 { font-size: 20px; font-weight: 600; margin: 0; }
-.section-divider {
-    margin: 45px 0 40px 0 !important; /* 分隔线上下间距调整 */
-    border-color: #f0f2f5 !important;
-}
-.section-divider:last-of-type { display: none; }
+.section-divider { margin: 45px 0 40px 0 !important; border-top: 1px solid #ebeef5 !important; } /* 使用更标准的 border-top */
+/* .section-divider:last-of-type { display: none; } */ /* 这句可能不需要，因为 v-if 会处理 */
 
-/* 嘉宾网格 */
-.guest-grid {
-    /* el-row 和 gutter 负责间距 */
-}
-.guest-col {
-    margin-bottom: 20px; /* 卡片垂直间距 */
-}
+.guest-grid { }
+.guest-col { margin-bottom: 20px; }
 
-/* 嘉宾卡片 */
-.guest-card {
-    border-radius: 8px;
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-    height: 100%; /* 使卡片高度一致 */
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #f0f2f5; /* 更轻的边框 */
-    overflow: hidden; /* 确保图片圆角生效 */
-}
-.guest-card:hover {
-   transform: translateY(-4px);
-   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
+.guest-card { border-radius: 8px; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; height: 100%; display: flex; flex-direction: column; border: 1px solid #f0f2f5; overflow: hidden; }
+.guest-card:hover { transform: translateY(-4px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); }
 
-/* 嘉宾头像 */
-.guest-avatar {
-    width: 100%;
-    height: 200px; /* 固定高度，或者使用 aspect-ratio */
-    display: block;
-    background-color: #f5f7fa; /* 头像加载时背景 */
-}
-.avatar-slot {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  background: #f5f7fa;
-  color: #c0c4cc; /* 占位符颜色 */
-}
-.avatar-slot.loading::after{ content: ''; /* 可以是加载动画或文字 */ }
-.avatar-slot.error .el-icon {
-  font-size: 40px; /* 错误图标大小 */
-}
+.guest-avatar { width: 100%; height: 200px; display: block; background-color: #f5f7fa; }
+.avatar-slot { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; background: #f5f7fa; color: #c0c4cc; }
+.avatar-slot.error .el-icon { font-size: 40px; }
 
-/* 嘉宾信息 */
-.guest-info {
-    padding: 10px;
-    text-align: center;
-    flex-grow: 1; /* 使信息区域填满剩余空间 */
-    display: flex;
-    flex-direction: column;
-}
-.guest-name {
-    font-size: 16px;
-    font-weight: 600;
-    color: #303133;
-    margin: 0 0 6px 0;
-    line-height: 1.3;
-      /* 限制名字显示一行 */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.guest-info { padding: 15px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; } /* 增加 padding */
+.guest-name { font-size: 16px; font-weight: 600; color: #303133; margin: 0 0 8px 0; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .guest-description {
-    font-size: 14px;
-    color: #8492a6; /* 描述文字颜色 */
+    font-size: 13px; /* 稍微缩小字体 */
+    color: #8492a6;
     line-height: 1.5;
     margin: 0 ;
-    flex-grow: 1; 
+    flex-grow: 1;
+    /* Webkit 兼容的多行省略 */
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4; /* 最多显示 2 行 */
+    -webkit-line-clamp: 3; /* 调整为最多 3 行 */
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: calc(1.5em * 2); /* 保证至少两行的高度 */
-
+    /* 保证至少一点高度，防止空描述时塌陷 */
+    min-height: calc(1.5em * 1);
+    /* 为了更好的跨浏览器兼容性（虽然不完美），可以添加 max-height */
+    max-height: calc(1.5em * 3); /* 限制最大高度为3行 */
 }
 
-/* 参与议程样式 */
-.guest-participation {
-    margin-top: auto; /* 将标签推到底部 */
-    padding-top: 10px;
-    border-top: 1px solid #f0f2f5; /* 信息和标签之间的细线 */
-}
-.guest-participation .el-tag {
-    cursor: pointer;
-}
-.guest-participation .el-icon {
-    vertical-align: middle;
-    margin-right: 3px;
-}
+.guest-participation { margin-top: auto; padding-top: 12px; border-top: 1px solid #f0f2f5; } /* 增加上下 padding */
+.guest-participation .el-tag { cursor: pointer; }
+.guest-participation .el-icon { vertical-align: middle; margin-right: 3px; }
 
-/* Popover 内部列表样式 */
-.participation-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 200px;
-    overflow-y: auto;
-}
-.participation-list li {
-    margin-bottom: 8px;
-    line-height: 1.4;
-}
-.participation-list li:last-child {
-    margin-bottom: 0;
-}
-.participation-list span {
-    font-size: 12px;
-    color: #909399;
-    display: block;
-}
-.participation-list p {
-    font-size: 13px;
-    color: #606266;
-    margin: 2px 0 0 0;
-}
+.participation-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+.participation-list li { margin-bottom: 8px; line-height: 1.4; }
+.participation-list li:last-child { margin-bottom: 0; }
+.participation-list span { font-size: 12px; color: #909399; display: block; }
+.participation-list p { font-size: 13px; color: #606266; margin: 2px 0 0 0; }
 
 
 /* --- 响应式 --- */
-@media (max-width: 992px) { /* lg 断点 */
-    .page-content-container { max-width: 960px; }
-}
-@media (max-width: 768px) { /* md 断点 */
+@media (max-width: 992px) { .page-content-container { max-width: 960px; } }
+@media (max-width: 768px) {
     .guide-page { padding: 20px 15px; }
-    .page-content-container { padding: 20px 25px; }
+    .page-content-container { padding: 20px 25px 30px 25px; }
     .page-header h1 { font-size: 22px; }
     .page-header p { font-size: 14px; }
+    /* 调整搜索框下方间距 */
+    .search-bar-container { margin-bottom: 30px; }
     .section-title h2 { font-size: 18px; }
-    .guest-avatar { height: 160px; } /* 调整头像高度 */
+    .guest-avatar { height: 160px; }
     .guest-info { padding: 12px; }
     .guest-name { font-size: 15px; }
-    .guest-description { font-size: 12px; }
+    .guest-description { font-size: 12px; -webkit-line-clamp: 2; max-height: calc(1.5em * 2); min-height: calc(1.5em * 1);} /* 中屏幕减少行数 */
 }
-@media (max-width: 576px) { /* sm 断点 */
+@media (max-width: 576px) {
      .guest-avatar { height: 140px; }
+     /* 调整搜索框下方间距 */
+    .search-bar-container { margin-bottom: 25px; }
 }
+
 </style>
