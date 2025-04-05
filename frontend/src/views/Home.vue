@@ -27,6 +27,7 @@
       <div class="middle-section">
         <!-- 中间区域的组件 -->
         <CalendarTodoList />
+        <PiiTestTool style="margin-bottom: 20px;"/>
       </div>
 
       <!-- 右侧部分 -->
@@ -107,7 +108,7 @@ import RecentActivity from '../components/RecentActivityCard.vue';
 import FileAttachmentContainer from '../components/FileAttachmentContainer.vue'; // 引入容器组件
 import DataSummary from '../components/DataSummary.vue';
 import UserProfileCard from '../components/UserProfileCard.vue';  // 引入用户信息卡片组件
-
+import PiiTestTool from '../components/PiiTestTool.vue';
 import Home from '../views/Home.vue';
 import MeetingData from '../components/DataSummary.vue';
 import Tools from '../components/Tools.vue';

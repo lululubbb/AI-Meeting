@@ -8,30 +8,45 @@
         <p>把握大会脉搏，不错过任何精彩瞬间</p>
       </div>
 
+      <!-- Search Bar -->
+      <div class="search-bar-container">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索议程、嘉宾、主题..."
+          :prefix-icon="Search"
+          clearable
+          size="large"
+        />
+      </div>
+
       <!-- Loading / Error / Empty States -->
       <div v-if="isLoading" class="loading-state">
         <el-icon class="is-loading" :size="30"><Loading /></el-icon>
         <span>加载议程信息中...</span>
       </div>
       <el-alert v-else-if="error" :title="'加载议程信息失败: ' + error" type="error" show-icon :closable="false" class="full-width-alert"/>
-      <el-empty v-else-if="!agendaData || agendaData.length === 0" description="大会议程暂未公布" />
+      <!-- Updated Empty State Logic -->
+      <el-empty v-else-if="!filteredAgendaData || filteredAgendaData.length === 0"
+                :description="searchQuery ? '没有找到匹配的议程项，请尝试其他关键词' : '大会议程暂未公布'" />
 
       <!-- Agenda Tabs -->
+      <!-- Use filteredAgendaData here -->
       <div v-else class="agenda-container">
         <el-tabs v-model="activeDate" class="agenda-tabs">
           <el-tab-pane
-            v-for="(day, dayIndex) in agendaData"
-            :key="`day-${dayIndex}`"
+            v-for="(day, dayIndex) in filteredAgendaData"
+            :key="`day-${day.date}`"  
             :label="day.date"
             :name="day.date"
           >
             <!-- Sessions for the selected day -->
+            <!-- Check filtered sessions within the day -->
             <div v-if="day.sessions && day.sessions.length > 0" class="sessions-list">
               <el-collapse v-model="activeSessionNames" class="session-collapse">
                 <el-collapse-item
                   v-for="(session, sessionIndex) in day.sessions"
-                  :key="`session-${dayIndex}-${sessionIndex}`"
-                  :name="`session-${dayIndex}-${sessionIndex}`"
+                  :key="`session-${day.date}-${sessionIndex}`" 
+                  :name="`session-${day.date}-${sessionIndex}`" 
                   class="agenda-session"
                 >
                   <!-- Custom Title Slot for Session Header -->
@@ -56,14 +71,14 @@
                   <div v-if="session.content && session.content.length > 0" class="agenda-detail-list">
                     <div
                       v-for="(item, itemIndex) in session.content"
-                      :key="`item-${dayIndex}-${sessionIndex}-${itemIndex}`"
+                      :key="`item-${day.date}-${sessionIndex}-${itemIndex}`" 
                       class="agenda-detail-item"
                     >
                       <div class="detail-time">{{ item.time }}</div>
                       <div class="detail-main">
                         <p class="detail-title">{{ item.title }}</p>
                         <div v-if="item.names && item.names.length > 0" class="speaker-info">
-                          <div v-for="(name, nameIndex) in item.names" :key="`speaker-${nameIndex}`" class="speaker-pair">
+                          <div v-for="(name, nameIndex) in item.names" :key="`speaker-${day.date}-${sessionIndex}-${itemIndex}-${nameIndex}`" class="speaker-pair">
                             <span class="speaker-name">
                               <el-icon><User /></el-icon> {{ name }}
                             </span>
@@ -79,7 +94,8 @@
                 </el-collapse-item>
               </el-collapse>
             </div>
-            <el-empty v-else description="今日暂无议程安排" />
+             <!-- Adjusted empty state for the day when filtering might empty it -->
+            <el-empty v-else :description="searchQuery ? '此日期下无匹配议程' : '今日暂无议程安排'" />
           </el-tab-pane>
         </el-tabs>
       </div>
@@ -92,50 +108,106 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { ElTabs, ElTabPane, ElCollapse, ElCollapseItem, ElTag, ElIcon, ElAlert, ElEmpty } from 'element-plus';
-import { Loading, Clock, Location, User } from '@element-plus/icons-vue'; // Removed Picture, added Location, User
+// Import ElInput for search and Search icon
+import { ElTabs, ElTabPane, ElCollapse, ElCollapseItem, ElTag, ElIcon, ElAlert, ElEmpty, ElInput } from 'element-plus';
+// Added Search icon
+import { Loading, Clock, Location, User, Search } from '@element-plus/icons-vue';
 
+// Original data state
 const agendaData = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
 const activeDate = ref(''); // To store the currently selected date tab
 const activeSessionNames = ref([]); // To store the names of expanded collapse items
 
-// No need for display computed property if we show all data
+// --- New Search State ---
+const searchQuery = ref('');
+
+// --- Computed property for filtered agenda ---
+const filteredAgendaData = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  if (!query) {
+    return agendaData.value; // Return original data if search is empty
+  }
+
+  // Filter logic
+  return agendaData.value.map(day => {
+    // Filter sessions within the day
+    const filteredSessions = day.sessions.filter(session => {
+      const sessionTitleMatch = session.title?.toLowerCase().includes(query);
+      const sessionForumMatch = session.forum?.toLowerCase().includes(query);
+      const sessionLocationMatch = session.location?.toLowerCase().includes(query);
+
+      // Check content items if session itself doesn't match yet
+      let contentMatch = false;
+      if (session.content && session.content.length > 0) {
+        contentMatch = session.content.some(item => {
+          const itemTitleMatch = item.title?.toLowerCase().includes(query);
+          const itemNameMatch = item.names?.some(name => name.toLowerCase().includes(query));
+          const itemDescMatch = item.descriptions?.some(desc => desc.toLowerCase().includes(query));
+          return itemTitleMatch || itemNameMatch || itemDescMatch;
+        });
+      }
+
+      return sessionTitleMatch || sessionForumMatch || sessionLocationMatch || contentMatch;
+    });
+
+    // Return the day object only if it has filtered sessions
+    if (filteredSessions.length > 0) {
+      // Return a *new* day object with only the filtered sessions
+      return { ...day, sessions: filteredSessions };
+    }
+    return null; // Indicate this day should be removed
+  }).filter(day => day !== null); // Remove days that returned null (no matching sessions)
+});
+
 
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const response = await fetch('/data/agenda.json'); // <<<---- IMPORTANT: Update this path
+    // IMPORTANT: Ensure '/data/agenda.json' is the correct path to your data file
+    const response = await fetch('/data/agenda.json');
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) { // Allow empty array as valid data
         agendaData.value = data;
-        activeDate.value = data[0].date; // Default active tab to the first day
-        // Optionally auto-expand the first session of the first day
-        // if (data[0].sessions?.length > 0) {
-        //   activeSessionNames.value = ['session-0-0'];
-        // }
-    } else {
-        console.warn("Fetched agenda data is not a valid non-empty array:", data);
-        agendaData.value = [];
-        // Handle case where data might be empty array correctly
-        if (Array.isArray(data) && data.length === 0) {
-          // It's valid but empty, no error needed, UI will show empty state
+        // Set active tab to the first available day (original or filtered)
+        if (data.length > 0) {
+            activeDate.value = data[0].date;
         } else {
-          throw new Error("议程数据格式不正确");
+            activeDate.value = ''; // No date if no data
         }
+        // Reset expanded sessions on data load
+        activeSessionNames.value = [];
+        // Optionally auto-expand the first session if needed after loading
+        // Be cautious if filtering is active immediately, maybe expand based on filtered data
+    } else {
+        console.warn("Fetched agenda data is not a valid array:", data);
+        agendaData.value = [];
+        activeDate.value = '';
+        throw new Error("议程数据格式不正确");
     }
   } catch (e) {
     console.error("无法加载议程数据:", e);
     error.value = e.message;
+    agendaData.value = []; // Ensure data is empty on error
+    activeDate.value = '';
   } finally {
     isLoading.value = false;
   }
 });
+
+// Watch for changes in filtered data to potentially reset activeDate if it becomes invalid
+// (Optional: Good practice but adds complexity, might not be strictly needed if tabs handle missing names gracefully)
+// watch(filteredAgendaData, (newData) => {
+//   if (!newData.some(day => day.date === activeDate.value)) {
+//     activeDate.value = newData.length > 0 ? newData[0].date : '';
+//   }
+// });
+
 </script>
 
 <style scoped>
@@ -143,7 +215,7 @@ onMounted(async () => {
 .agenda-background { background-color:  var(--background-color)}
 .guide-page { padding: 25px 15px; min-height: 100vh; }
 .page-content-container {
-  max-width: 980px; /* Adjusted width for agenda clarity */
+  max-width: 980px;
   margin: 0 auto;
   padding: 30px 35px;
   background-color: #fff;
@@ -153,13 +225,30 @@ onMounted(async () => {
 .agenda-page { padding-bottom: 50px; }
 
 .page-header {
-  margin-bottom: 35px; /* Reduced margin */
+  margin-bottom: 25px; /* Adjusted margin */
   padding-bottom: 15px;
   border-bottom: 1px solid #f0f2f5;
   text-align: center;
 }
 .page-header h1 { font-size: 26px; font-weight: 600; color: #2c3e50; margin: 0 0 8px 0; }
 .page-header p { font-size: 15px; color: #7f8c8d; margin: 0; }
+
+/* --- Search Bar --- */
+.search-bar-container {
+  margin-bottom: 30px; /* Space between search and loading/tabs */
+}
+/* Optional: Style the input further if needed */
+.search-bar-container .el-input {
+  /* Example: Make shadow softer */
+  /* box-shadow: 0 2px 6px rgba(0,0,0,0.05); */
+}
+/* Ensure input icon color is appropriate */
+:deep(.search-bar-container .el-input__prefix .el-icon) {
+  color: #a8abb2; /* Element Plus default grey */
+}
+
+
+/* --- Loading / Error / Empty States --- */
 .loading-state {
   display: flex;
   justify-content: center;
@@ -380,6 +469,7 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .page-content-container { padding: 25px 20px; }
   .guide-page { padding: 20px 10px; }
+  .search-bar-container { margin-bottom: 25px; }
   :deep(.el-tabs__item) { font-size: 14px; padding: 0 18px; height: 42px; }
   :deep(.el-collapse-item__header) { padding: 12px 15px; }
   .session-header { gap: 10px; }
@@ -396,6 +486,8 @@ onMounted(async () => {
 @media (max-width: 480px) {
   .page-header h1 { font-size: 22px; }
   .page-header p { font-size: 14px; }
+  /* Adjust search bar margin for small screens */
+  .search-bar-container { margin-bottom: 20px; }
   :deep(.el-tabs__item) { padding: 0 12px; font-size: 13px; } /* Smaller tabs */
   .session-header { flex-direction: column; align-items: flex-start; } /* Stack header items */
   .session-time-forum { margin-bottom: 8px; }
