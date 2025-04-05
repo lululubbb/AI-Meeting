@@ -396,7 +396,11 @@ function formatDateForComparison(date) {
   .chart-container h3 {
     margin-bottom: 10px;
     font-size: 20px;
-    color: var(--text-color); /* 全局文本颜色 */
+    background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
     text-align: center;
     font-weight: 600;
   }

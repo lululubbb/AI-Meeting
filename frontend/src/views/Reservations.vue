@@ -104,7 +104,7 @@ onMounted(() => {
 .home-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
   background-color: var(--background-color); /* 使用全局背景颜色 */
   overflow: hidden; 

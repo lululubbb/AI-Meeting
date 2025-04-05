@@ -281,7 +281,7 @@ onMounted(async () => {
 /* --- Theme and Global Styles --- */
 .guide-page {
   padding: 24px;
-  background-color: #f8f9fa; /* Light background for the whole page */
+  background-color:  var(--background-color); /* Light background for the whole page */
 }
 
 /* The single main card */
@@ -293,31 +293,29 @@ onMounted(async () => {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer shadow */
   overflow: hidden; /* Ensure children respect border-radius */
 }
-/* Adjust card body padding */
+
 .page-content-card :deep(.el-card__body) {
     padding: 30px 35px; /* Generous padding */
 }
 
 /* Page Header inside the card */
-.page-header {
-    margin-bottom: 35px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eef0f3; /* Lighter separator */
-}
-.page-header h1 {
-    font-size: 24px;
-    font-weight: 600; /* Slightly less bold */
-    color: #2c3e50; /* Darker text color */
-    margin: 0 0 6px 0;
-}
-.page-header p {
-    font-size: 15px;
-    color: #7f8c8d; /* Softer description color */
-    margin: 0;
-}
+.page-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* Centered Header */
+  .page-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
+  .page-header p { font-size: 15px; color: #8492a6; margin: 0; }
+  
 
-.loading-state { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 80px 0; color: #909399; font-size: 16px; }
-.loading-state .el-icon { margin-bottom: 10px; }
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  color: #909399;
+  font-size: 16px;
+}
+.loading-state .el-icon {
+  margin-right: 8px;
+  color: #669bff;
+}
 
 
 /* Sections Container */

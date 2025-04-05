@@ -207,7 +207,12 @@ const navigateTo = (routeName) => {
   font-size: 16px; /* 减小标题字体大小 */
   font-weight: bold;
   margin-bottom: 4px; /* 减小标题下边距 */
-  color: var(--text-color);}
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
+}
 
 .tool-description {
   font-size: 14px; /* 减小描述字体大小 */

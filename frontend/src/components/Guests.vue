@@ -137,26 +137,35 @@ onMounted(async () => {
 <style scoped>
 /* --- 复用和调整全局样式 --- */
 .guide-page {
-  padding: 30px;
+  padding: 20px;
   background-color: #f9fafb;
 }
 .page-content-container {
-  max-width: 1200px; /* 嘉宾页可以宽一点 */
+  max-width: 1350px; 
   margin: 0 auto;
-  padding: 30px 40px;
+  padding: 20px 30px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
-.page-header {
-    margin-bottom: 35px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #f0f2f5;
-}
+
+.page-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* Centered Header */
 .page-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
 .page-header p { font-size: 15px; color: #8492a6; margin: 0; }
-.loading-state { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 80px 0; color: #909399; font-size: 16px; }
-.loading-state .el-icon { margin-bottom: 10px; }
+  
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  color: #909399;
+  font-size: 16px;
+}
+.loading-state .el-icon {
+  margin-right: 8px;
+  color: #669bff;
+}
 .full-width-alert { margin-bottom: 20px; }
 
 /* --- 嘉宾页面特定样式 --- */
@@ -206,8 +215,7 @@ onMounted(async () => {
 /* 嘉宾头像 */
 .guest-avatar {
     width: 100%;
-    /* aspect-ratio: 1 / 1; */ /* 强制1:1比例, 如果需要的话 */
-    height: 180px; /* 固定高度，或者使用 aspect-ratio */
+    height: 200px; /* 固定高度，或者使用 aspect-ratio */
     display: block;
     background-color: #f5f7fa; /* 头像加载时背景 */
 }
@@ -227,7 +235,7 @@ onMounted(async () => {
 
 /* 嘉宾信息 */
 .guest-info {
-    padding: 15px;
+    padding: 10px;
     text-align: center;
     flex-grow: 1; /* 使信息区域填满剩余空间 */
     display: flex;
@@ -245,15 +253,14 @@ onMounted(async () => {
     text-overflow: ellipsis;
 }
 .guest-description {
-    font-size: 13px;
+    font-size: 14px;
     color: #8492a6; /* 描述文字颜色 */
     line-height: 1.5;
-    margin: 0 0 10px 0;
-    flex-grow: 1; /* 使描述优先填充空间 */
-    /* 限制描述行数 */
+    margin: 0 ;
+    flex-grow: 1; 
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3; /* 最多显示 2 行 */
+    -webkit-line-clamp: 4; /* 最多显示 2 行 */
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: calc(1.5em * 2); /* 保证至少两行的高度 */

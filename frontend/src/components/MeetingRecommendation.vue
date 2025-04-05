@@ -2,7 +2,7 @@
     <el-card class="recommendation-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>🌟 会议日程推荐</span>
+          <span>会议日程推荐</span>
           <el-tooltip content="根据您的历史会议记录推荐可能感兴趣的未开始议程" placement="top">
             <el-icon><InfoFilled /></el-icon>
           </el-tooltip>
@@ -240,7 +240,7 @@ watch(() => props.upcomingAgenda, (newVal) => {
   <style scoped>
   .recommendation-card {
     margin-top: 30px;
-    border: 1px solid #e4e7ed;
+    border: 1px solid #8b8b8b;
     margin-bottom: 20px;
     min-height: 350px;
   }
@@ -250,10 +250,15 @@ watch(() => props.upcomingAgenda, (newVal) => {
     justify-content: space-between;
     align-items: center;
     font-weight: bold;
+    background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
   }
   
   .card-header .el-icon {
-    color: #909399;
+    color: #424242;
     cursor: help;
   }
   .loading-state {
@@ -267,7 +272,7 @@ watch(() => props.upcomingAgenda, (newVal) => {
   }
   
   .recommendation-item {
-    border: 1px solid #f0f2f5;
+    border: 1px solid #cdcdcd;
       transition: box-shadow 0.3s ease;
   }
 

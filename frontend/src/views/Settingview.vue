@@ -79,11 +79,16 @@ const handleNotificationsChange = (value) => {
   margin: 0 auto;
   padding: 20px;
   line-height: 1.6;
+  min-height:100vh ;
 }
 
 .setting-title {
   text-align: center;
-  color: var(--text-color);
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   margin-bottom: 20px;
 }
 
