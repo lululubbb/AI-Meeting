@@ -394,6 +394,7 @@ const updateTodo =async (todo) => {
   margin: 10px; 
   margin-left: 5px;
   max-width: 100%;
+  min-height: 100vh;
   padding: 5px;
   margin-top: 30px;
   scrollbar-width: none; /* Firefox */

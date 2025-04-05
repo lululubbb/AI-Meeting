@@ -200,16 +200,23 @@ const filteredSpeakers = computed(() => {
 .guide-page {
   padding: 20px;
   background-color: #f9fafb;
+  min-height: 100vh;
 }
 .page-content-container {
   max-width: 1350px;
   margin: 0 auto;
-  padding: 20px 30px 40px 30px; /* 增加底部 padding */
+  padding: 20px 30px; /* 增加底部 padding */
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
-
+h1{
+  background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;
+}
 .page-header { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* 调整间距 */
 .page-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
 .page-header p { font-size: 15px; color: #8492a6; margin: 0; }

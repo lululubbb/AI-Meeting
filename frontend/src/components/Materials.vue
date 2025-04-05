@@ -15,8 +15,8 @@
       </template>
 
       <div v-if="isLoading" class="loading-container">
-        <el-icon :size="30"><Loading /></el-icon>
-        <p>加载会议资料中...</p>
+        <el-icon style="width: 3em; height: 3em;"><Loading /></el-icon>
+        <p>加载中...</p>
       </div>
 
             <div v-else-if="currentFiles.length > 0" class="list-container">
@@ -158,6 +158,7 @@ onMounted(() => {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
 }
 
 /* 卡片样式 */
@@ -166,9 +167,13 @@ onMounted(() => {
 }
 
 /* 卡片头部 */
-.card-header{ margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #f0f2f5; text-align: center; } /* Centered Header */
-  .card-header h1 { font-size: 26px; font-weight: 600; color: #1f2d3d; margin: 0 0 8px 0; }
-  .card-header p { font-size: 15px; color: #8492a6; margin: 0; }
+.card-header {
+  border-bottom: 1px solid #ebeef5;
+  padding: 0px 20px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
 
 .card-title {
   font-size: 22px;
@@ -191,10 +196,6 @@ onMounted(() => {
   align-items: center; /* 垂直居中 */
 }
 
-.loading-container .el-icon {
-  margin-right: 8px;
-  color: #669bff;
-}
 /* 列表容器 */
 .list-container {
     padding: 10px;

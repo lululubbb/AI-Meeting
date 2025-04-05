@@ -381,7 +381,7 @@ function formatDateForComparison(date) {
     border-radius: 8px;
     padding: 15px;
     background-color: var(--background-color);  /* 全局背景 */
-    height: 100%;
+    min-height: 100vh;
     margin:5px;
   }
   

@@ -163,6 +163,7 @@ export default {
   align-items: center;
   gap: 40px; 
   padding: 10px;
+  min-height: 100vh;
   margin:5px;
   margin-top: 10px;
   scrollbar-width: none; /* Firefox */
