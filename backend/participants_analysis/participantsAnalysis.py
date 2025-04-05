@@ -4,24 +4,46 @@ from sentence_transformers import SentenceTransformer, util
 from flask_cors import CORS
 import os 
 import torch
-# --- 新增：导入 PII 处理逻辑 ---
+import sys
+import warnings
+import traceback
+from typing import Dict, Optional, List, Tuple, Any
+# --- 导入 PII 处理逻辑 ---
 from pii_logic import load_ner_pipeline, detect_and_desensitize_pii_enhanced
-
+from content_safety import load_detoxify_model, check_content_safety
+from detoxify import Detoxify
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# --- 新增：应用启动时加载 NER 模型 ---
+# --- 模型加载 ---
+print("\n[Main App] === 开始加载模型 ===")
+
+# 1. 加载 PII NER 模型
 print("[Main App] 尝试在应用启动时加载 PII NER 模型...")
-# 注意：模型文件默认会缓存到 ~/.cache/huggingface/hub
-# 如果需要指定缓存目录，可以设置环境变量 TRANSFORMERS_CACHE
-# os.environ['TRANSFORMERS_CACHE'] = '/path/to/your/cache'
-ner_pipeline_instance, loaded_model_name = load_ner_pipeline()
+# load_ner_pipeline 来自 pii_logic.py
+ner_pipeline_instance, loaded_ner_model_name = load_ner_pipeline()
 if ner_pipeline_instance:
-    print(f"[Main App] PII NER 模型 '{loaded_model_name}' 加载成功。")
+    print(f"[Main App] PII NER 模型 '{loaded_ner_model_name}' 加载成功。")
 else:
     print("[Main App] 警告：PII NER 模型加载失败。PII 过滤功能将主要依赖正则表达式。")
 
+# 2. 加载 Detoxify 模型
+print("[Main App] 尝试在应用启动时加载 Detoxify 模型...")
+DETOXIFY_MODEL_NAME = 'original'
+DEVICE = 'cuda' if torch and torch.cuda.is_available() else 'cpu'
+# load_detoxify_model 来自 content_safety.py
+detoxify_model_instance: Optional[Detoxify] = load_detoxify_model() # 调用导入的函数
+if detoxify_model_instance:
+    print(f"[Main App] Detoxify 模型 '{DETOXIFY_MODEL_NAME}' 加载成功 (Device: {DEVICE})。")
+else:
+    print("[Main App] 警告：Detoxify 模型加载失败或未安装。内容安全检查将不可用或默认通过。")
 
+# Detoxify 阈值 (保持不变)
+DETOXIFY_THRESHOLDS: Dict[str, float] = {
+    'toxicity': 0.7, 'severe_toxicity': 0.5, 'obscene': 0.8,
+    'threat': 0.6, 'insult': 0.7, 'identity_hate': 0.6
+}
+print("[Main App] === 模型加载阶段结束 ===\n")
 # 1. 行为参与度计算（保持不变）
 def calculate_behavior_score(camera_on_times, camera_duration, audio_on_times, audio_duration, share_on_times,
                              share_duration, message_count, total_duration):
@@ -182,5 +204,25 @@ def pii_filter_route():
         # import traceback; traceback.print_exc() # 打印详细堆栈信息以供调试
         return jsonify({"error": "处理 PII 过滤请求时发生内部服务器错误。"}), 500
 
+
+# === 内容安全检查 API 路由 (保持不变) ===
+@app.route('/api/check-safety', methods=['POST'])
+def check_safety_route():
+    print('\n[Main App] 收到 /api/check-safety 请求')
+    try:
+        data = request.get_json(); input_text = data.get('text')
+        if not data or input_text is None or not isinstance(input_text, str): return jsonify({"error": '请求体必须是包含 "text" 字符串的 JSON。'}), 400
+        if not detoxify_model_instance:
+            print("[Main App] 警告: Detoxify 模型未加载，默认视为安全。")
+            return jsonify({"isSafe": True, "message": "安全检查服务不可用", "scores": None, "reasons": None})
+        print(f"[Main App] 开始检查文本安全性: '{input_text[:100]}...'")
+        is_safe, scores, reasons = check_content_safety(input_text, detoxify_model_instance) # 调用导入的函数
+        print(f"[Main App] 安全检查完成。")
+        response_data = { 'isSafe': is_safe, 'scores': scores, 'reasons': reasons }
+        print(f'[Main App] 安全检查响应已发送: isSafe={is_safe}')
+        return jsonify(response_data)
+    except Exception as e:
+        print(f"[Main App] 处理 /api/check-safety 时发生严重错误: {e}"); import traceback; traceback.print_exc()
+        return jsonify({"error": "处理内容安全检查请求时发生内部服务器错误。", "isSafe": False}), 500
 if __name__ == '__main__':
     app.run(debug=True)
