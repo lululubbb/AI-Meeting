@@ -16,6 +16,7 @@
 </template>
 
 <script>
+import './components/pdf-export.css';
 import { computed, ref, provide, onMounted, watchEffect,watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AIFloatingChat from './components/AIFloatingChat.vue';

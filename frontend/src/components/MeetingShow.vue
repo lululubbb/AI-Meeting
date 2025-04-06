@@ -16,6 +16,7 @@
       <div class="section-header">
         <h2>会议总览</h2>
       </div>
+      
       <div class="timeline-container">
         <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
           <span class="emoji">{{ segment.emoji }}</span>
@@ -29,6 +30,17 @@
     <div class="echart-container">
       <EChartsBar ref="echart" :chartData="chartData" v-if="chartData"/>
     </div>
+    <ExportButtons 
+      :transcriptionData="transcriptionData"
+      :processedData="processedData"
+      :optimizationData="optimizationData"
+      :summaries="summaries"
+      :keywords="keywords"
+      :overallSummary="overallSummary"
+      :todosAndExtensions="todosAndExtensions"
+      :wordCloudData="wordCloudData"
+      :meetingTitle="meetingTitle"
+    />
     <div v-if="isLoading" class="loading-indicator">
       <div class="spinner"></div>
       <p>加载中...</p>
@@ -118,6 +130,7 @@
         <div class="section-header">
           <h2>会议整理</h2>
         </div>
+
         <!-- 会议整体摘要卡片 -->
         <div v-if="overallSummary" class="overall-summary-card">
           <h3>会议整体摘要</h3>
@@ -177,6 +190,7 @@ import { marked } from 'marked'; // 导入 marked
 import WordCloud from './WordCloud.vue'; // 导入词云组件
 import backgroundImageSrc from '@/assets/intro1.png'; // 导入图片
 // 添加活动标签状态
+import ExportButtons from './ExportButton.vue';
 const activeTab = ref('overview');
 
 // 设置活动标签的方法
@@ -262,10 +276,10 @@ const wordCloudLoading = ref(false);
 
 const echart = ref(null);
 
-// 监听窗口大小变化
+// 修改 MeetingShow.vue 中的 handleResize 函数
 const handleResize = () => {
-  if (echart.value) {
-    echart.value.resize(); // 调用 ECharts 的 resize 方法
+  if (echart.value && typeof echart.value.resize === 'function') {
+    echart.value.resize(); // 只有当 resize 是函数时才调用
   }
 };
 
@@ -1033,7 +1047,7 @@ onUnmounted(() => {
   padding: 30px;
   background-color: var(--background-color);
   color: var(--text-color);
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   line-height: 1.6;
 }
@@ -1689,7 +1703,8 @@ h4 {
 
 .truncated {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4; /* 增加行数，原为3 */
+  max-height: 6.4em; /* 增加高度 */
   line-clamp: 3; /* 添加标准属性 */
   -webkit-box-orient: vertical;
   overflow: hidden;
