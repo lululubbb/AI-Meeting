@@ -1,4 +1,4 @@
-`<!-- src/components/AIFloatingChat.vue -->
+<!-- src/components/AIFloatingChat.vue -->
 <template>
   <div>
     <button class="ai-float-button"
@@ -86,14 +86,25 @@
         </div>
 
         <!-- 输入框 -->
-        <div class="chat-input">
-          <input
-            v-model="userInput"
-            @keyup.enter="sendMessage"
-            :placeholder="fileToAnalyze ? '请输入关于文档的问题...' : '输入您的问题...'"
-          />
-          <button @click="sendMessage">发送</button>
-        </div>
+        <!-- 输入框 -->
+<!-- 输入框 -->
+<div class="chat-input">
+  <input
+    v-model="userInput"
+    @keyup.enter="sendMessage"
+    :placeholder="fileToAnalyze ? '请输入关于文档的问题...' : (isRecording ? '正在录音...' : '输入您的问题...')"
+  />
+  <button @click="sendMessage">发送</button>
+  <!-- 新增语音输入按钮 -->
+  <button 
+    @click="toggleVoiceInput" 
+    class="voice-button" 
+    :class="{ recording: isRecording }"
+  >
+    <img v-if="isRecording" src="@/assets/audio_off.png" alt="停止录音" />
+    <img v-else src="@/assets/audio_on.png" alt="语音输入" />
+  </button>
+</div>
       </div>
     </el-drawer>
   </div>
@@ -160,6 +171,12 @@ export default {
 },
 data() {
     return {
+      isRecording: false,        // 是否正在录音
+        audioContext: null,        // 音频上下文
+        mediaStream: null,         // 媒体流
+        webSocket: null,           // WebSocket 连接
+        recordingTimerId: null, // 新增：用于存储录音超时定时器 ID
+        
          // 新增数据项
       showWelcome: true,
       quickQuestions: [
@@ -192,8 +209,198 @@ computed: {
   mounted() {
   },
   beforeUnmount() {
+        // 确保停止录音
+        if (this.isRecording) {
+        this.stopRecording();
+    }
   },
   methods: {
+
+ // 切换语音输入
+ async toggleVoiceInput() {
+        if (this.isRecording) {
+            await this.stopRecording();
+        } else {
+            await this.startRecording();
+        }
+    },
+    
+    // 开始录音
+    async startRecording() {
+        try {
+            // 请求麦克风权限
+            this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // 初始化 WebSocket 连接
+            const user = this.$store.getters.getUser;
+            const userId = user.uid;
+            const userName = this.getUserName();
+            
+            // 连接到 WebSocket 服务器
+            this.webSocket = new WebSocket(`ws://localhost:4399?userId=${userId}&userName=${userName}`);
+            
+            this.webSocket.onopen = () => {
+                console.log('WebSocket 连接已建立');
+                this.isRecording = true;
+                this.setupAudioProcessing();
+
+                
+                // --- 新增：启动 10 秒自动停止定时器 ---
+                if (this.recordingTimerId) { // 如果已有定时器，先清除
+                    clearTimeout(this.recordingTimerId);
+                }
+                this.recordingTimerId = setTimeout(() => {
+                    // console.log('录音达到10秒，自动停止。');
+                    // showSnackBar('录音已达10秒上限，自动停止'); // 提示用户
+                    this.stopRecording(); // 调用停止录音方法
+                }, 10000); // 10000 毫秒 = 10 秒
+                // --- 结束新增部分 ---
+
+                
+
+
+                
+                // 显示录音状态提示
+                showSnackBar('开始语音输入');
+            };
+            
+            this.webSocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('收到识别结果:', data);
+                    
+                    if (data.userId === userId) {
+                        if (data.type === 'interim' || data.type === 'final') {
+                            // 更新输入框
+                            this.userInput = data.text;
+                        }
+                    }
+                } catch (error) {
+                    console.error('解析 WebSocket 消息失败:', error);
+                }
+            };
+            
+            this.webSocket.onerror = (error) => {
+                console.error('WebSocket 错误:', error);
+                showSnackBar('语音识别服务连接错误');
+                this.stopRecording(); // 出错时也要停止
+            };
+            
+            this.webSocket.onclose = () => {
+                console.log('WebSocket 连接已关闭');
+                // --- 修改：确保关闭时清除定时器 ---
+                if (this.recordingTimerId) {
+                   clearTimeout(this.recordingTimerId);
+                   this.recordingTimerId = null;
+                }
+                this.isRecording = false; // 确保状态更新
+            };
+            
+          } catch (error) {
+            console.error('启动语音输入失败:', error);
+            showSnackBar('无法访问麦克风');
+             // --- 新增：启动失败也要确保定时器状态正确 ---
+             if (this.recordingTimerId) {
+                clearTimeout(this.recordingTimerId);
+                this.recordingTimerId = null;
+             }
+        }
+    },
+    
+    // 设置音频处理
+    setupAudioProcessing() {
+        try {
+            // 创建音频上下文
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                sampleRate: 16000 // 使用 16kHz 采样率，与服务端匹配
+            });
+            
+            // 创建音频源
+            const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+            
+            // 创建脚本处理器
+            const processor = this.audioContext.createScriptProcessor(1024, 1, 1);
+            
+            // 处理音频数据
+            processor.onaudioprocess = (e) => {
+                if (this.isRecording && this.webSocket && this.webSocket.readyState === WebSocket.OPEN) {
+                    // 获取音频数据
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    
+                    // 转换为16bit PCM数据
+                    const buffer = new Int16Array(inputData.length);
+                    
+                    // 转换浮点数据为16位整数
+                    for (let i = 0; i < inputData.length; i++) {
+                        buffer[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+                    }
+                    
+                    // 发送到 WebSocket
+                    this.webSocket.send(buffer.buffer);
+                }
+            };
+            
+            // 连接节点
+            source.connect(processor);
+            processor.connect(this.audioContext.destination);
+            
+            // 保存处理器引用
+            this.audioProcessor = processor;
+        } catch (error) {
+            console.error('设置音频处理失败:', error);
+        }
+    },
+    
+    // 停止录音
+    async stopRecording() {
+        // --- 新增：在停止操作开始时就清除定时器 ---
+        if (this.recordingTimerId) {
+            clearTimeout(this.recordingTimerId);
+            this.recordingTimerId = null;
+            console.log('手动停止或出错，清除录音定时器。');
+        }
+        // --- 结束新增部分 ---
+
+        // 关闭麦克风
+        if (this.mediaStream) {
+            this.mediaStream.getTracks().forEach(track => track.stop());
+            this.mediaStream = null;
+        }
+
+        // 关闭音频上下文
+        if (this.audioContext) {
+            if (this.audioProcessor) {
+                this.audioProcessor.disconnect();
+                this.audioProcessor = null;
+            }
+            // 确保 audioContext 存在且状态不是 'closed'
+            if (this.audioContext.state !== 'closed') {
+              try {
+                await this.audioContext.close();
+              } catch(e) {
+                 console.warn("Error closing AudioContext: ", e);
+              }
+            }
+            this.audioContext = null;
+        }
+
+        // 关闭 WebSocket
+        // 检查 WebSocket 状态，避免重复关闭或在错误状态下关闭
+        if (this.webSocket && this.webSocket.readyState === WebSocket.OPEN) {
+           try {
+              this.webSocket.close();
+           } catch (e) {
+               console.warn("Error closing WebSocket: ", e);
+           }
+        }
+        this.webSocket = null; // 确保引用被清除
+
+        // 放在最后更新状态
+        if (this.isRecording) { // 只有在确实是录音状态时才显示停止提示
+            showSnackBar('语音输入已停止');
+        }
+        this.isRecording = false;
+    },
     // 切换AI聊天窗口显示
     toggleChat() {
       this.isChatOpen = !this.isChatOpen;
@@ -1283,6 +1490,43 @@ async askAiQuestion(question) {
     margin: 0 4px;
   }
 }
+/* 语音输入按钮 */
+.voice-button {
+  background-color: #f3f3f3;
+  color: #434040;
+  border: solid 1px #ecebeb;
+  border-radius: 12px;
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-left: 5px;
+}
+
+.voice-button:hover {
+  background-color: #e6e6e6;
+}
+
+.voice-button.recording {
+  background-color: #ff6b6b;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-button img {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
 </style>
-`
