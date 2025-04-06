@@ -41,124 +41,75 @@
 
     <!-- 地图上的浮动按钮 (控制百度地图) -->
     <div class="map-float-buttons">
-       <button @click="resetMapRotation" class="float-btn reset-north-btn" title="恢复指北">
-          <div class="float-btn-content">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 2L6 22l6-4 6 4z"/></svg>
-             <span class="float-btn-label">指北</span>
-          </div>
-       </button>
-       <button @click="toggleFullScreen" class="float-btn fullscreen-btn" :title="isFullscreen ? '退出全屏' : '全屏'">
-          <div class="float-btn-content">
-             <svg v-if="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-             <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
-             <span class="float-btn-label">{{ isFullscreen ? '退出' : '全屏' }}</span>
-          </div>
-       </button>
-       <button @click="toggleMapType" class="float-btn map-type-btn" title="切换地图类型">
-          <div class="float-btn-content">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2l-.01-12zM11 6h9v5h-9V6zm-2 0v5H4V6h5zm0 7v5H4v-5h5zm2 0h9v5h-9v-5z"/></svg>
-             <span class="float-btn-label">图层</span>
-          </div>
-       </button>
-       <button @click="toggleTraffic" class="float-btn traffic-btn" :class="{ active: isTrafficLayerOn }" title="实时路况">
-          <div class="float-btn-content">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M18 4h-2V2h-4v2H8V2H6v2H4v18h16V4h-2zM6 8h2v2H6V8zm4 0h4v2h-4V8zm6 0h2v2h-2V8zM6 12h2v2H6v-2zm4 0h4v2h-4v-2zm6 0h2v2h-2v-2zm-6 4h4v2h-4v-2z"/></svg>
-             <span class="float-btn-label">路况</span>
-          </div>
-       </button>
-       <button @click="panToCurrentLocation" class="float-btn locate-btn" title="回到当前位置" :disabled="isLocating || !userLocation?.point || !mapInstance">
-          <div class="float-btn-content">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
-             <span class="float-btn-label">定位</span>
-          </div>
-       </button>
+       <button @click="resetMapRotation" class="float-btn reset-north-btn" title="恢复指北"><div class="float-btn-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 2L6 22l6-4 6 4z"/></svg><span class="float-btn-label">指北</span></div></button>
+       <button @click="toggleFullScreen" class="float-btn fullscreen-btn" :title="isFullscreen ? '退出全屏' : '全屏'"><div class="float-btn-content"><svg v-if="!isFullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg><svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg><span class="float-btn-label">{{ isFullscreen ? '退出' : '全屏' }}</span></div></button>
+       <button @click="toggleMapType" class="float-btn map-type-btn" title="切换地图类型"><div class="float-btn-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2l-.01-12zM11 6h9v5h-9V6zm-2 0v5H4V6h5zm0 7v5H4v-5h5zm2 0h9v5h-9v-5z"/></svg><span class="float-btn-label">图层</span></div></button>
+       <button @click="toggleTraffic" class="float-btn traffic-btn" :class="{ active: isTrafficLayerOn }" title="实时路况"><div class="float-btn-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M18 4h-2V2h-4v2H8V2H6v2H4v18h16V4h-2zM6 8h2v2H6V8zm4 0h4v2h-4V8zm6 0h2v2h-2V8zM6 12h2v2H6v-2zm4 0h4v2h-4v-2zm6 0h2v2h-2v-2zm-6 4h4v2h-4v-2z"/></svg><span class="float-btn-label">路况</span></div></button>
+       <button @click="panToCurrentLocation" class="float-btn locate-btn" title="回到当前位置" :disabled="isLocating || !userLocation?.point || !mapInstance"><div class="float-btn-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg><span class="float-btn-label">定位</span></div></button>
     </div>
 
     <!-- 底部结果面板 (显示百度规划结果) -->
     <div class="bottom-sheet" :class="{ 'sheet-visible': isResultPanelVisible }">
-      <div class="sheet-header" @click="toggleResultPanel">
-         <span class="drag-handle"></span>
-         <button class="close-sheet-btn" @click.stop="toggleResultPanel" v-if="isResultPanelVisible">×</button>
-      </div>
+      <div class="sheet-header" @click="toggleResultPanel"><span class="drag-handle"></span><button class="close-sheet-btn" @click.stop="toggleResultPanel" v-if="isResultPanelVisible">×</button></div>
       <div class="sheet-content">
         <!-- 加载、错误、空状态 -->
-        <div v-if="isLoadingRoute && !routeResults?.length" class="sheet-loading">
-          <div class="spinner"></div>
-          路线规划中...
-        </div>
-        <div v-if="routeError" class="sheet-error">
-          ⚠️ {{ routeError }}
-        </div>
-        <div v-if="!isLoadingRoute && !routeResults?.length && !routeError && routeSearched" class="sheet-empty">
-          未找到合适的路线。
-        </div>
+        <div v-if="isLoadingRoute && !routeResults?.length" class="sheet-loading"><div class="spinner"></div>路线规划中...</div>
+        <div v-if="routeError" class="sheet-error">⚠️ {{ routeError }}</div>
+        <div v-if="!isLoadingRoute && !routeResults?.length && !routeError && routeSearched" class="sheet-empty">未找到合适的路线。</div>
 
         <!-- 路线结果 -->
         <div v-if="routeResults && routeResults.length > 0" class="route-results-container">
           <!-- 方案切换 -->
           <div v-if="routeResults.length > 1" class="plan-tabs-mobile">
-             <button v-for="(route, index) in routeResults" :key="'plan-mob-' + index" :class="{ active: selectedPlanIndex === index }" @click="selectPlan(index)">
-               方案 {{ index + 1 }}
-               <span v-if="route.duration !== null && route.duration !== undefined"> ({{ formatDurationForTab(route.duration) }})</span>
-             </button>
+             <button v-for="(route, index) in routeResults" :key="'plan-mob-' + index" :class="{ active: selectedPlanIndex === index }" @click="selectPlan(index)">方案 {{ index + 1 }}<span v-if="route.duration !== null && route.duration !== undefined"> ({{ formatDurationForTab(route.duration) }})</span></button>
           </div>
           <!-- 概要 -->
           <div v-if="selectedRouteSummary" class="route-summary-mobile">
-             <div v-if="isLoadingRoute && routeResults?.length > 0" class="summary-loading">
-                <span class="spinner small"></span> 更新概要...
-             </div>
-             <div v-else>
-                <p>
-                   <span>总览: {{ selectedRouteSummary.duration }}</span>
-                   <span> / {{ selectedRouteSummary.distance }}</span>
-                   <span v-if="selectedRouteSummary.costEstimate" class="cost-estimate">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style="vertical-align: -2px; margin-right: 3px;"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.75-2.7 1.75-2.11 0-3.14-.91-3.24-2.4H5.23c.16 2.28 1.65 3.99 4.27 4.41V21h3v-2.15c2.13-.46 3.5-1.78 3.5-3.97 0-2.02-1.31-3.18-4.2-3.98z"/></svg>
-                       {{ selectedRouteSummary.costEstimate }}
-                   </span>
-                </p>
-                <p v-if="transportMode === 'transit' && transitRouteDescription" class="transit-desc">
-                   {{ transitRouteDescription }}
-                </p>
-             </div>
+             <div v-if="isLoadingRoute && routeResults?.length > 0" class="summary-loading"><span class="spinner small"></span> 更新概要...</div>
+             <div v-else><p><span>总览: {{ selectedRouteSummary.duration }}</span><span> / {{ selectedRouteSummary.distance }}</span><span v-if="selectedRouteSummary.costEstimate" class="cost-estimate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style="vertical-align: -2px; margin-right: 3px;"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.75-2.7 1.75-2.11 0-3.14-.91-3.24-2.4H5.23c.16 2.28 1.65 3.99 4.27 4.41V21h3v-2.15c2.13-.46 3.5-1.78 3.5-3.97 0-2.02-1.31-3.18-4.2-3.98z"/></svg> {{ selectedRouteSummary.costEstimate }}</span></p><p v-if="transportMode === 'transit' && transitRouteDescription" class="transit-desc">{{ transitRouteDescription }}</p></div>
           </div>
 
-           <!-- 【修改】导航按钮调用高德地图 -->
+           <!-- 【【【修改：导航按钮触发选择】】】 -->
            <div class="navigation-controls">
-               <button @click="startAmapNavigation" class="start-nav-btn" :disabled="!startAddress || !endAddress">
+               <!-- 点击此按钮将弹出地图选择模态框 -->
+               <button @click="prepareAndShowMapChoice" class="start-nav-btn" :disabled="!startAddress || !endAddress">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-                  开始导航 (高德)
+                  开始导航
                </button>
            </div>
 
           <!-- 详细步骤 (百度规划结果) -->
-          <div v-if="isLoadingRoute && routeResults?.length > 0" class="steps-loading">
-             <span class="spinner small"></span> 更新步骤...
-          </div>
+          <div v-if="isLoadingRoute && routeResults?.length > 0" class="steps-loading"><span class="spinner small"></span> 更新步骤...</div>
           <div v-else class="route-steps-mobile">
-            <ul v-if="routeSteps.length > 0">
-              <li v-for="(step, index) in routeSteps" :key="'step-mob-' + index" @click="highlightStepOnMap(step)" tabindex="0">
-                <span class="step-icon" v-html="getStepIcon(step)"></span>
-                <div class="step-details">
-                  <span class="step-instruction" v-html="step.rawInstruction || step.instruction"></span>
-                   <span class="step-meta"> ({{ step.formattedDistance }}{{ step.formattedDuration && step.formattedDuration !== '0秒' ? ', ' + step.formattedDuration : '' }})</span>
-                </div>
-              </li>
-            </ul>
+             <ul v-if="routeSteps.length > 0"><li v-for="(step, index) in routeSteps" :key="'step-mob-' + index" @click="highlightStepOnMap(step)" tabindex="0"><span class="step-icon" v-html="getStepIcon(step)"></span><div class="step-details"><span class="step-instruction" v-html="step.rawInstruction || step.instruction"></span><span class="step-meta"> ({{ step.formattedDistance }}{{ step.formattedDuration && step.formattedDuration !== '0秒' ? ', ' + step.formattedDuration : '' }})</span></div></li></ul>
              <p v-else-if="!isLoadingRoute" class="no-steps">当前方案无详细步骤信息。</p>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- 【【【新增：地图选择模态框】】】 -->
+    <div v-if="showMapChoiceModal" class="map-choice-modal-overlay" @click.self="closeMapChoiceModal"> <!-- 点击遮罩层关闭 -->
+      <div class="map-choice-modal-content">
+        <h3>选择导航应用</h3>
+        <div class="map-choice-buttons">
+          <button @click="selectAmap" class="map-choice-btn amap">
+            <img src="https://webapi.amap.com/theme/v1.3/images/autonavi.png" alt="高德地图 Logo" width="24" height="24"/>
+            <span>高德地图</span>
+          </button>
+          <button @click="selectTencent" class="map-choice-btn tencent">
+             <!-- 尝试加载腾讯地图 favicon，如果失败，则不显示图标 -->
+             <img src="https://map.qq.com/favicon.ico" alt="腾讯地图 Logo" width="24" height="24" @error="($event.target).style.display='none'"/>
+             <span>腾讯地图</span>
+          </button>
+        </div>
+        <button @click="closeMapChoiceModal" class="map-choice-close-btn">取消</button>
+      </div>
+    </div>
+
     <!-- SDK 加载提示 & 定位加载提示 -->
-    <div v-if="!isMapSdkLoaded" class="sdk-loading-overlay">
-      <div class="spinner"></div>
-      <div>正在加载地图组件...</div>
-    </div>
-    <div v-if="isLocating" class="locating-overlay">
-      <div class="spinner"></div>
-      <div>正在定位...</div>
-    </div>
+    <div v-if="!isMapSdkLoaded" class="sdk-loading-overlay"><div class="spinner"></div><div>正在加载百度地图组件...</div></div>
+    <div v-if="isLocating" class="locating-overlay"><div class="spinner"></div><div>正在定位(百度)...</div></div>
   </div>
 </template>
 
@@ -181,6 +132,15 @@ const isResultPanelVisible = ref(false);
 const routeSearched = ref(false);
 const currentMapType = ref('BMAP_NORMAL_MAP');
 const isFullscreen = ref(false);
+
+// --- 地图选择模态框状态 ---
+const showMapChoiceModal = ref(false);
+// --- 临时存储准备好的导航参数 (GCJ02坐标和实际名称) ---
+const preparedOriginGcj02 = ref(null);
+const preparedDestinationGcj02 = ref(null);
+const preparedOriginName = ref('');
+const preparedDestinationName = ref('');
+
 
 // --- 输入框图标 SVG ---
 const startPointSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 11.5A2.5 2.5 0 0 1 14.5 14 2.5 2.5 0 0 1 12 16.5 2.5 2.5 0 0 1 9.5 14 2.5 2.5 0 0 1 12 11.5ZM12 2C17.523 2 22 6.477 22 12s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/></svg>`;
@@ -337,7 +297,6 @@ function setupAutocompletes() {
         try {
           mapUtils.setupAutocomplete('start-input-mobile', (address) => {
               startAddress.value = address; // 更新本地 v-model
-              // store.commit('map/SET_START_ADDRESS', address); // watch 会同步
               nextTick(() => endInputRef.value?.focus()); // 聚焦终点输入框
           }, currentMap); // 使用百度地图实例
         } catch(e) { console.error("设置起点 Autocomplete 失败:", e); }
@@ -348,7 +307,6 @@ function setupAutocompletes() {
         try {
           mapUtils.setupAutocomplete('end-input-mobile', (address) => {
               endAddress.value = address; // 更新本地 v-model
-              // store.commit('map/SET_END_ADDRESS', address); // watch 会同步
               nextTick(() => handlePlanRoute()); // 选中后立即进行内部百度路线规划
               endInputRef.value?.blur(); // 收起键盘
           }, currentMap); // 使用百度地图实例
@@ -361,6 +319,10 @@ function inputFocus(inputType) {
      // 输入框获得焦点时，隐藏结果面板
      if (isResultPanelVisible.value) {
          isResultPanelVisible.value = false;
+     }
+     // 同时关闭地图选择模态框
+     if (showMapChoiceModal.value) {
+         closeMapChoiceModal();
      }
 }
 
@@ -484,15 +446,11 @@ function selectPlan(index) {
                console.error("调用百度 planner.selectPlan 出错:", e);
                // 尝试手动调整视野作为后备
                const newRoute = store.state.map.routeResults?.[index];
-               if (newRoute?.steps?.length > 0) {
-                   const pointsToFit = newRoute.steps.flatMap(step => step.pathPoints || []).filter(p => p); // 需要 BD09LL points
+               if (newRoute?.steps?.length > 0 && window.BMapGL) {
+                   const pointsToFit = newRoute.steps.flatMap(step => step.pathPoints || []).filter(p => p);
                    if (pointsToFit.length > 0 && mapInstance.value) {
-                       // 确保 pointsToFit 包含 BMapGL.Point 对象，如果不是需要转换
-                       // 如果 extractStepsFromJsPlan 返回的是 {lng, lat}，需要转换回 BMapGL.Point
-                       // const bmapPoints = pointsToFit.map(p => new window.BMapGL.Point(p.lng, p.lat));
-                       // mapUtils.setMapView(bmapPoints, mapInstance.value);
-                       // 如果已经是 BMapGL.Point 数组，则直接使用
-                       mapUtils.setMapView(pointsToFit, mapInstance.value);
+                       const bmapPoints = pointsToFit.map(p => p instanceof BMapGL.Point ? p : new BMapGL.Point(p.lng, p.lat));
+                       mapUtils.setMapView(bmapPoints, mapInstance.value);
                    }
                }
            }
@@ -500,11 +458,11 @@ function selectPlan(index) {
            console.warn("无法自动高亮方案，百度 planner 不可用或不支持 selectPlan。尝试手动调整视野。");
            // 手动调整视野
            const newRoute = store.state.map.routeResults?.[index];
-           if (newRoute?.steps?.length > 0) {
+           if (newRoute?.steps?.length > 0 && window.BMapGL) {
                const pointsToFit = newRoute.steps.flatMap(step => step.pathPoints || []).filter(p => p);
                if (pointsToFit.length > 0 && mapInstance.value) {
-                    // 同上，确保是 BMapGL.Point 数组
-                    mapUtils.setMapView(pointsToFit, mapInstance.value);
+                   const bmapPoints = pointsToFit.map(p => p instanceof BMapGL.Point ? p : new BMapGL.Point(p.lng, p.lat));
+                   mapUtils.setMapView(bmapPoints, mapInstance.value);
                }
            }
       }
@@ -530,6 +488,10 @@ function highlightStepOnMap(step) {
 
 function toggleResultPanel() {
     isResultPanelVisible.value = !isResultPanelVisible.value;
+     // 打开/关闭结果面板时，关闭地图选择模态框
+     if (showMapChoiceModal.value) {
+         closeMapChoiceModal();
+     }
 }
 
 // 切换百度地图的交通图层
@@ -550,15 +512,9 @@ function formatDurationForTab(seconds) {
     let durationStr = '';
     if (hours > 0) durationStr += `${hours}小时`;
     if (minutes > 0 && (hours === 0 || (seconds % 3600) / 60 >= 1)) {
-        // 避免显示 1小时60分钟
-        if (!(hours > 0 && minutes === 60)) {
-           durationStr += `${minutes}分钟`;
-        } else if (hours > 0 && minutes === 60) {
-           // 如果刚好是 1小时60分钟，修正为 2小时
-           durationStr = `${hours + 1}小时`;
-        }
+        if (!(hours > 0 && minutes === 60)) { durationStr += `${minutes}分钟`; }
+        else if (hours > 0 && minutes === 60) { durationStr = `${hours + 1}小时`; }
     }
-    // 如果计算后为空（例如刚好 1 小时），确保返回小时数
     return durationStr || (hours === 1 ? '1小时' : '<1分钟');
 }
 
@@ -575,126 +531,232 @@ function getStepIcon(step) {
     let type = step.type; // 百度 JS API 的 type
     const instruction = step.instruction || "";
     switch (type) {
-        case 4: return `<span class="svg-icon walk-icon">${walkingSvg}</span>`; // 步行
-        case 1: return `<span class="svg-icon subway-icon">${subwaySvg}</span>`; // 地铁
-        case 2: return `<span class="svg-icon bus-icon">${transitSvg}</span>`;   // 公交
-        case 3: return `<span class="svg-icon drive-icon">${drivingSvg}</span>`; // 驾车
-        case 5: return `<span class="svg-icon ride-icon">${ridingSvg}</span>`;  // 骑行
-        default: // 尝试通过文本判断
+        case 4: return `<span class="svg-icon walk-icon">${walkingSvg}</span>`;
+        case 1: return `<span class="svg-icon subway-icon">${subwaySvg}</span>`;
+        case 2: return `<span class="svg-icon bus-icon">${transitSvg}</span>`;
+        case 3: return `<span class="svg-icon drive-icon">${drivingSvg}</span>`;
+        case 5: return `<span class="svg-icon ride-icon">${ridingSvg}</span>`;
+        default:
             if (instruction.includes('步行')) return `<span class="svg-icon walk-icon">${walkingSvg}</span>`;
             if (instruction.includes('地铁') || instruction.includes('轨道')) return `<span class="svg-icon subway-icon">${subwaySvg}</span>`;
             if (instruction.includes('公交') || instruction.includes('乘坐')) return `<span class="svg-icon bus-icon">${transitSvg}</span>`;
             if (instruction.includes('驾车') || instruction.includes('行驶')) return `<span class="svg-icon drive-icon">${drivingSvg}</span>`;
             if (instruction.includes('骑行')) return `<span class="svg-icon ride-icon">${ridingSvg}</span>`;
-            return `<span class="svg-icon default-icon">${defaultSvg}</span>`; // 默认
+            return `<span class="svg-icon default-icon">${defaultSvg}</span>`;
     }
 }
 
-// --- 【【【核心修改：调用高德地图 URI API 进行导航】】】 ---
+// --- 【【【核心修改：导航选择与调用】】】 ---
+
 /**
- * @description 尝试使用高德地图 URI API 调起外部地图应用或网页进行导航。
+ * @description 准备导航参数(获取BD09坐标->转换为GCJ02坐标, 获取名称)并显示地图选择模态框。
  */
-async function startAmapNavigation() {
-    const currentSelectedBaiduRoute = selectedRoute.value; // 内部百度规划结果
-    const currentMode = transportMode.value;
-    const currentBaiduLoc = userLocation.value; // 百度定位结果 (BD09LL)
+async function prepareAndShowMapChoice() {
+    const currentSelectedBaiduRoute = selectedRoute.value;
+    const currentBaiduLoc = userLocation.value;
     const startInputVal = startAddress.value?.trim();
     const endInputVal = endAddress.value?.trim();
 
-    console.log("[AMap Nav] 开始导航 (高德)。状态:", { hasBaiduRoute: !!currentSelectedBaiduRoute, mode: currentMode, hasBaiduLocation: !!currentBaiduLoc?.point, startInput: startInputVal, endInput: endInputVal });
+    console.log("[External Nav Prep] 准备导航数据...");
 
-    // 1. 检查基本条件: 必须有起点和终点信息才能导航
-    if (!startInputVal && !currentBaiduLoc?.point && !currentSelectedBaiduRoute?.origin) {
-         alert('导航需要起点信息，请输入、使用当前位置或先进行路线查询。');
-         console.warn("[AMap Nav] Aborted: Missing origin information.");
-         return;
-    }
-    if (!endInputVal && !currentSelectedBaiduRoute?.destination) {
-        alert('导航需要终点信息，请输入或先进行路线查询。');
-        console.warn("[AMap Nav] Aborted: Missing destination information.");
-        return;
-    }
+    // 1. 检查基本条件
+    if (!endInputVal && !currentSelectedBaiduRoute?.destination) { alert('请提供导航终点'); return; }
+    if (!startInputVal && !currentBaiduLoc?.point && !currentSelectedBaiduRoute?.origin) { alert('请提供导航起点'); return; }
 
-    let originBd09 = null; // {lng, lat} in BD09LL
-    let destinationBd09 = null; // {lng, lat} in BD09LL
-    let originName = '起点';
-    let destinationName = endInputVal || '终点';
+    let originBd09 = null, destinationBd09 = null;
+    let tempOriginName = '起点', tempDestinationName = endInputVal || '终点'; // 先用输入框的值或默认值
 
     try {
-        // --- 2. 确定起点和终点的 BD09LL 坐标和名称 ---
-        // 确定起点 BD09LL
-        if (currentSelectedBaiduRoute?.origin?.point) {
-            originBd09 = currentSelectedBaiduRoute.origin.point; // 结构是 {lng, lat}
-            originName = currentSelectedBaiduRoute.origin.title || startInputVal || originName;
-            console.log("[AMap Nav] 使用内部百度路线的起点坐标 (BD09LL):", originBd09);
-        } else if ((!startInputVal || startInputVal.includes('当前位置') || startInputVal.includes('我的位置')) && currentBaiduLoc?.point) {
-            originBd09 = currentBaiduLoc.point; // 结构是 {lng, lat}
-            originName = currentBaiduLoc.address || '我的位置';
-            console.log("[AMap Nav] 使用百度定位的坐标作为起点 (BD09LL):", originBd09);
+        // --- 2. 确定起点和终点的 BD09LL 坐标和【最终】名称 ---
+        // 起点
+        if ((!startInputVal || startInputVal.includes('当前位置') || startInputVal.includes('我的位置')) && currentBaiduLoc?.point) {
+            // 场景1：用户使用了当前位置作为起点
+            originBd09 = currentBaiduLoc.point;
+            tempOriginName = currentBaiduLoc.address || '我的位置'; // 使用定位地址
+            console.log("[External Nav Prep] 起点: 使用当前位置定位结果");
+        } else if (currentSelectedBaiduRoute?.origin?.point && startInputVal === currentSelectedBaiduRoute.origin.title) {
+             // 场景2：用户输入框内容与内部规划结果的起点标题一致 (很可能是通过Autocomplete选择的)
+             originBd09 = currentSelectedBaiduRoute.origin.point;
+             tempOriginName = currentSelectedBaiduRoute.origin.title; // 使用规划结果的精确标题
+             console.log("[External Nav Prep] 起点: 使用内部规划结果点和标题");
         } else if (startInputVal) {
-            originName = startInputVal;
-            console.log("[AMap Nav] 尝试 Geocode 起点地址 (获取 BD09LL):", originName);
-            originBd09 = await mapUtils.geocode(originName, store); // geocode 返回 {lng, lat} BD09LL
-            console.log("[AMap Nav] Geocode 起点成功 (BD09LL):", originBd09);
-        } else { throw new Error('无法确定导航起点坐标'); }
+            // 场景3：用户手动输入了地址
+            tempOriginName = startInputVal;
+            console.log("[External Nav Prep] 起点: 尝试 Geocode 用户输入地址", tempOriginName);
+            originBd09 = await mapUtils.geocode(tempOriginName, store); // 获取BD09坐标
+        } else { throw new Error('无法确定起点坐标'); }
 
-        // 确定终点 BD09LL
-        if (currentSelectedBaiduRoute?.destination?.point) {
+        // 终点 (逻辑类似)
+        if (currentSelectedBaiduRoute?.destination?.point && endInputVal === currentSelectedBaiduRoute.destination.title) {
             destinationBd09 = currentSelectedBaiduRoute.destination.point;
-            destinationName = currentSelectedBaiduRoute.destination.title || endInputVal || destinationName;
-            console.log("[AMap Nav] 使用内部百度路线的终点坐标 (BD09LL):", destinationBd09);
-        } else if (endInputVal) { // 终点输入框必须有值
-            destinationName = endInputVal;
-            console.log("[AMap Nav] 尝试 Geocode 终点地址 (获取 BD09LL):", destinationName);
-            destinationBd09 = await mapUtils.geocode(destinationName, store); // geocode 返回 {lng, lat} BD09LL
-            console.log("[AMap Nav] Geocode 终点成功 (BD09LL):", destinationBd09);
-        } else { throw new Error('无法确定导航终点坐标'); } // 理论上不会执行
+            tempDestinationName = currentSelectedBaiduRoute.destination.title;
+            console.log("[External Nav Prep] 终点: 使用内部规划结果点和标题");
+        } else if (endInputVal) { // 终点必须有输入值
+            tempDestinationName = endInputVal;
+            console.log("[External Nav Prep] 终点: 尝试 Geocode 用户输入地址", tempDestinationName);
+            destinationBd09 = await mapUtils.geocode(tempDestinationName, store);
+        } else { throw new Error('无法确定终点坐标'); } // 理论上不会触发
 
         // --- 3. 将 BD09LL 坐标转换为 GCJ02 坐标 ---
         if (!originBd09 || !destinationBd09) throw new Error("缺少有效的起点或终点 BD09LL 坐标");
-
-        console.log("[AMap Nav] 准备将 BD09LL 转换为 GCJ02...");
+        console.log("[External Nav Prep] 开始坐标转换 BD09LL -> GCJ02...");
         const [originGcj02, destinationGcj02] = await Promise.all([
             mapUtils.convertBd09ToGcj02(originBd09),
             mapUtils.convertBd09ToGcj02(destinationBd09)
         ]);
-        console.log("[AMap Nav] 坐标转换完成 (GCJ02):", { originGcj02, destinationGcj02 });
+        console.log("[External Nav Prep] 坐标转换完成 (GCJ02).");
 
-        // --- 4. 构造高德地图导航 URI ---
-        const aMapBaseUrl = 'https://uri.amap.com/navigation';
-        let aMapMode = '0'; // 高德模式: 0驾车, 1公交, 2步行, 3骑行
-        switch (currentMode) {
-            case 'driving': aMapMode = '0'; break;
-            case 'transit': aMapMode = '1'; break;
-            case 'walking': aMapMode = '2'; break;
-            case 'riding': aMapMode = '3'; break; // 高德支持骑行模式
-        }
-        // 高德参数格式: lon,lat,name (经度在前!)
-        const fromParam = `${originGcj02.lng},${originGcj02.lat},${encodeURIComponent(originName)}`;
-        const toParam = `${destinationGcj02.lng},${destinationGcj02.lat},${encodeURIComponent(destinationName)}`;
-        // 应用来源标识 (替换为你自己的)
-        const srcParam = 'mypage'; // 【【【请替换为你自己的高德应用来源标识】】】
-        const callnativeParam = '1'; // 尝试调起 App
+        // --- 4. 将准备好的数据存入临时状态 ---
+        preparedOriginGcj02.value = originGcj02;
+        preparedDestinationGcj02.value = destinationGcj02;
+        preparedOriginName.value = tempOriginName; // 存储最终确定的名称
+        preparedDestinationName.value = tempDestinationName; // 存储最终确定的名称
 
-        // 组装 URL，明确指定坐标系为gcj02
-        const navigationUrl = `${aMapBaseUrl}?from=${fromParam}&to=${toParam}&mode=${aMapMode}&coordinate=gcj02&src=${srcParam}&callnative=${callnativeParam}`;
-
-        console.log("[AMap Nav] 生成的高德导航 URI:", navigationUrl);
-        try { console.log("[AMap Nav] Decoded URI:", decodeURIComponent(navigationUrl)); } catch(e){}
-
-        // --- 5. 打开高德地图 URI ---
-        console.log("[AMap Nav] 尝试打开高德导航链接...");
-        const mapWindow = window.open(navigationUrl, '_blank');
-        if (!mapWindow) {
-            console.error("[AMap Nav] window.open 返回 null 或 false, 可能被阻止。");
-            throw new Error("无法打开导航页面，请检查浏览器是否阻止了弹出窗口。");
-        }
-        console.log("[AMap Nav] 高德导航链接已尝试打开。");
-        isResultPanelVisible.value = false; // 隐藏结果面板
+        // --- 5. 显示模态框 ---
+        showMapChoiceModal.value = true;
+        console.log("[External Nav Prep] 显示地图选择模态框.");
 
     } catch (error) {
-        console.error("[AMap Nav] 启动高德导航过程中发生错误:", error);
-        alert(`启动高德导航失败: ${error.message}`); // 向用户显示错误
+        console.error("[External Nav Prep] 准备导航数据失败:", error);
+        alert(`准备导航信息失败: ${error.message}`);
+        closeMapChoiceModal(); // 出错时确保关闭模态框并清理状态
+    }
+}
+
+/**
+ * 用户在模态框中选择了高德地图 - 【同步】执行
+ */
+function selectAmap() {
+  if (!preparedOriginGcj02.value || !preparedDestinationGcj02.value) {
+    console.error("[AMap Select] 缺少准备好的坐标数据。");
+    alert("无法启动导航，缺少坐标信息。");
+    closeMapChoiceModal();
+    return;
+  }
+  // 直接调用构造和打开 URL 的函数
+  constructAndOpenAmapUrl(
+    preparedOriginGcj02.value,
+    preparedDestinationGcj02.value,
+    preparedOriginName.value, // 使用准备好的实际名称
+    preparedDestinationName.value, // 使用准备好的实际名称
+    transportMode.value
+  );
+  closeMapChoiceModal(); // 关闭模态框
+}
+
+/**
+ * 用户在模态框中选择了腾讯地图 - 【同步】执行
+ */
+function selectTencent() {
+  if (!preparedOriginGcj02.value || !preparedDestinationGcj02.value) {
+    console.error("[Tencent Select] 缺少准备好的坐标数据。");
+    alert("无法启动导航，缺少坐标信息。");
+    closeMapChoiceModal();
+    return;
+  }
+  // 直接调用构造和打开 URL 的函数
+  constructAndOpenTencentUrl(
+    preparedOriginGcj02.value,
+    preparedDestinationGcj02.value,
+    preparedOriginName.value, // 使用准备好的实际名称
+    preparedDestinationName.value, // 使用准备好的实际名称
+    transportMode.value
+  );
+  closeMapChoiceModal(); // 关闭模态框
+}
+
+/**
+ * 关闭地图选择模态框并清理临时数据
+ */
+function closeMapChoiceModal() {
+    showMapChoiceModal.value = false;
+    // 清理临时存储的数据
+    preparedOriginGcj02.value = null;
+    preparedDestinationGcj02.value = null;
+    preparedOriginName.value = '';
+    preparedDestinationName.value = '';
+    console.log("[Map Choice Modal] 已关闭并清理临时数据。");
+}
+
+
+/**
+ * 构造并打开高德地图导航 URI - 【同步】执行
+ */
+function constructAndOpenAmapUrl(originGcj02, destinationGcj02, originName, destinationName, currentMode) {
+    console.log("[AMap Nav] 构造高德 URL...");
+    const aMapBaseUrl = 'https://uri.amap.com/navigation';
+    let aMapMode = '0';
+    switch (currentMode) {
+        case 'driving': aMapMode = '0'; break;
+        case 'transit': aMapMode = '1'; break;
+        case 'walking': aMapMode = '2'; break;
+        case 'riding': aMapMode = '3'; break;
+    }
+    // 使用准备好的实际名称
+    const fromParam = `${originGcj02.lng},${originGcj02.lat},${encodeURIComponent(originName)}`;
+    const toParam = `${destinationGcj02.lng},${destinationGcj02.lat},${encodeURIComponent(destinationName)}`;
+    const srcParam = 'mypage'; // 【【【请替换为你自己的高德应用来源标识】】】
+    const callnativeParam = '1';
+    const navigationUrl = `${aMapBaseUrl}?from=${fromParam}&to=${toParam}&mode=${aMapMode}&coordinate=gcj02&src=${srcParam}&callnative=${callnativeParam}`;
+
+    console.log("[AMap Nav] 最终高德 URI:", navigationUrl);
+    openExternalMapUrl(navigationUrl, "高德地图"); // 调用打开链接的辅助函数
+}
+
+/**
+ * 构造并打开腾讯地图导航 URI - 【同步】执行
+ */
+function constructAndOpenTencentUrl(originGcj02, destinationGcj02, originName, destinationName, currentMode) {
+    console.log("[Tencent Nav] 构造腾讯 URL...");
+    const tencentBaseUrl = 'https://apis.map.qq.com/uri/v1/routeplan';
+    let tencentType = 'drive';
+    switch (currentMode) {
+        case 'driving': tencentType = 'drive'; break;
+        case 'transit': tencentType = 'bus'; break;
+        case 'walking': tencentType = 'walk'; break;
+        case 'riding':
+            console.warn("[Tencent Nav] 腾讯地图 URI 不直接支持骑行, 回退到驾车模式。");
+            tencentType = 'drive';
+            break;
+    }
+    // 使用准备好的实际名称
+    const fromcoordParam = `${originGcj02.lat},${originGcj02.lng}`;
+    const tocoordParam = `${destinationGcj02.lat},${destinationGcj02.lng}`;
+    const fromNameParam = encodeURIComponent(originName);
+    const toNameParam = encodeURIComponent(destinationName);
+    // 【【【！！！请务必替换为你在腾讯位置服务申请的有效 Key 或 Referer！！！】】】
+    const refererParam = 'OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77'; // 示例 Key，必须替换!
+
+    if (refererParam === 'OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77') {
+        console.warn("[Tencent Nav] 警告: 正在使用腾讯示例 Referer/Key，可能导致失败。请替换！");
+    }
+
+    const navigationUrl = `${tencentBaseUrl}?type=${tencentType}&from=${fromNameParam}&fromcoord=${fromcoordParam}&to=${toNameParam}&tocoord=${tocoordParam}&referer=${refererParam}`;
+
+    console.log("[Tencent Nav] 最终腾讯 URI:", navigationUrl);
+    openExternalMapUrl(navigationUrl, "腾讯地图"); // 调用打开链接的辅助函数
+}
+
+/**
+ * 尝试打开外部地图 URL - 【同步】执行
+ */
+function openExternalMapUrl(url, mapProviderName) {
+    try {
+        console.log(`[External Nav] 尝试同步打开 ${mapProviderName} URL...`);
+        const mapWindow = window.open(url, '_blank');
+        if (!mapWindow) {
+            console.error(`[External Nav] window.open 返回 null/false (可能是被阻止) for ${mapProviderName}.`);
+            // 不再抛出错误，而是提示用户
+            alert(`无法自动打开${mapProviderName}导航页面，请检查浏览器是否阻止了弹出窗口或尝试手动复制链接。`);
+            // 可以在控制台输出链接方便复制
+            console.log(`${mapProviderName} 导航链接: ${url}`);
+        } else {
+            console.log(`[External Nav] ${mapProviderName} 导航链接已尝试打开。`);
+            // isResultPanelVisible.value = false; // 可以选择保持结果面板打开
+        }
+    } catch (e) {
+        console.error(`[External Nav] 打开 ${mapProviderName} 导航 URL 时发生错误:`, e);
+        alert(`启动${mapProviderName}导航时发生错误: ${e.message}`);
     }
 }
 
@@ -776,8 +838,85 @@ function removeFullscreenListener() {
 </script>
 
 <style scoped>
-/* --- CSS 样式 (保持不变) --- */
-/* (此处省略与上一版本相同的 CSS 代码, 请确保你复制了完整的样式部分) */
+/* --- CSS 样式 --- */
+/* (复制并粘贴之前回答中完整的样式代码，包括基础布局、顶部面板、地图、浮动按钮、底部面板、结果、步骤、加载提示、Spinner、百度提示框，以及新增的模态框样式) */
+
+/* 【【【确保这里包含了上一回答中提供的所有 CSS 样式】】】 */
+/* ... */
+
+/* 【【【包括新增的模态框样式】】】 */
+.map-choice-modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* 遮罩深一点 */
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000; opacity: 0; visibility: hidden; /* 初始隐藏 */
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s; /* 过渡效果 */
+}
+/* 当模态框显示时改变透明度和可见性 */
+.map-choice-modal-overlay:has(.map-choice-modal-content) { /* 或用 JS 控制添加 class */
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0s linear 0s;
+}
+
+.map-choice-modal-content {
+  background-color: #fff; padding: 25px 30px; border-radius: 12px; /* 圆角更大 */
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15); text-align: center;
+  min-width: 300px; max-width: calc(100% - 40px); /* 适应小屏幕 */
+  transform: scale(0.95); opacity: 0; /* 初始状态 */
+  transition: transform 0.3s ease, opacity 0.3s ease; /* 进入动画 */
+}
+/* 当模态框显示时改变 transform 和 opacity */
+.map-choice-modal-overlay:has(.map-choice-modal-content) .map-choice-modal-content { /* 或用 JS 控制添加 class */
+  transform: scale(1);
+  opacity: 1;
+}
+
+
+.map-choice-modal-content h3 {
+  margin-top: 0; margin-bottom: 25px; /* 增大间距 */
+  font-size: 19px; font-weight: 600; color: #2c3e50; /* 深灰色 */
+}
+
+.map-choice-buttons { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
+
+.map-choice-btn {
+  display: flex; align-items: center; justify-content: flex-start; /* 左对齐 */
+  padding: 14px 20px; /* 增大按钮内边距 */
+  border: 1px solid #ebebeb; /* 边框更柔和 */
+  border-radius: 8px; background-color: #fff; color: #333;
+  font-size: 16px; cursor: pointer; transition: all 0.2s ease;
+  gap: 12px; /* 增大图标与文字间距 */
+  width: 100%; box-sizing: border-box; text-align: left;
+}
+.map-choice-btn:hover {
+  background-color: #f8f9fa; /* 悬停背景 */
+  border-color: #dcdcdc; /* 悬停边框 */
+  transform: translateY(-1px); /* 轻微上移效果 */
+  box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+}
+.map-choice-btn:active {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.08); /* 按下效果 */
+}
+
+.map-choice-btn img { width: 24px; height: 24px; vertical-align: middle; flex-shrink: 0; }
+.map-choice-btn span { flex-grow: 1; } /* 文字占满剩余空间 */
+
+/* 可选品牌色提示 */
+/* .map-choice-btn.amap { border-left: 3px solid #007aff; } */
+/* .map-choice-btn.tencent { border-left: 3px solid #00b38a; } */
+
+.map-choice-close-btn {
+  margin-top: 15px; padding: 10px 25px; border: none; border-radius: 20px;
+  background-color: #f0f2f5; /* 取消按钮颜色调整 */
+  color: #555; font-size: 15px; cursor: pointer;
+  transition: background-color 0.2s;
+}
+.map-choice-close-btn:hover { background-color: #e4e6e9; }
+
+
+/* (省略其他样式...) */
 /* 基础布局 */
 .map-navigation-container-mobile { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; position: relative; background-color: #f4f4f4; }
 /* 顶部输入面板 */
