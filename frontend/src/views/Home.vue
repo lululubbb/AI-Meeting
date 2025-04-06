@@ -493,7 +493,6 @@ onMounted(() => {
 }
 
 .options {
-  margin: 100px auto;
   padding: 30px;
   width: 85%; 
   max-width: 400px; 
