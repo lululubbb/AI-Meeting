@@ -158,7 +158,7 @@
       </div>
     </main>
     <footer v-if="!isMobile">
-      <p>&copy; 2024 慧议先锋. </p>
+      <p>&copy; 2024 智汇西湖. </p>
     </footer>
   </div>
 </template>

@@ -91,7 +91,7 @@ const handleHistoryMeeting = () => {
 
 .icon-wrapper {
   border-radius: 50%;
-  background: linear-gradient(to right, #E4F5FC,#B5E1FC, #9bd9fc); /* 新会议图标背景色 */
+  background: linear-gradient(to right, #bdf0e8,#B5E1FC, #9bd9fc); /* 新会议图标背景色 */
 
 }
 
@@ -172,6 +172,7 @@ span {
   span {
     font-size: 18px;
     margin-top: 8px;
+    font-weight: 600;
   }
 }
 
@@ -203,7 +204,7 @@ span {
 }
   span {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 650;
   }
 
   /* 优化触控体验 */
@@ -237,6 +238,7 @@ span {
   span {
     font-size: 18px;
     margin-top: 8px;
+    font-weight: 650;
   }
 }
 
@@ -267,7 +269,7 @@ span {
 
   span {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 650;
   }
 
   /* 优化触控体验 */

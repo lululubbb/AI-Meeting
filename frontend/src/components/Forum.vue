@@ -1158,15 +1158,73 @@ const viewDetail = async (post) => {
     }
  };
 
-const hotPosts = computed(() => {
-    return [...allPosts.value] 
-      .map(post => ({
-        ...post,
-        hotScore: (post.commentCount ?? (post.comments?.length || 0)) * 2 + (post.viewCount || 0)
-      }))
-      .sort((a, b) => b.hotScore - a.hotScore)
-      .slice(0, 10);
+// 辅助函数：生成拉普拉斯噪声 (简单实现)
+function generateLaplaceNoise(scale) {
+  const u = Math.random() - 0.5;
+  // 处理 u=0.5 的边界情况，虽然概率极低
+  if (u === 0) return 0;
+  return Math.sign(u) * scale * Math.log(1 - 2 * Math.abs(u));
+}
+
+// 差分隐私参数 (示例值，需要根据实际需求调整)
+const dpConfig = {
+  epsilonView: 1.0,     // 隐私预算 for view count
+  epsilonComment: 1.0,  // 隐私预算 for comment count
+  sensitivityView: 1.0, // 假设每个用户对view最多贡献1
+  sensitivityComment: 1.0 // 假设每个用户对comment最多贡献1
+};
+
+// 计算 Laplace 尺度参数
+const scaleView = dpConfig.sensitivityView / dpConfig.epsilonView;
+const scaleComment = dpConfig.sensitivityComment / dpConfig.epsilonComment;
+
+// 创建一个计算属性，用于添加差分隐私噪声
+const dpPosts = computed(() => {
+  return allPosts.value.map(post => {
+    // 1. 获取原始计数
+    const originalViewCount = post.viewCount || 0;
+    // 使用 commentCount 字段，如果不存在则回退到 comments.length
+    const originalCommentCount = post.commentCount ?? (post.comments?.length || 0);
+
+    // 2. 添加 Laplace 噪声
+    const viewNoise = generateLaplaceNoise(scaleView);
+    const commentNoise = generateLaplaceNoise(scaleComment);
+
+    // 3. 计算带噪声的计数 (确保不为负数，并取整)
+    const noisyViewCount = Math.max(0, Math.round(originalViewCount + viewNoise));
+    const noisyCommentCount = Math.max(0, Math.round(originalCommentCount + commentNoise));
+
+    // 4. 使用带噪声的计数计算 hotScore
+    const noisyHotScore = (noisyCommentCount * 2) + noisyViewCount;
+
+    // 返回带有噪声分数的新对象
+    return {
+      ...post,
+      hotScore: noisyHotScore // 核心：使用加噪后的分数进行排序
+      // 可以选择性地保留加噪后的计数值用于调试或展示（但不建议直接展示）
+      // dpViewCount: noisyViewCount,
+      // dpCommentCount: noisyCommentCount,
+    };
+  });
 });
+
+const hotPosts = computed(() => {
+  // 使用 dpPosts 而不是 allPosts
+  return [...dpPosts.value]
+    // 直接按已经加噪的 hotScore 排序
+    .sort((a, b) => b.hotScore - a.hotScore)
+    .slice(0, 10);
+});
+
+// const hotPosts = computed(() => {
+//     return [...allPosts.value] 
+//       .map(post => ({
+//         ...post,
+//         hotScore: (post.commentCount ?? (post.comments?.length || 0)) * 2 + (post.viewCount || 0)
+//       }))
+//       .sort((a, b) => b.hotScore - a.hotScore)
+//       .slice(0, 10);
+// });
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', updateScreenWidth);
@@ -1230,11 +1288,21 @@ onUnmounted(() => {
   }
   h2{
     font-size: 17px;
+    background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   }
   h3{
     font-size: 15px;
     margin:0px;
-    padding: 0;;
+    padding: 0;
+    background: var(--text-gradient); /* 1. 应用渐变作为背景 */
+  -webkit-background-clip: text;    /* 2. (兼容性) 将背景裁剪到文字形状 */
+  background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
+  -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
+  color: transparent;  
   }
 
   .post-list-container {
@@ -1557,6 +1625,13 @@ el-select {
   position: sticky;
   bottom: 15px;
   z-index: 100;
+}
+.el-menu-item {
+  background: var(--text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent; 
 }
 
 .post-list-content-wrapper {
