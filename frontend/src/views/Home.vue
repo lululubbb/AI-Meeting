@@ -563,8 +563,10 @@ footer {
 }
 
 .icon-button:hover {
-  color: #434040;
-  transform: translateY(-5px); /* 点击时上移 */
+  background: linear-gradient(to right, #044DB4, #1492A0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform: translateY(-5px);
 }
 
 .mobile-layout {

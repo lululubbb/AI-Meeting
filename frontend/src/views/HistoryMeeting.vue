@@ -1561,13 +1561,13 @@ body {
 
 
  .meeting-list li.finished {
-  background-color: #f6ffed; /* 浅绿色背景 */
-  border-color: #b7eb8f;
+  background-color: #edfffd; /* 浅绿色背景 */
+  border-color: #9ddecd;
 }
 
 .meeting-list li.scheduled {
-  background-color: #fff1f0;
-  border-color: #ffa39e;
+  background-color: #e4f7fb;
+  border-color: #c0f0e9;
 }
 
 .meeting-list strong {
