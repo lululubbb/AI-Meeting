@@ -111,7 +111,7 @@ const logout = async () => {
 
   padding: 1.25rem 2.25rem 0.1875rem 2.25rem; /* 20px 36px 3px 36px */
   box-sizing: border-box;
-  z-index: 1000;
+  z-index: 800;
   box-shadow: 0 0.13rem 0.3rem rgba(5, 5, 5, 0.258); /* 0 2px 4px rgba(0, 0, 0, 0.1) */
 }
 
