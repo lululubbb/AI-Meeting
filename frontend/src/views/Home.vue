@@ -16,8 +16,9 @@
             :history-meetings="historyMeetings"
             :upcoming-agenda="upcomingAgendaItems"
             :is-loading="isLoadingAgenda"
-            :max-recommendations="5"
+            :max-recommendations="3"
             style="margin-top: 15px;" 
+            @view-detail="handleViewDetail"
          />
         </div>
         
@@ -66,8 +67,9 @@
             :history-meetings="historyMeetings"
             :upcoming-agenda="upcomingAgendaItems"
             :is-loading="isLoadingAgenda"
-            :max-recommendations="5"
+            :max-recommendations="3"
             style="margin-top: 15px;" 
+            @view-detail="handleViewDetail"
         />
         <el-alert v-if="agendaError" :title="'议程加载失败: ' + agendaError" type="warning" show-icon :closable="false" style="margin-top: 15px;"/>
       </main>
@@ -93,6 +95,66 @@
       
     </div>
 
+    <el-dialog
+      v-model="detailDialogVisible"
+      :title="selectedAgendaItemForDetail?.title || '日程详情'"
+      :width="isMobile ? '90%' : '60%'"
+      append-to-body
+      custom-class="agenda-detail-dialog"
+      draggable
+    >
+      <div v-if="selectedAgendaItemForDetail" class="detail-content">
+          <div class="detail-section">
+              <p v-if="selectedAgendaItemForDetail.fullDateTime">
+                  <strong><el-icon><Calendar /></el-icon> 日期:</strong> {{ formatDetailDate(selectedAgendaItemForDetail.fullDateTime) }}
+              </p>
+              <p v-if="selectedAgendaItemForDetail.time">
+                  <strong><el-icon><Clock /></el-icon> 时间:</strong> {{ formatDetailTime(selectedAgendaItemForDetail.time) }}
+              </p>
+              <p v-if="selectedAgendaItemForDetail.location">
+                  <strong><el-icon><Location /></el-icon> 地点:</strong> {{ selectedAgendaItemForDetail.location }}
+              </p>
+               <p v-if="selectedAgendaItemForDetail.forum">
+                  <strong><el-icon><CollectionTag /></el-icon> 所属论坛:</strong>
+                  <el-tag type="info" size="small" effect="light" style="margin-left: 8px;">{{ selectedAgendaItemForDetail.forum }}</el-tag>
+              </p>
+          </div>
+
+          <div v-if="selectedAgendaItemForDetail.names?.length > 0 || selectedAgendaItemForDetail.descriptions?.length > 0" class="detail-section detail-speakers">
+              <h4>主讲人/内容详情:</h4>
+               <div v-if="selectedAgendaItemForDetail.names && selectedAgendaItemForDetail.names.length > 0">
+                  <div v-for="(name, index) in selectedAgendaItemForDetail.names" :key="`speaker-detail-${index}`" class="speaker-item">
+                      <span class="speaker-name">
+                        <el-icon><User /></el-icon> {{ name }}
+                      </span>
+                      <span v-if="selectedAgendaItemForDetail.descriptions && selectedAgendaItemForDetail.descriptions[index]" class="speaker-desc">
+                        ({{ selectedAgendaItemForDetail.descriptions[index] }})
+                      </span>
+                  </div>
+               </div>
+
+               <p v-else-if="selectedAgendaItemForDetail.description || selectedAgendaItemForDetail.content" class="detail-description-text">
+                    {{ selectedAgendaItemForDetail.description || selectedAgendaItemForDetail.content }}
+                </p>
+
+          </div>
+
+          <div v-else-if="selectedAgendaItemForDetail.description || selectedAgendaItemForDetail.content" class="detail-section">
+               <h4>详情:</h4>
+               <p class="detail-description-text">{{ selectedAgendaItemForDetail.description || selectedAgendaItemForDetail.content }}</p>
+           </div>
+
+      </div>
+       <div v-else>
+           <p>无法加载详情。</p>
+       </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="detailDialogVisible = false" type="primary">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <footer v-if="!isMobile">
       <p>&copy; 慧议先锋.</p>
     </footer>
@@ -103,7 +165,8 @@
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';  // 如果你使用 vuex 来管理状态
 import { ref, onMounted, computed } from 'vue';
-
+import { ElDialog, ElButton } from 'element-plus';
+import { Calendar, Clock, Location, CollectionTag, User } from '@element-plus/icons-vue'
 // 导入组件
 import MeetingOption from '../components/MeetingOption.vue'; 
 import CalendarTodoList from '../components/CalendarToDoList.vue'; 
@@ -119,7 +182,7 @@ import Tools from '../components/Tools.vue';
 import AIFloatingChat from '../components/AIFloatingChat.vue';
 import MeetingRecommendation from '../components/MeetingRecommendation.vue';
 import ContentSafetyTestTool from '../components/ContentSafetyTestTool.vue';
-const agendaError = ref(null); 
+
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -211,24 +274,26 @@ const navigateToHistoryMeeting = () => {
 
 // 移动端导航
 const navigateToHome = () => {
-    router.push({ name: 'Home' });  //  假设你的主页路由名为 'Home'
+    router.push({ name: 'Home' }); 
 };
 const navigateToAIFloatingChat = () => {
-     router.push({ name: 'AIFloatingChat' });  //  你需要创建一个名为 'AIFunctions' 的路由
+     router.push({ name: 'AIFloatingChat' }); 
 };
 const navigateToDataSummary = () => {
-    router.push({ name: 'DataSummary' });  //  你需要创建一个名为 'MeetingData' 的路由
+    router.push({ name: 'DataSummary' });  
 };
 const navigateToTools = () => {
-    router.push({ name: 'Tools' });        //  你需要创建一个名为 'Tools' 的路由
+    router.push({ name: 'Tools' });      
 };
 const navigateToUserProfile = () => {
-    router.push({name:'UserProfile'}) // 你需要创建一个名为 'UserProfile' 的路由
+    router.push({name:'UserProfile'})
 }
 
 const rawAgendaData = ref(null); 
 const upcomingAgendaItems = ref([]);
 const isLoadingAgenda = ref(true); 
+const agendaError = ref(null); 
+
 const historyMeetings = computed(() => {
     const meetings = store.getters.getMeetings;
     console.log("Home.vue - Computed historyMeetings - Vuex getter returned:", meetings);
@@ -239,6 +304,38 @@ const historyMeetings = computed(() => {
     }
     return meetings || [];
 });
+
+const detailDialogVisible = ref(false);
+const selectedAgendaItemForDetail = ref(null);
+
+// --- Event Handler ---
+const handleViewDetail = (agendaItem) => {
+  selectedAgendaItemForDetail.value = agendaItem;
+  detailDialogVisible.value = true;
+};
+
+// --- Formatting Helpers for Dialog ---
+const formatDetailTime = (timeStr) => {
+    if (!timeStr) return '时间待定';
+    // Handle ranges like "08:30 - 09:00"
+    const match = timeStr.match(/^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+    if (match) return `${match[1]} 至 ${match[2]}`;
+    // Handle single time like "09:00"
+    const singleTimeMatch = timeStr.match(/^(\d{2}:\d{2})$/);
+    if (singleTimeMatch) return singleTimeMatch[1];
+    // Fallback for potentially different formats or already formatted strings
+    const time = dayjs(timeStr); // Try parsing directly
+    return time.isValid() ? time.format('HH:mm') : timeStr; // Fallback to original if invalid
+};
+
+const formatDetailDate = (dateTimeStr) => {
+    if (!dateTimeStr) return '';
+    const time = dayjs(dateTimeStr); // Assumes fullDateTime is valid ISO
+    return time.isValid() ? time.format('YYYY年MM月DD日') : '';
+};
+
+
+
 
 const parseChineseDate = (dateStr) => {
     const currentYear = dayjs().year();
@@ -466,8 +563,10 @@ footer {
 }
 
 .icon-button:hover {
-  color: #434040;
-  transform: translateY(-5px); /* 点击时上移 */
+  background: linear-gradient(to right, #044DB4, #1492A0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform: translateY(-5px);
 }
 
 .mobile-layout {
@@ -544,16 +643,100 @@ footer {
   padding: 5px;
   cursor: pointer;
 }
+
 .footer-icon {
-     width: 24px; /* 根据需要调整图标大小 */
+     width: 24px;
      height: 24px;
      margin-bottom: 5px; /* 图标与文字之间的间距 */
 }
 
 .mobile-footer button span {
-    font-size: 12px; /* 根据需要调整文字大小 */
+    font-size: 12px; 
 }
 
+.agenda-detail-dialog .detail-content {
+    line-height: 1.7;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 10px; 
+}
+.agenda-detail-dialog .detail-section {
+    margin-bottom:10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.agenda-detail-dialog .detail-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.agenda-detail-dialog h3 { /* Title inside dialog */
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: #303133;
+    font-weight: 600;
+}
+.agenda-detail-dialog h4 { /* Section titles */
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: #555;
+    font-weight: 500;
+}
+.agenda-detail-dialog p {
+    margin-bottom: 8px;
+    font-size: 1rem;
+    color: #606266;
+    display: flex; 
+    align-items: center; 
+}
+.agenda-detail-dialog p .el-icon {
+    margin-right: 15px;
+    color: #909399;
+    font-size: 1.1em; 
+}
+.agenda-detail-dialog strong {
+    color: #303133;
+}
+
+.agenda-detail-dialog .detail-speakers .speaker-item {
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+}
+.agenda-detail-dialog .speaker-name {
+    font-weight: 500;
+    color: #404244;
+    margin-right: 5px;
+    display: inline-flex; 
+    align-items: center;
+}
+.agenda-detail-dialog .speaker-name .el-icon {
+    font-size: 1em; 
+    margin-right: 15px;
+}
+
+.agenda-detail-dialog .speaker-desc {
+    font-size: 0.85em;
+    color: #888;
+}
+.agenda-detail-dialog .detail-description-text {
+    font-size: 0.9rem;
+    white-space: pre-line; 
+    color: #555;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+:deep(.el-dialog) {
+  margin: 0 !important;
+  position: fixed !important; /* Position relative to the viewport */
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important; /* Center it */
+}
 /* 响应式调整 */
 @media screen and (max-width: 768px) {
   .main-layout {
@@ -567,7 +750,25 @@ footer {
     margin: 20px auto;
     padding: 15px;
   }
-
+  .agenda-detail-dialog .detail-content {
+         max-height: 75vh; /* Slightly more height on mobile */
+    }
+     .agenda-detail-dialog h3 {
+         font-size: 1.15rem;
+     }
+     .agenda-detail-dialog h4 {
+         font-size: 1rem;
+     }
+      .agenda-detail-dialog p,
+      .agenda-detail-dialog .detail-description-text {
+         font-size: 0.85rem;
+     }
+       .agenda-detail-dialog .speaker-name {
+         font-size: 0.9rem;
+     }
+     .agenda-detail-dialog .speaker-desc {
+         font-size: 0.8rem;
+     }
 }
 
 @media screen and (min-width: 769px) {

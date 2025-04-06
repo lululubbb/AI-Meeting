@@ -434,8 +434,6 @@ function formatDateForComparison(date) {
         width: calc(50% - 9px); /* 50% - (18px / 2) */
         border-radius: 8px; /* 移动端圆角可以稍小 */
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05); /* 调整阴影 */
-        /* 移除 min-height，让内容自然撑高，或设置一个更合适的 min-height */
-        /* min-height: 260px; */ /* 示例：根据实际内容调整 */
     }
 
     /* 微调图片容器和文字区域 */

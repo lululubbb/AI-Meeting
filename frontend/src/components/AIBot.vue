@@ -298,7 +298,7 @@ const response = await fetch(`/api/proxy/agent/execute`, {
   
   .message.user {
     align-self: flex-end;
-    background-color: #dcf8c6;
+    background-color: #a4d9fc;
     margin-left: auto;
   }
   
@@ -339,7 +339,7 @@ const response = await fetch(`/api/proxy/agent/execute`, {
   button {
     width: 80px;
     margin-left: 10px;
-    background-color: #007bff;
+    background-color: #92b7de;
     color: white;
     border: none;
     border-radius: 4px;
@@ -347,7 +347,7 @@ const response = await fetch(`/api/proxy/agent/execute`, {
   }
   
   button:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: #3c77b6;
   }
   
   button:disabled {

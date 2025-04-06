@@ -2,10 +2,11 @@
 <template>
   <div>
     <button class="ai-float-button"
+      ref="dragButton"
       @mousedown="startDragging"
       @touchstart="startDragging"
-      :style="{ left: buttonLeft + 'px', top: buttonTop + 'px' }"
-      @click="drawer = true">
+      :style="{ left: buttonLeft + 'px', top: buttonTop + 'px' }" 
+      >
       <img src="@/assets/AI.png" alt="AI Chat" />
     </button>
 
@@ -170,6 +171,12 @@ data() {
       ],
         answerTemplates: ANSWER_TEMPLATES,
         drawer: false,
+        buttonLeft: window.innerWidth * 0.9,  // 按屏幕宽度的 80% 位置
+        buttonTop: window.innerHeight * 0.8, // 按屏幕高度的 80% 位置
+        isDragging: false,
+        dragged: false,
+        offsetX: 0,
+        offsetY: 0,
         isChatOpen: false,
         messages: [],          // 普通聊天
         userInput: '',
@@ -190,10 +197,85 @@ computed: {
     }
   },
   mounted() {
+    // 将 stopDragging / onDrag 绑定为箭头函数，保持 this 正确
+    this.boundMouseMove = (e) => this.onDrag(e);
+    this.boundMouseUp = (e) => this.stopDragging(e);
+    this.boundTouchMove = (e) => this.onDrag(e);
+    this.boundTouchEnd = (e) => this.stopDragging(e);
   },
   beforeUnmount() {
   },
   methods: {
+    startDragging(event) {
+      event.preventDefault();
+      const e = event.type.includes("touch") ? event.touches[0] : event;
+      this.offsetX = e.clientX - this.buttonLeft;
+      this.offsetY = e.clientY - this.buttonTop;
+      this.dragStartX = e.clientX;
+      this.dragStartY = e.clientY;
+      this.isDragging = true;
+      this.dragged = false;
+
+      console.log("🟡 startDragging", {
+        x: e.clientX,
+        y: e.clientY,
+        offsetX: this.offsetX,
+        offsetY: this.offsetY,
+      });
+
+      window.addEventListener("mousemove", this.boundMouseMove);
+      window.addEventListener("mouseup", this.boundMouseUp);
+      window.addEventListener("touchmove", this.boundTouchMove);
+      window.addEventListener("touchend", this.boundTouchEnd);
+    },
+    onDrag(event) {
+      if (!this.isDragging) return;
+
+      const e = event.type.includes("touch") ? event.touches[0] : event;
+      this.buttonLeft = e.clientX - this.offsetX;
+      this.buttonTop = e.clientY - this.offsetY;
+      this.dragged = true;
+
+      console.log("🔵 onDrag", {
+        left: this.buttonLeft,
+        top: this.buttonTop,
+      });
+    },
+    stopDragging(event) {
+      if (!this.isDragging) {
+        console.log("⚠️ stopDragging called but isDragging is false");
+        return;
+      }
+
+      this.isDragging = false;
+
+      window.removeEventListener("mousemove", this.boundMouseMove);
+      window.removeEventListener("mouseup", this.boundMouseUp);
+      window.removeEventListener("touchmove", this.boundTouchMove);
+      window.removeEventListener("touchend", this.boundTouchEnd);
+
+      const e = event.type.includes("touch")
+        ? event.changedTouches[0]
+        : event;
+      const deltaX = Math.abs(e.clientX - this.dragStartX);
+      const deltaY = Math.abs(e.clientY - this.dragStartY);
+      const movementThreshold = 5;
+
+      console.log("🟥 stopDragging", {
+        x: e.clientX,
+        y: e.clientY,
+        deltaX,
+        deltaY,
+        dragged: this.dragged,
+      });
+
+      if (deltaX < movementThreshold && deltaY < movementThreshold) {
+        console.log("✅ Click detected — open drawer");
+        this.drawer = true;
+      } else {
+        console.log("🟠 Drag detected — not opening drawer");
+      }
+    },
     // 切换AI聊天窗口显示
     toggleChat() {
       this.isChatOpen = !this.isChatOpen;
@@ -1111,7 +1193,7 @@ async askAiQuestion(question) {
 
 /* AI 消息气泡 */
 .ai-message {
-  background-color: #bcd9ffe0;
+  background-color: #dedbdba0;
   color: #434040;
   text-align: left;
   align-self: flex-start; /* 让气泡自己也贴左边 */
@@ -1119,7 +1201,7 @@ async askAiQuestion(question) {
 
 /* 用户消息气泡 */
 .user-message {
-  background-color: #feb2a5e0;
+  background-color: #a5dcfee0;
   color: #434040;
   text-align: right;
   align-self: flex-end; /* 让气泡贴右边 */
