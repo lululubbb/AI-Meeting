@@ -8,9 +8,9 @@
           <img src="../assets/logo.jpg" alt="AI Meeting workplace Logo" />
         </div>
         <div class="title">
-          AI Meeting<br />
+          AI Westlake <br />
           <div class="subtitle">
-           AI智能会议 打造智能高效的沟通新生态<br />
+           专为西湖论剑大会打造的智能高效沟通新生态<br />
           </div>
         </div>
       </div>
@@ -171,7 +171,7 @@ const logout = async () => {
   height: 60px;       /* 你也可以根据需要调整大小 */
   width: 60px;
   object-fit: contain; /* 保持图片宽高比 */
-  margin :4px;
+  margin :0px;
   /* 可根据需求加上 margin、padding 等 */
 }
 

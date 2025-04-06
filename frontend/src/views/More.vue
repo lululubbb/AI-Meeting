@@ -31,7 +31,7 @@
     </main>
 
     <footer>
-        <p>&copy; 慧议先锋.</p>
+        <p>&copy; 智汇西湖.</p>
     </footer>
   </div>
 </template>

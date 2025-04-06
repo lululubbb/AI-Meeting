@@ -21,7 +21,7 @@
     </main>
 
     <footer v-if="!isMobile">
-        <p>&copy; 慧议先锋.</p>
+        <p>&copy; 智汇西湖.</p>
     </footer>
   </div>
       <!-- 移动端布局 -->
