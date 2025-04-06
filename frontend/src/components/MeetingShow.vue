@@ -2,66 +2,79 @@
   <div class="transcription-page">
     <!-- 导航栏 -->
     <nav class="navbar">
-      <ul>
-        <li><a href="#overview">会议总览</a></li>
-        <li><a href="#content">会议内容记录</a></li>
-        <li><a href="#summary">会议整理</a></li>
-      </ul>
-    </nav>
+  <ul>
+    <li><a :class="{ 'active': activeTab === 'overview' }" href="#overview">会议总览</a></li>
+    <li><a :class="{ 'active': activeTab === 'content' }" href="#content">会议内容记录</a></li>
+    <li><a :class="{ 'active': activeTab === 'summary' }" href="#summary">会议整理</a></li>
+  </ul>
+</nav>
+
+
 
     <!-- 会议总览 -->
     <section id="overview">
-    <h2>会议总览</h2>
-    <div class="timeline-container">
-      <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
-        <span class="emoji">{{ segment.emoji }}</span>
-        <span class="time">{{ formatTime(segment.start) }} - {{ formatTime(segment.end) }}</span>
+      <div class="section-header">
+        <h2>会议总览</h2>
       </div>
-    </div>
+      <div class="timeline-container">
+        <div v-for="(segment, index) in timeSegments" :key="index" class="timeline-segment">
+          <span class="emoji">{{ segment.emoji }}</span>
+          <span class="time">{{ formatTime(segment.start) }} - {{ formatTime(segment.end) }}</span>
+        </div>
+      </div>
     </section>
 
 
     <!-- ECharts 图表 -->
     <div class="echart-container">
-    <EChartsBar ref="echart" :chartData="chartData" v-if="chartData"/>
+      <EChartsBar ref="echart" :chartData="chartData" v-if="chartData"/>
     </div>
-    <div v-if="isLoading">加载中...</div>
-    <div v-else-if="error">{{ error }}</div>
+    <div v-if="isLoading" class="loading-indicator">
+      <div class="spinner"></div>
+      <p>加载中...</p>
+    </div>
+    <div v-else-if="error" class="error-message">{{ error }}</div>
     <div v-else-if="transcriptionData && transcriptionData.length > 0">
 
-    <!-- 会议内容记录 -->
-    <section id="content">  
-    <h2>会议内容记录</h2>
-      <!-- 优化按钮 (全局) -->
-      <button @click="startAllOptimization" :disabled="allOptimizationStarted" class="optimize-all-btn">
-        一键优化
-      </button>
+      <!-- 会议内容记录 -->
+      <section id="content">  
+        <div class="section-header">
+          <h2>会议内容记录</h2>
+        </div>
+        <!-- 优化按钮 (全局) -->
+        <button @click="startAllOptimization" :disabled="allOptimizationStarted" class="optimize-all-btn">
+          {{ allOptimizationStarted ? '优化中...' : '一键优化' }}
+          <span v-if="allOptimizationStarted" class="btn-spinner"></span>
+        </button>
 
-      <!-- 一键生成按钮 -->
-      <div class="global-buttons">
-        <button @click="getAllSummaries" :disabled="summaryLoading" class="summary-all-btn">
-          {{ summaryLoading ? '生成中...' : '一键生成摘要' }}
-        </button>
-        <button @click="getAllKeywords" :disabled="keywordLoading" class="keyword-all-btn">
-          {{ keywordLoading ? '生成中...' : '一键生成关键词' }}
-        </button>
-        <button @click="getOverallSummary" :disabled="overallSummaryLoading" class="overall-summary-btn">
-          {{ overallSummaryLoading ? '生成中...' : '生成会议整体摘要' }}
-        </button>
-        <button @click="getTodosAndExtensions" :disabled="todosLoading" class="todos-btn">
-                      {{ todosLoading ? '生成中...' : '生成会议待办与拓展' }}
-                  </button>
-          <button @click="generateWordCloud" :disabled="wordCloudLoading" class="wordcloud-btn">
-            {{ wordCloudLoading ? '生成中...' : '生成词云' }}
+        <!-- 一键生成按钮 -->
+        <div class="global-buttons">
+          <button @click="getAllSummaries" :disabled="summaryLoading" class="summary-all-btn action-btn">
+            <span class="btn-text">{{ summaryLoading ? '生成中...' : '一键生成摘要' }}</span>
+            <span v-if="summaryLoading" class="btn-spinner"></span>
           </button>
-      </div>
+          <button @click="getAllKeywords" :disabled="keywordLoading" class="keyword-all-btn action-btn">
+            <span class="btn-text">{{ keywordLoading ? '生成中...' : '一键生成关键词' }}</span>
+            <span v-if="keywordLoading" class="btn-spinner"></span>
+          </button>
+          <button @click="getOverallSummary" :disabled="overallSummaryLoading" class="overall-summary-btn action-btn">
+            <span class="btn-text">{{ overallSummaryLoading ? '生成中...' : '生成会议整体摘要' }}</span>
+            <span v-if="overallSummaryLoading" class="btn-spinner"></span>
+          </button>
+          <button @click="getTodosAndExtensions" :disabled="todosLoading" class="todos-btn action-btn">
+            <span class="btn-text">{{ todosLoading ? '生成中...' : '生成会议待办与拓展' }}</span>
+            <span v-if="todosLoading" class="btn-spinner"></span>
+          </button>
+          <button @click="generateWordCloud" :disabled="wordCloudLoading" class="wordcloud-btn action-btn">
+            <span class="btn-text">{{ wordCloudLoading ? '生成中...' : '生成词云' }}</span>
+            <span v-if="wordCloudLoading" class="btn-spinner"></span>
+          </button>
+        </div>
 
-      <!-- 内容区域 -->
-      <div class="content-container">
-          <!-- ... 其他内容 ... -->
+        <!-- 内容区域 -->
+        <div class="content-container">
           <div v-for="(segment, segmentIndex) in processedData" :key="segmentIndex" class="content-segment">
             <div v-for="(item, userId) in segment" :key="userId" class="user-transcription">
-              <!-- 使用函数生成唯一的 ref -->
               <div :ref="el => setNoteRef(el, segmentIndex, userId)" class="note" @click="toggleExpanded(segmentIndex, userId)">
                 <div class="note-header">
                   <span class="user-name">{{ item.userName }}</span>
@@ -76,7 +89,7 @@
                 <div class="optimized-text-container" v-if="optimizationData[segmentIndex] && optimizationData[segmentIndex][userId]">
                   <p class="optimized-label">优化结果:</p>
                   <div class="optimized-text-scroll-wrapper" :class="{ 'expanded-scroll': expandedStates[segmentIndex]?.[userId] }" ref="scrollWrapper">
-                    <p class="optimized-text" :id="`optimized-text-${segmentIndex}-${userId}`" v-html="processedOptimizationData[segmentIndex]?.[userId]"></p>
+                    <div class="optimized-text markdown-content" :id="`optimized-text-${segmentIndex}-${userId}`" v-html="processedOptimizationData[segmentIndex]?.[userId]"></div>
                   </div>
                 </div>
               </div>
@@ -85,69 +98,73 @@
             <!-- 摘要卡片 -->
             <div v-if="summaries[segmentIndex]" class="summary-card">
               <p class="card-label">摘要:</p>
-              <p class="summary-text" v-html="processedSummaries[segmentIndex]"></p>
+              <div class="summary-text markdown-content" v-html="processedSummaries[segmentIndex]"></div>
             </div>
 
             <!-- 关键词卡片 -->
             <div v-if="keywords[segmentIndex]" class="keyword-card">
               <p class="card-label">关键词:</p>
-              <p class="keyword-text">{{ keywords[segmentIndex] }}</p>
+              <div class="keyword-tags">
+                <span v-for="(keyword, idx) in keywords[segmentIndex].split('，')" :key="idx" class="keyword-tag">
+                  {{ keyword.trim() }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-    </section>  
+      </section>  
 
-    <section id="summary">
-       <!-- 会议整体摘要卡片 -->
-       <h2>会议整理</h2>
-      <div v-if="overallSummary" class="overall-summary-card">
-        <h3>会议整体摘要</h3>
-          <!-- <p class="card-label">会议整体摘要:</p> -->
-          <p class="summary-text" v-html="processedOverallSummary"></p>
-      </div>
+      <section id="summary">
+        <div class="section-header">
+          <h2>会议整理</h2>
+        </div>
+        <!-- 会议整体摘要卡片 -->
+        <div v-if="overallSummary" class="overall-summary-card">
+          <h3>会议整体摘要</h3>
+          <div class="summary-text markdown-content" v-html="processedOverallSummary"></div>
+        </div>
 
-     <!-- 待办事项和词云的容器 -->
-      <div class="todos-wordcloud-container">
-        <!-- 会议待办与拓展卡片 -->
-        <div v-if="todosAndExtensions" class="todos-card">
+        <!-- 待办事项和词云的容器 -->
+        <div class="todos-wordcloud-container">
+          <!-- 会议待办与拓展卡片 -->
+          <div v-if="todosAndExtensions" class="todos-card">
             <h3>会议待办</h3>
-            <!-- <p class="card-label">会议待办与拓展:</p> -->
-            <p class="summary-text" v-html="processedTodosAndExtensions"></p>
-        </div>
+            <div class="summary-text markdown-content" v-html="processedTodosAndExtensions"></div>
+          </div>
 
-        <!-- 新增：词云显示区域 -->
-        <div v-if="wordCloudData && wordCloudData.length > 0" class="wordcloud-card">
+          <!-- 新增：词云显示区域 -->
+          <div v-if="wordCloudData && wordCloudData.length > 0" class="wordcloud-card">
             <h3>会议词云</h3>
-            <!-- <p class="card-label">词云:</p> -->
             <WordCloud :wordData="wordCloudData" />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </div>
-    <div v-else>没有转录数据。</div>
+    <div v-else class="no-data-message">没有转录数据。</div>
   </div>
+  
+  <!-- 扩展浮层 -->
   <div class="overlay" v-if="overlayVisible" @click="closeOverlay">
-    <div class="expanded-note" :style="expandedNoteStyle" ref="expandedNote">
-      <!-- Add ref here -->
+    <div class="expanded-note" @click.stop>
       <div class="note-header">
         <span class="user-name">{{ expandedNoteData.userName }}</span>
-        <span class="expand-icon" @click.stop="closeOverlay">−</span>
+        <span class="close-icon" @click.stop="closeOverlay">×</span>
       </div>
-      <p class="transcription-text" style="max-height:none;">
-        {{ expandedNoteData.text }}
-      </p>
+      <div class="expanded-content">
+        <h4>原始内容</h4>
+        <p class="transcription-text full-text">
+          {{ expandedNoteData.text }}
+        </p>
 
-      <!-- 优化结果 -->
-      <div class="optimized-text-container">
-        <p class="optimized-label">优化结果:</p>
-        <!-- 使用 v-html 渲染 Markdown -->
-        <div class="expanded-optimized-text" v-html="marked(expandedNoteData.optimizedText)"></div>
+        <!-- 优化结果 -->
+        <div class="expanded-optimized-container" v-if="expandedNoteData.optimizedText">
+          <h4>优化结果</h4>
+          <div class="expanded-optimized-text markdown-content" v-html="marked(expandedNoteData.optimizedText)"></div>
+        </div>
       </div>
     </div>
   </div>
 </template>
-
-
 
 <script setup>
 import { ref, onMounted, computed, reactive, nextTick, watch, onUnmounted } from 'vue';
@@ -158,7 +175,48 @@ import { format } from 'date-fns';
 import EChartsBar from './EChartsBar.vue';
 import { marked } from 'marked'; // 导入 marked
 import WordCloud from './WordCloud.vue'; // 导入词云组件
+import backgroundImageSrc from '@/assets/intro1.png'; // 导入图片
+// 添加活动标签状态
+const activeTab = ref('overview');
 
+// 设置活动标签的方法
+function setActiveTab(tab) {
+  activeTab.value = tab;
+}
+
+// 监听滚动，自动更新活动标签
+function updateActiveTabOnScroll() {
+  const overviewSection = document.getElementById('overview');
+  const contentSection = document.getElementById('content');
+  const summarySection = document.getElementById('summary');
+  
+  const scrollPosition = window.scrollY + 100; // 增加一点偏移量以提高准确性
+  
+  if (summarySection && scrollPosition >= summarySection.offsetTop) {
+    activeTab.value = 'summary';
+  } else if (contentSection && scrollPosition >= contentSection.offsetTop) {
+    activeTab.value = 'content';
+  } else if (overviewSection && scrollPosition >= overviewSection.offsetTop) {
+    activeTab.value = 'overview';
+  }
+}
+
+// 在 onMounted 钩子中添加滚动监听
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('scroll', updateActiveTabOnScroll);
+  
+  // 初始化活动标签
+  nextTick(() => {
+    updateActiveTabOnScroll();
+  });
+});
+
+// 在 onUnmounted 钩子中移除滚动监听
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+  window.removeEventListener('scroll', updateActiveTabOnScroll);
+});
 const transcriptionData = ref(null);
 const isLoading = ref(false);
 const error = ref(null);
@@ -184,13 +242,11 @@ const keywordLoading = ref(false);
 
 // Overlay and Expanded Note
 const overlayVisible = ref(false);
-const expandedNoteStyle = ref({});
 const expandedNoteData = reactive({
   userName: '',
   text: '',
   optimizedText: ''
 });
-const expandedNote = ref(null);
 
 // 会议整体摘要
 const overallSummary = ref('');
@@ -252,14 +308,6 @@ const processedTodosAndExtensions = computed(() => {
   return todosAndExtensions.value ? marked(todosAndExtensions.value) : '';
 });
 
-watch(overlayVisible, (newVal) => {
-  if (!newVal) {
-    setTimeout(() => {
-      expandedNoteStyle.value = {};
-    }, 400);
-  }
-});
-
 function setNoteRef(el, segmentIndex, userId) {
   if (el) {
     if (!noteRefs.value[segmentIndex]) {
@@ -272,8 +320,6 @@ function setNoteRef(el, segmentIndex, userId) {
 const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
-
-// 在 fetchData 函数中添加加载已保存的优化内容的逻辑
 
 async function fetchData() {
   const meetingId = route.params.meetingId;
@@ -518,7 +564,7 @@ async function optimizeText(segmentIndex, userId, text) {
     optimizationData[segmentIndex][userId] = '优化失败';
   }
 }
-// 2. 添加保存优化文本到 Firebase 的方法
+
 async function saveOptimizedTextToFirebase(segmentIndex, userId, content) {
   try {
     const meetingId = route.params.meetingId;
@@ -544,14 +590,6 @@ async function saveOptimizedTextToFirebase(segmentIndex, userId, content) {
   } catch (error) {
     console.error('保存优化文本到 Firebase 失败:', error);
   }
-}
-
-
-function getLatestThreeLines(text) {
-  if (!text) return '';
-  const lines = text.split('\n');
-  const latestThree = lines.slice(-3);
-  return latestThree.join('\n');
 }
 
 function scrollToBottom(segmentIndex, userId) {
@@ -581,84 +619,16 @@ function getScrollWrapperIndex(segmentIndex, userId) {
 }
 
 function toggleExpanded(segmentIndex, userId) {
-  const noteElement = noteRefs.value[segmentIndex]?.[userId];
-  if (!noteElement) return;
-
-  const rect = noteElement.getBoundingClientRect();
-
-  expandedNoteStyle.value = {
-    // width: `${rect.width}px`,  // 移除
-    // height: `${rect.height}px`, // 移除
-    // top: `${rect.top}px`,    // 移除
-    // left: `${rect.left}px`,   // 移除
-    // transform: 'scale(1)',  // 移除
-    // transition: 'none',     // 移除
-    opacity: 0              // 保留
-  };
-
   expandedNoteData.userName = processedData.value[segmentIndex][userId].userName;
   expandedNoteData.text = processedData.value[segmentIndex][userId].text;
   expandedNoteData.optimizedText = optimizationData[segmentIndex]?.[userId] || '';
   overlayVisible.value = true;
-
-  nextTick(() => {
-    if (expandedNote.value) {
-      expandedNoteStyle.value = {
-        // ...expandedNoteStyle.value, // 移除
-        // top: '50%',              // 移除
-        // left: '50%',             // 移除
-        // width: '80%',            // 移除
-        // height: '80%',           // 移除
-        // transform: 'translate(-50%, -50%) scale(1)', // 移除
-        // transition: 'all 0.4s ease',   // 移除
-
-        opacity: 1                      // 保留
-      };
-      expandedStates[segmentIndex] = expandedStates[segmentIndex] || {};
-      expandedStates[segmentIndex][userId] = !expandedStates[segmentIndex][userId];
-    }
-  });
 }
 
 function closeOverlay() {
-  //   if (!expandedNote.value) return;  //注释
-
-  //   const originalNote = noteRefs.value[getSegmentAndUserIdFromExpanded().segmentIndex]?.[getSegmentAndUserIdFromExpanded().userId];
-  //   if (!originalNote) return;       //注释
-
-  //   const rect = originalNote.getBoundingClientRect(); //注释
-
-  //   expandedNoteStyle.value = {       //注释
-  //     ...expandedNoteStyle.value,     //注释
-  //     width: `${rect.width}px`,      //注释
-  //     height: `${rect.height}px`,     //注释
-  //     top: `${rect.top}px`,          //注释
-  //     left: `${rect.left}px`,         //注释
-  //     transform: 'scale(1)',          //注释
-  //     opacity: 0,                    //注释
-  //     transition: 'all 0.4s ease',    //注释
-  //   };                                 //注释
-
-  for (let segmentIndex in expandedStates) {
-    for (let userId in expandedStates[segmentIndex]) {
-      expandedStates[segmentIndex][userId] = false;
-    }
-  }
   overlayVisible.value = false;
 }
 
-function getSegmentAndUserIdFromExpanded() {
-  for (let segmentIndex in expandedStates) {
-    for (let userId in expandedStates[segmentIndex]) {
-      if (expandedStates[segmentIndex][userId] === true) {
-        return { segmentIndex: segmentIndex, userId: userId };
-      }
-    }
-  }
-  return { segmentIndex: null, userId: null };
-}
-
-// 3. 修改 getAllSummaries 方法，添加保存功能
 async function getAllSummaries() {
   summaryLoading.value = true;
   const texts = processedData.value.map(segment =>
@@ -737,7 +707,6 @@ async function getAllSummaries() {
   }
 }
 
-// 4. 添加保存摘要到 Firebase 的方法
 async function saveSummariesToFirebase(summaryTexts) {
   try {
     const meetingId = route.params.meetingId;
@@ -752,7 +721,6 @@ async function saveSummariesToFirebase(summaryTexts) {
   }
 }
 
-// 5. 修改 getAllKeywords 方法，添加保存功能
 async function getAllKeywords() {
   keywordLoading.value = true;
   const texts = processedData.value.map(segment =>
@@ -831,7 +799,6 @@ async function getAllKeywords() {
   }
 }
 
-// 6. 添加保存关键词到 Firebase 的方法
 async function saveKeywordsToFirebase(keywordTexts) {
   try {
     const meetingId = route.params.meetingId;
@@ -846,7 +813,8 @@ async function saveKeywordsToFirebase(keywordTexts) {
   }
 }
 
-// 获取会议整体摘要函数
+// 接续上一部分代码...
+
 async function getOverallSummary() {
     overallSummaryLoading.value = true;
     overallSummary.value = ''; // 清空旧的摘要
@@ -967,9 +935,7 @@ async function saveTodosToFirebase(todos) {
   }
 }
 
-
 // 新增：生成词云函数
-// 11. 修改 generateWordCloud 方法，添加保存功能
 async function generateWordCloud() {
     wordCloudLoading.value = true;
     wordCloudData.value = []; // 清空旧数据
@@ -1003,7 +969,6 @@ async function generateWordCloud() {
     }
 }
 
-// 12. 添加保存词云到 Firebase 的方法
 async function saveWordCloudToFirebase(wordcloudData) {
   try {
     const meetingId = route.params.meetingId;
@@ -1027,621 +992,1248 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.transcription-page {
-  padding: 30px;
-  background-color: var(--background-color); /* 使用全局背景颜色 */
-  color: #343a40;
-  margin: 0;
+/* 设置全局变量 */
+:root {
+  --primary-color: #4a6bff;
+  --primary-light: #e8eeff;
+  --secondary-color: #8a54d8;
+  --accent-color: #0aacb6;
+  --text-color: #333;
+  --text-light: #666;
+  --background-color: #f5f7fa; /* 更改为浅灰色背景 */
+  --card-background: #ffffff; /* 保持卡片为白色 */
+  --border-color: #e0e0e0;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  --border-radius-sm: 6px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 20px;
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  /* 暗色模式 */
+  @media (prefers-color-scheme: dark) {
+  .expanded-note {
+    background-color: var(--card-background); /* 确保暗色模式下背景色正确 */
+    color: var(--text-color); /* 确保暗色模式下文字颜色正确 */
+  }
+  
+    .expanded-content {
+    background-color: var(--card-background);
+    color: var(--text-color);
+  }
+}
 }
 
-/* 导航栏样式 */
+/* 整体页面样式 */
+.transcription-page {
+  font-family: var(--font-family);
+  padding: 30px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  max-width: 1400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+
+/* 导航栏左上角样式 */
 .navbar {
-  top: 0;
-  background-color: #ffffff;
-  padding: 10px 20px;
-  z-index: 1000;
-  font-size: 22px;
-  list-style: none;
-  height: 20px;
+  position: fixed;
+  top: 30;
+  left: 0;
+  background-color: var(--card-background);
+  padding: 10px 15px;
+  border-radius: 0 0 var(--border-radius-md) 0;
+  box-shadow: var(--shadow-sm);
+  z-index: 1100;
+  max-width: 200px;
 }
 
 .navbar ul {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .navbar li {
-  margin: 0 15px;
+  margin: 8px 0;
 }
 
 .navbar a {
-    text-decoration: none;
-    color: #333;
-    font-size: 22px;
-    margin-right: 20px;
-    transition: color 0.3s ease; 
-    padding: 10px;
-    border-radius: 20px;
-    font-weight: bold;
+  position: relative;
+  text-decoration: none;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-normal);
+  display: block;
 }
 
 .navbar a:hover {
-  color: #000000;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15); /* 点击时阴影减弱 */
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+  transform: translateX(3px);
 }
 
-
-#overview,
-#content,
-#summary {
-  scroll-margin-top: 100px; /* 导航栏的高度 */
-  background-color: var(--background-color);  /* 全局背景 */
+.navbar a::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 0;
+  top: 50%;
+  left: 0;
+  background-color: var(--primary-color);
+  transition: all 0.3s ease;
+  transform: translateY(-50%);
 }
 
-h1 {
-  color: #343a40;
+.navbar a:hover::after {
+  height: 70%;
+}
+
+/* 适应主内容区域 */
+.transcription-page {
+  padding-left: 21px; /* 为左侧导航留出空间 */
+}
+
+/* 调整标签栏位置 */
+.meeting-tabs-sticky {
+  left: 21px; /* 与左侧内容对齐 */
+  width: calc(100% - 210px);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .navbar {
+    position: static;
+    max-width: 100%;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 20px;
+  }
+  
+  .navbar ul {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .navbar li {
+    margin: 0 10px;
+  }
+  
+  .navbar a:hover {
+    transform: translateY(-2px);
+  }
+  
+  .navbar a::after {
+    width: 0;
+    height: 3px;
+    bottom: 0;
+    left: 50%;
+    top: auto;
+    transform: translateX(-50%);
+  }
+  
+  .navbar a:hover::after {
+    width: 70%;
+    height: 3px;
+  }
+  
+  .transcription-page {
+    padding-left: 30px;
+  }
+  
+  .meeting-tabs-sticky {
+    left: 0;
+    width: 100%;
+  }
+}
+/* 修改固定标签栏的样式，使其与顶部图片中样式一致 */
+.meeting-tabs-sticky {
+  position: sticky;
+  top: 70px; /* 在顶部导航栏下方固定 */
+  z-index: 999;
+  /* background-color: var(--background-color); */
+  padding: 0;
   margin-bottom: 30px;
-  text-align: center;
-  font-weight: 600;
 }
 
+.meeting-tabs {
+  display: flex;
+  justify-content: center;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  max-width: 100%;
+  margin: 0 auto;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.meeting-tab {
+  flex: 1;
+  text-align: center;
+  padding: 15px 20px;
+  text-decoration: none;
+  color: var(--text-color);
+  border-radius: 0;
+  transition: all var(--transition-normal);
+  font-weight: 500;
+  position: relative;
+  max-width: 200px;
+}
+
+.meeting-tab:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.meeting-tab.active {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 500;
+}
+
+/* 移除三角形指示器 */
+.meeting-tab.active::after {
+  display: none;
+}
+
+/* 添加下划线指示器，与图片中的蓝色线条一致 */
+.meeting-tab.active::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .meeting-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    white-space: nowrap;
+    justify-content: flex-start;
+  }
+  
+  .meeting-tab {
+    flex: 0 0 auto;
+    padding: 12px 15px;
+  }
+}
+/* 页面区块样式 */
+section {
+  margin-bottom: 40px;
+  scroll-margin-top: 130px; /* 增加滚动边距，以避免被固定导航遮挡 */
+  padding: 20px;
+  border-radius: var(--border-radius-md);
+  background-color: var(--card-background);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
+}
+
+section:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.section-header {
+  position: relative;
+  margin-bottom: 25px;
+  text-align: center;
+}
 
 h2 {
-  color: #343a40;
-  margin-bottom: 10px;
-  margin-top: 20px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 20px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+  position: relative;
+  display: inline-block;
 }
 
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
 
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-top: 0;
+  margin-bottom: 12px;
+  border-left: 4px solid var(--accent-color);
+  padding-left: 10px;
+}
+/* 移动端导航栏优化 */
+@media (max-width: 768px) {
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.7); /* 半透明背景 */
+    backdrop-filter: blur(10px); /* 毛玻璃效果 */
+    -webkit-backdrop-filter: blur(10px); /* Safari 兼容 */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    margin: 0;
+    z-index: 1200;
+    border-radius: 0;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid rgba(230, 230, 230, 0.7);
+  }
+  
+  .navbar ul {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0;
+  }
+  
+  .navbar li {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+  }
+  
+  .navbar a {
+    display: block;
+    padding: 15px 8px;
+    font-size: 14px;
+    border-radius: 0;
+    text-align: center;
+    transition: all 0.3s ease;
+    color: var(--text-color);
+    font-weight: 500;
+  }
+  
+  /* 活动标签样式 */
+  .navbar a.active {
+    color: var(--primary-color);
+    position: relative;
+  }
+  
+  .navbar a.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 25%;
+    width: 50%;
+    height: 3px;
+    background-color: var(--primary-color);
+    border-radius: 3px 3px 0 0;
+  }
+  
+  /* 暗色模式下的调整 */
+  @media (prefers-color-scheme: dark) {
+    .navbar {
+      background-color: rgba(30, 30, 30, 0.7);
+      border-bottom: 1px solid rgba(50, 50, 50, 0.7);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline-container {
+    display: none;
+  }
+}
+/* 时间线样式 */
 .timeline-container {
   display: flex;
   justify-content: space-between;
   margin-bottom: 30px;
-  background-color: #f5f5f5;
-  padding: 15px;
-  border-radius: 12px;
+  background-color: var(--card-background);
+  padding: 20px;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  z-index: 1;
 }
 
 .timeline-segment {
   flex: 1;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  padding: 10px;
+  transition: transform var(--transition-fast);
+}
+
+.timeline-segment:hover {
+  transform: translateY(-5px);
 }
 
 .timeline-segment .emoji {
-  font-size: 24px;
-  margin-bottom: 8px;
+  font-size: 28px;
+  margin-bottom: 12px;
+  background-color: var(--background-color);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
 }
 
 .timeline-segment .time {
   font-size: 14px;
-  color: #6c757d;
+  color: var(--text-light);
+  font-weight: 500;
 }
 
+/* 图表容器 */
 .echart-container {
-    max-width: 100%; /* 限制最大宽度 */
-  overflow: hidden; /* 防止内容溢出 */
-  width: 100%; /* 占据父容器的宽度 */
+  width: 100%;
+  height: 300px;
+  margin-bottom: 30px;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  background-color: var(--card-background);
+  box-shadow: var(--shadow-sm);
 }
-.content-container {
+
+/* 加载状态样式 */
+.loading-indicator {
   display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--primary-light);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message, .no-data-message {
+  text-align: center;
+  padding: 40px;
+  color: #e74c3c;
+  background-color: #fde8e8;
+  border-radius: var(--border-radius-md);
+  margin: 20px 0;
+}
+
+.no-data-message {
+  color: var(--text-light);
+  background-color: var(--primary-light);
+}
+
+/* 按钮样式 */
+.optimize-all-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
   border: none;
+  padding: 12px 30px;
+  border-radius: var(--border-radius-sm);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  margin: 0 auto 25px;
+  display: block;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
 }
 
-.content-segment {
-  flex: 1;
-  padding: 0 10px;
+.optimize-all-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.7s;
 }
 
+.optimize-all-btn:hover::before {
+  left: 100%;
+}
+
+.optimize-all-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.optimize-all-btn:disabled {
+  background: #b0b0b0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.global-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 10px 18px;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.action-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  margin-left: 8px;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 内容区域样式 - 5列布局 */
 .content-container {
-  display: flex; /* 启用 Flexbox 布局 */
-  flex-wrap: wrap; /* 允许换行 */
-  gap: 20px; /* 卡片之间的间距 */
-  justify-content: space-between; /* 均匀分布卡片 */
-  background-color: var(--background-color);  /* 全局背景 */
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+/* 确保在不同屏幕尺寸下优雅降级 */
+@media (max-width: 1600px) {
+  .content-container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1280px) {
+  .content-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .content-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
 }
 
 .content-segment {
-  flex: 1; /* 每个卡片自动扩展以占满可用空间 */
-  min-width: 300px; /* 设置卡片的最小宽度，避免过小 */
-  max-width: calc(33.33% - 20px); /* 每行最多显示 3 个卡片，并考虑间距 */
-  background-color: var(--background-color);  /* 全局背景 */
-}
-
-.content-segment:last-child {
-  border-right: none;
-}
-
-.user-transcription {
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; /* 防止内容溢出 */
 }
 
 /* 便签样式 */
 .note {
-  border-radius: 12px;
-  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
   padding: 20px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  border: 1px solid #ced4da;
-  transition: box-shadow 0.3s ease;
-    box-shadow: var(--global-box-shadow);
-  background-color: var(--background-color);  /* 全局背景 */
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
 }
 
 .note:hover {
-  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+
+.note::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
 }
 
 .note-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.expand-icon {
-  font-size: 1.2em;
-  color: #007bff;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border-color);
 }
 
 .user-name {
   font-weight: 600;
-  color: #007bff;
-  margin-right: auto;
+  color: var(--primary-color);
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+}
+
+.expand-icon, .close-icon {
+  font-size: 18px;
+  color: var(--secondary-color);
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.expand-icon:hover, .close-icon:hover {
+  background-color: var(--primary-light);
 }
 
 .transcription-text {
-  margin: 10px 0;
+  margin: 0;
   line-height: 1.6;
-  color: #495057;
+  color: var(--text-color);
   max-height: 4.8em;
   overflow: hidden;
-  transition: max-height 0.5s ease-in-out;
+  font-size: 14px;
 }
 
 .truncated {
-  text-overflow: ellipsis;
   display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3; /* 添加标准属性 */
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.note-header::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 10px;
-  height: 10px;
-  background-color: #ffd561;
-  border-radius: 50%;
-  opacity: 0.8;
+.full-text {
+  max-height: none;
+  margin-bottom: 20px;
 }
 
 .optimized-text-container {
   margin-top: 15px;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--border-color);
   padding-top: 15px;
 }
 
-.optimized-label {
+.optimized-label, .card-label {
   font-weight: 600;
-  color: #a05bff;
-  margin-bottom: 5px;
+  color: var(--secondary-color);
+  margin-bottom: 8px;
   display: block;
-
-}
-/*原样式保留,但默认不设置高度*/
-.optimized-text {
-  color: #495057;
-  line-height: 1.6;
-  margin: 0;
-  white-space: pre-line;
-}
-
-/*优化md 样式*/
-.optimized-text p {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  line-height: 1.5;
-}
-.optimized-text h1 {
-font-size: 1.2em;
-margin-bottom: 0.4em;
-color: #444;
-}
-
-.optimized-text h2 {
-  font-size: 1.1em;
-  margin-bottom: 0.3em;
-  color: #555;
-}
-
-.optimized-text h3 {
-  font-size: 1em;
-  margin-bottom: 0.2em;
-  color: #666;
-}
-.optimized-text strong{
-font-weight: bold;
-}
-
-.optimized-text ul{
-list-style-type: disc;
-  margin-left: 20px;
-  padding-left: 0;
-}
-
-.optimized-text ol {
-  list-style-type: decimal;
-  margin-left: 20px;
-  padding-left: 0;
-}
-.optimized-text  a {
-    color: #007bff;
-    text-decoration: none;
-  }
-.optimized-text  a:hover {
-        text-decoration: underline;
-}
-
-/* 行内代码 `code` */
-.optimized-text code {
-  font-family: 'Courier New', Courier, monospace;
-  background-color: #f8f9fa;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.optimize-all-btn {
-background-color: #70b5ff;
-border: 1px solid #839cff;
-padding: 10px 30px;
-border-radius: 15px;
-font-size: 16px;
-font-weight:500;
-cursor: pointer;
-transition: background-color 0.3s ease;
-margin-bottom: 20px;
-display: block;
-margin-left: auto;
-margin-right: auto;
-}
-
-.optimize-all-btn:hover {
-    transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.optimize-all-btn:disabled {
-background-color: #bee1ff;
-cursor: not-allowed;
+  font-size: 14px;
 }
 
 .optimized-text-scroll-wrapper {
-  max-height: 200px; /* 设置最大高度 */
-  overflow-y: auto;  /* 超出时显示滚动条 */
-  transition: max-height 0.3s ease;
-  position: relative;
-}
-/*去掉原来得.expanded-scroll,不再需要*/
-
-.overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.5);
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 2000;
-  /* 移除transition */
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--background-color);
 }
 
-.expanded-note {
-position: relative; /* 改为 relative，不再需要 absolute */
-padding: 20px;
-border-radius: 15px;
-  background-color: var(--background-color);  /* 全局背景 */z-index: 2001;
-  width: 80%; /* 或者你想要的宽度 */
-  max-width: 800px; /* 设置一个最大宽度 */
-  max-height: 80vh; /* 设置最大高度为视口高度的80% */
-  overflow-y: auto; /* 添加滚动条 */
+.optimized-text-scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* 优化后文本的 Markdown 样式（在展开的便签中） */
-.expanded-optimized-text {
-    /* 这里可以复制 .optimized-text 的所有样式 */
-    color: #495057;
-    line-height: 1.6;
-    margin: 0;
-    white-space: pre-line;
-    overflow-y: auto; /* 确保有滚动条 */
-    max-height: 60vh; /* 或者其他合适的高度 */
+.optimized-text-scroll-wrapper::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 10px;
 }
 
-/*原样式保留,但默认不设置高度*/
-.expanded-optimized-text p {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    line-height: 1.5;
+.optimized-text-scroll-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 10px;
 }
 
-  /* 调整 h1 样式 */
-.expanded-optimized-text h1 {
-    font-size: 1.3em;
-    margin-bottom: 0.4em;
-    margin-top: 0.6em;
-    font-weight: bold;
-    line-height: 1.2;
-}
-
-  /* 调整 h2 样式 */
-.expanded-optimized-text h2 {
-    font-size: 1.1em;
-    margin-bottom: 0.3em;
-    margin-top: 0.5em;
-    color: #555;
-    font-weight: bold;
-    line-height: 1.2;
-}
-
-  /* 调整 h3 样式 */
-.expanded-optimized-text h3 {
-    font-size: 1em;
-    margin-bottom: 0.2em;
-    margin-top: 0.4em;
-    color: #666;
-    font-weight: bold;
-    line-height: 1.2;
-}
-
-.expanded-optimized-text strong{
-    font-weight: bold;
-}
-
-.expanded-optimized-text ul{
-    list-style-type: disc;
-    margin-left: 20px;
-    padding-left: 0;
-}
-
-.expanded-optimized-text ol {
-    list-style-type: decimal;
-    margin-left: 20px;
-    padding-left: 0;
-}
-.expanded-optimized-text  a {
-        color: #007bff;
-        text-decoration: none;
-    }
-.expanded-optimized-text  a:hover {
-            text-decoration: underline;
-}
-
-  /* 行内代码 `code` */
-.expanded-optimized-text code {
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #f8f9fa;
-    padding: 2px 4px;
-    border-radius: 3px;
-    color: #c889ff;
-}
-
-
-  /* 一键生成按钮的样式 */
-.global-buttons {
-  display: flex;
-  justify-content: center; /* 水平居中 */
-  gap: 25px; /* 按钮之间的间距 */
-  border: none;
-  border-radius: 15px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  background: none;
-  box-shadow: none;
-}
-
-.summary-all-btn, .keyword-all-btn, .overall-summary-btn, .todos-btn, .wordcloud-btn  {
-  /* 移除之前的 float: left; */
-  padding: 10px 20px;
-  border: none;
-  border-radius: 15px;
-  font-size: 14px;
-  background-color: #bde4ff;
-  border: 1px solid #83cbff;
-    cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-/* 按钮颜色和悬停效果 */
-.summary-all-btn:hover {
-    transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.keyword-all-btn:hover {
-    transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.overall-summary-btn:hover {
-    transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.todos-btn:hover {
-    transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.wordcloud-btn:hover{
-    transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-  /* 摘要和关键词卡片样式 */
+/* 摘要和关键词卡片样式 */
 .summary-card, .keyword-card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    margin-bottom: 15px;
-    border: 1px solid #e0e0e0;
-    max-height: 250px; /* 添加最大高度 */
-    overflow-y: auto;  /* 添加垂直滚动 */
-    box-shadow: var(--global-box-shadow);
-  background-color: var(--background-color);  /* 全局背景 */
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before, .keyword-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
 }
 
 .summary-card:hover, .keyword-card:hover {
-    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
-
-}
-.card-label {
-    font-weight: bold;
-    color: #a05bff;
-    margin-bottom: 5px;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
 }
 
-.summary-text, .keyword-text {
-    color: #555;
-    line-height: 1.5;
-     /*  .keyword-text，保留原来的样式 */
+.keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-/* summary md渲染优化*/
-.summary-text p {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    line-height: 1.5;
+.keyword-tag {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
 }
 
-.summary-text h1 {
-  font-size: 1.2em;
-  margin-bottom: 0.4em;
-  color: #444;
+.keyword-tag:hover {
+  background-color: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
-.summary-text h2 {
-    font-size: 1.1em;
-    margin-bottom: 0.3em;
-    color: #555;
-}
-
-.summary-text h3 {
-    font-size: 1em;
-    margin-bottom: 0.2em;
-    color: #666;
-}
-.summary-text strong{
-  font-weight: bold;
-}
-
-.summary-text ul{
-list-style-type: disc;
-  margin-left: 20px;
-  padding-left: 0;
-}
-
-.summary-text ol {
-    list-style-type: decimal;
-    margin-left: 20px;
-    padding-left: 0;
-}
-.summary-text  a {
-    color: #007bff;
-    text-decoration: none;
-}
-.summary-text  a:hover {
-    text-decoration: underline;
-}
-
-  /* 行内代码 `code` */
-.summary-text code {
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #f8f9fa;
-    padding: 2px 4px;
-    border-radius: 3px;
-    color: #d63384;
-}
-
-  /* 会议整体摘要卡片样式 */
+/* 会议整体摘要卡片 */
 .overall-summary-card {
-    border-radius: 15px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    margin-bottom: 15px; /* 与下方内容的间距 */
-    border: 1px solid #e0e0e0;
-    max-height: 500px; /* 可以根据需要调整 */
-    overflow-y: auto;
-    box-shadow: var(--global-box-shadow);
-    background-color: var(--background-color);  /* 全局背景 */
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  margin-bottom: 25px;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.overall-summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
 }
 
 .overall-summary-card:hover {
-    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
+
+/* 待办事项和词云
 
 /* 待办事项和词云的容器 */
 .todos-wordcloud-container {
-  display: flex;
-  justify-content: space-between; /* 两端对齐 */
-  padding: 0;
-  border-radius: 15px;
-  margin-bottom: 10px; /* 与下方内容的间距，保持一致 */
-}
-
-.todos-wordcloud-container:hover{
-    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.15);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-bottom: 30px;
 }
 
 /* 待办事项卡片和词云卡片 */
-.todos-card,
-.wordcloud-card {
-  background-color: #fff;
-  border-radius: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  max-height: 500px;
+.todos-card, .wordcloud-card {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.todos-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+}
+
+.wordcloud-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+}
+
+.todos-card:hover, .wordcloud-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+
+/* 浮层 - 优化点击后的卡片设计 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.expanded-note {
+  position: relative;
+  width: 85%;
+  max-width: 900px;
+  max-height: 85vh;
+  background-color: var(--card-background); /* 确保使用正确的背景色 */
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 25px;
+  z-index: 2001; /* 确保在overlay之上 */
+  overflow: hidden;
+  animation: slideIn 0.4s ease;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.expanded-content {
+  max-height: calc(85vh - 120px);
   overflow-y: auto;
-  width: calc(50% - 10px); /* 各占一半宽度，并留出间距 */
+  padding-right: 15px;
+  padding-left: 5px;
+  background-color: var(--card-background); /* 确保内容区域有正确的背景色 */
+  color: var(--text-color); /* 确保文字颜色正确 */
 }
 
-/* 响应式设计：小屏幕时垂直排列 */
+.expanded-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.expanded-content::-webkit-scrollbar-track {
+  background: var(--background-color);
+  border-radius: 10px;
+}
+
+.expanded-content::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 10px;
+}
+
+.expanded-optimized-container {
+  margin-top: 25px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+}
+
+/* 关闭按钮样式优化 */
+.close-icon {
+  font-size: 22px;
+  font-weight: bold;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.close-icon:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Markdown 内容样式 */
+.markdown-content {
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.markdown-content h1 {
+  font-size: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 0.6em;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.markdown-content h2 {
+  font-size: 1.3em;
+  margin-top: 0.8em;
+  margin-bottom: 0.5em;
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.markdown-content h3 {
+  font-size: 1.1em;
+  margin-top: 0.6em;
+  margin-bottom: 0.4em;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.markdown-content p {
+  margin-top: 0;
+  margin-bottom: 1em;
+  line-height: 1.6;
+}
+
+.markdown-content strong {
+  font-weight: 700;
+  color: var(--primary-color);
+  background-color: rgba(74, 107, 255, 0.08);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.markdown-content em {
+  font-style: italic;
+  color: var(--accent-color);
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 0;
+  margin-bottom: 1em;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+  margin-left: 20px;
+  padding-left: 0;
+  margin-bottom: 1em;
+}
+
+.markdown-content li {
+  margin-bottom: 0.5em;
+}
+
+.markdown-content a {
+  color: var(--primary-color);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--primary-color);
+  transition: border-bottom var(--transition-fast);
+}
+
+.markdown-content a:hover {
+  border-bottom: 1px solid var(--primary-color);
+}
+
+.markdown-content code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  background-color: #f3f4f6;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #d63384;
+}
+
+.markdown-content pre {
+  background-color: #f3f4f6;
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid var(--primary-color);
+  margin-left: 0;
+  padding-left: 15px;
+  color: var(--text-light);
+  font-style: italic;
+  margin-bottom: 1em;
+}
+
+.markdown-content hr {
+  border: 0;
+  height: 1px;
+  background: var(--border-color);
+  margin: 20px 0;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 15px 0;
+  overflow-x: auto;
+  display: block;
+}
+
+.markdown-content table th,
+.markdown-content table td {
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-content table th {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.markdown-content table tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+/* 词云组件样式增强 */
+.wordcloud-wrapper {
+  height: 350px;
+  width: 100%;
+  position: relative;
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 10px;
+  opacity: 0.8;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
+}
+
+/* 响应式设计增强 */
 @media (max-width: 768px) {
-  .todos-wordcloud-container {
+  .meeting-tabs {
     flex-direction: column;
+    padding: 0;
   }
-
-  .todos-card,
-  .wordcloud-card {
-    width: 100%; /* 小屏幕时占满整个宽度 */
-    margin-bottom: 10px;
+  
+  .meeting-tab {
+    padding: 12px 10px;
+    border-radius: 0;
   }
-    /*button 组,小屏幕也需要独占一行*/
-.global-buttons{
- flex-direction: column;
+  
+  .meeting-tab.active::after {
+    display: none;
   }
-  .content-container{
-     flex-direction: column;
-     margin-top: 120px;
+  
+  .meeting-tab:first-child {
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
   }
-  .content-segment{
-    border-right:none;
+  
+  .meeting-tab:last-child {
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  }
+  
+  .global-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .expanded-note {
+    width: 95%;
+    padding: 15px;
+  }
 }
+
+/* 打印样式 */
+@media print {
+  .navbar, .meeting-tabs-sticky, .optimize-all-btn, .global-buttons {
+    display: none;
+  }
+  
+  section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .transcription-page {
+    padding: 0;
+  }
+}
+
+/* 暗黑模式增强 */
+@media (prefers-color-scheme: dark) {
+  .markdown-content code {
+    background-color: #2a2a2a;
+    color: #e83e8c;
+  }
+  
+  .markdown-content pre {
+    background-color: #2a2a2a;
+  }
+  
+  .markdown-content table th {
+    background-color: #353535;
+    color: var(--primary-light);
+  }
+  
+  .markdown-content table tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+  
+  .close-icon {
+    background-color: #353535;
+    color: var(--primary-light);
+  }
+  
+  .close-icon:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+}
+@media (max-width: 768px) {
+  .expanded-note {
+    width: 95%;
+    max-width: none;
+    max-height: 90vh;
+    padding: 15px;
+    border-radius: var(--border-radius-md);
+  }
+  
+  .expanded-content {
+    max-height: calc(90vh - 100px);
+    padding-right: 10px;
+  }
+  
+  .close-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+  }
 }
 </style>
