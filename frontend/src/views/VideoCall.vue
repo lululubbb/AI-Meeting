@@ -141,24 +141,59 @@
               </div>
             </video-player-container>
 
-            <!-- 字幕容器 -->
-            <div class="subtitle-container" v-if="subtitles">
-              <div class="subtitle">
-                <div
-                  v-for="(sub, userId) in subtitles"
-                  :key="userId"
-                  class="subtitle-item"
-                >
-                  <span class="subtitle-user">{{ sub.userName }}: </span>
-                  <span class="subtitle-text">{{ sub.originalText }}</span>
-                  <span class="subtitle-translation" v-if="sub.translatedText">
-                    ({{ sub.translatedText }})
-                  </span>
-                </div>
-              </div>
-            </div>
+<!-- 改进后的字幕容器模板 -->
+<div class="subtitle-container" v-if="isTranscribing">
+  <transition-group name="subtitle-trans" tag="div" class="subtitle">
+    <template v-for="(sub, userId) in subtitles" :key="userId">
+      <div 
+        class="subtitle-item" 
+        v-if="sub.visible && sub.originalText"
+      >
+        <!-- 移动端优化：用户名和文本分开布局 -->
+        <div class="subtitle-header">
+          <span class="subtitle-user">{{ sub.userName }}</span>
+          <span class="subtitle-time" v-if="false">{{ getCurrentTime() }}</span>
+        </div>
+        <div class="subtitle-content">
+          <p class="subtitle-text">{{ sub.originalText }}</p>
+          <p class="subtitle-translation" v-if="sub.translatedText">
+            {{ sub.translatedText }}
+          </p>
+        </div>
+      </div>
+    </template>
+    
+    <!-- 空状态显示优化 -->
+    <div 
+      v-if="Object.keys(subtitles).length === 0 || !Object.values(subtitles).some(sub => sub.visible && sub.originalText)" 
+      class="subtitle-placeholder"
+      key="placeholder"
+    >
+      <span>等待发言...</span>
+    </div>
+  </transition-group>
+</div>
             <!-- 底部控制栏 -->
             <div class="controls">
+              <!-- 在 controls div 内，加入以下代码 -->
+              <div class="language-selector"> <!-- Add this wrapper -->
+  <button @click="showLanguageDropdown = !showLanguageDropdown" class="language-button">
+    <img src="@/assets/audio_off.png" alt="语言选择" />
+    <span class="selected-language">{{ supportedLanguages.find(l => l.code === targetLanguage).name }}</span>
+  </button>
+
+  <div v-if="showLanguageDropdown" class="language-dropdown">
+    <div
+      v-for="lang in supportedLanguages"
+      :key="lang.code"
+      @click="selectLanguage(lang.code)"
+      class="language-option"
+      :class="{ active: targetLanguage === lang.code }"
+    >
+      {{ lang.name }}
+    </div>
+  </div>
+</div>
               <button @click="toggleTranscription" :class="{ active: isTranscribing }">
                 <img v-if="isTranscribing" src="@/assets/字幕_on.png" alt="停止转录" />
                 <img v-else src="@/assets/字幕_off.png" alt="开始转录" />
@@ -413,6 +448,16 @@ import { useI18n } from "vue-i18n";
 import defaultAvatar from "../assets/柴犬.png";
 import { format } from "date-fns"; // 导入 date-fns 的 format函数
 const { t } = useI18n();
+// 翻译目标语言
+const targetLanguage = ref('en'); // 默认为英语
+
+// 支持的语言列表
+const supportedLanguages = [
+  { code: 'en', name: '英语' },
+  { code: 'ko', name: '韩语' },
+  { code: 'ru', name: '俄语' },
+  { code: 'zh', name: '中文' }
+];
 
 import { ElMessage, ElMessageBox } from "element-plus";
 
@@ -527,6 +572,22 @@ const stopScreenRecording = () => {
   }
   isScreenRecording.value = false; // 确保状态正确
 };
+const showLanguageDropdown = ref(false);
+
+// 选择目标语言
+const selectLanguage = (langCode) => {
+  targetLanguage.value = langCode;
+  showLanguageDropdown.value = false; // 选择后关闭下拉菜单
+};
+
+// 点击外部区域关闭下拉菜单
+const closeLanguageDropdown = (event) => {
+  const dropdown = document.querySelector('.language-selector');
+  if (dropdown && !dropdown.contains(event.target)) {
+    showLanguageDropdown.value = false;
+  }
+};
+
 //  定义翻译函数
 async function translateText(text, sourceLang, targetLang) {
   if (!text) return "";
@@ -1853,6 +1914,9 @@ const endSession = async () => {
     // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
     if (isTranscribing.value) {
       stopTranscription(); // 先停止转录 (重要!)
+      
+      // 确保保存所有已完成的句子
+      const formattedTranscriptions = formatTranscriptionsForSaving(completedSentences.value);
 
       // 更新 Firestore
       if (user && config.meetingId) {
@@ -1861,7 +1925,7 @@ const endSession = async () => {
           endTime: now,
           participants: filteredUsers,
           chatMessages: filteredChatMessages,
-          transcriptionHistory: transcriptionHistory.value, // 新增：保存转录历史
+          transcriptionHistory: formattedTranscriptions, // 使用新的转录历史格式
         });
       }
     } else {
@@ -1889,6 +1953,19 @@ const endSession = async () => {
   }
 };
 
+// 格式化转录数据以便保存
+function formatTranscriptionsForSaving(sentences) {
+  return sentences.map(sentence => ({
+    userId: sentence.userId,
+    userName: sentence.userName,
+    text: sentence.text,
+    translatedText: sentence.translatedText,
+    date: format(sentence.timestamp, 'yyyy-MM-dd'),
+    time: format(sentence.timestamp, 'HH:mm:ss')
+  }));
+}
+
+
 function resetState() {
   sessionJoined.value = false;
   autoJoin.value = false;
@@ -1909,21 +1986,7 @@ const transcriptionHistory = ref({});
 // 新增：当前时间段 (用于标记当前正在记录的时间段)
 let currentTimeslot = ref("");
 // 新增：计算当前时间段的函数
-const getCurrentTimeslot = () => {
-  const now = new Date();
-  const minutes = Math.floor(now.getMinutes() / 5) * 5; // 向下取整到最近的 5 分钟
-  const start = `${String(now.getHours()).padStart(2, "0")}:${String(minutes).padStart(
-    2,
-    "0"
-  )}`;
-  const endMinutes = (minutes + 5) % 60;
-  const endHours = minutes + 5 >= 60 ? now.getHours() + 1 : now.getHours(); // 小时+1
-  const end = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(
-    2,
-    "0"
-  )}`;
-  return `${start}-${end}`;
-};
+
 // 辅助函数：获取当前日期 (YYYY-MM-DD 格式)
 const getCurrentDate = () => {
   return format(new Date(), "yyyy-MM-dd");
@@ -1932,7 +1995,7 @@ const getCurrentDate = () => {
 // 新增：将转录数据添加到历史记录的函数
 const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
   const date = getCurrentDate(); // YYYY-MM-DD
-  const timeslot = getCurrentTimeslot(); // HH:mm-HH:mm
+  
   const time = format(timestamp, "HH:mm:ss"); // HH:mm:ss
   // 确保日期存在
   if (!transcriptionHistory.value[date]) {
@@ -1954,10 +2017,14 @@ const addTranscriptionToHistory = (userId, userName, text, timestamp) => {
 const isTranscribing = ref(false);
 const subtitles = ref({}); // 使用对象存储字幕, 键是 userId
 const subtitle = ref(""); // (已弃用)
+const subtitleTimers = ref({});
 const transcriptionWs = ref(null); //  转录 WebSocket
 let audioContext = null; //  全局的 AudioContext
 let scriptNode = null; //  全局的 ScriptProcessorNode
 let mediaStream = null; // 全局
+const userTranscriptions = reactive({}); // 存储每个用户的转录状态
+const completedSentences = ref([]); // 存储完整的句子缓存
+const lastSaveTimestamp = ref(Date.now()); // 上次保存到Firebase的时间戳
 
 const toggleTranscription = async () => {
   if (isTranscribing.value) {
@@ -2056,7 +2123,17 @@ const startTranscription = async () => {
       return;
     }
 
-    // 5. 建立 WebSocket 连接 (如果尚未建立)
+    // 初始化状态变量
+    completedSentences.value = [];
+    userTranscriptions[curUser.userId] = {
+      currentText: "",
+      lastText: "",
+      lastUpdateTime: new Date(),
+      userName: curUser.displayName
+    };
+    lastSaveTimestamp.value = Date.now();
+
+    // 5. 建立 WebSocket 连接
     if (!transcriptionWs.value || transcriptionWs.value.readyState !== WebSocket.OPEN) {
       const wsUrl = `ws://localhost:4399?userId=${
         curUser.userId
@@ -2066,11 +2143,9 @@ const startTranscription = async () => {
       transcriptionWs.value.onopen = () => {
         console.log("[Client] 转录 WebSocket 连接已建立");
         isTranscribing.value = true;
-        currentTimeslot.value = getCurrentTimeslot();
 
-        // 6. *重要修改*: 在 onopen 中设置 onaudioprocess
+        // 6. 在 onopen 中设置 onaudioprocess
         scriptNode.onaudioprocess = (e) => {
-          // console.log('onaudioprocess triggered'); // 确认事件触发
           const pcmData = e.inputBuffer.getChannelData(0);
           const buffer = new Int16Array(pcmData.length);
 
@@ -2084,53 +2159,149 @@ const startTranscription = async () => {
             transcriptionWs.value &&
             transcriptionWs.value.readyState === WebSocket.OPEN
           ) {
-            // console.log('Sending audio data:', buffer.buffer)
             transcriptionWs.value.send(buffer.buffer);
           } else {
             console.warn("[Client] WebSocket 未准备好，无法发送音频数据");
           }
         };
-        // *** 连接节点 (在 onopen 里，确保 WebSocket 连接建立后) ***
+        // 连接节点
         source.connect(scriptNode);
         scriptNode.connect(audioContext.destination);
       };
 
       transcriptionWs.value.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        const now = new Date();
+  const data = JSON.parse(event.data);
+  const now = new Date();
 
-        // 合并处理 interim 和 final 类型的消息
-        if (data.type === "interim" || data.type === "final") {
-          // 如果 subtitles 对象中没有当前 userId 对应的条目，则创建一个新的条目
-          if (!subtitles.value[data.userId]) {
-            subtitles.value[data.userId] = {
-              userName: data.userName,
-              originalText: "", // 初始为空字符串
-              translatedText: "", // 初始为空字符串
-            };
-          }
+  // 初始化用户的转录状态（如果不存在）
+  if (!userTranscriptions[data.userId]) {
+    userTranscriptions[data.userId] = {
+      currentText: "",
+      lastText: "",
+      lastUpdateTime: now,
+      userName: data.userName
+    };
+  }
 
-          // 将语音识别的文本赋值给 originalText
-          subtitles.value[data.userId].originalText = data.text;
+  // 获取当前用户状态
+  const userState = userTranscriptions[data.userId];
+  
+  // 检查句子是否结束的逻辑
+  const isSentenceComplete = 
+    // 1. 文本变短了，说明是新句子开始
+    (data.text.length < userState.currentText.length) ||
+    // 2. 文本超过2秒没有变化，且不为空
+    (userState.currentText.length > 0 && 
+     now - userState.lastUpdateTime > 2000 && 
+     data.text === userState.currentText);
+  
+  // 如果句子完成，缓存它
+  if (isSentenceComplete && userState.currentText.trim() !== "") {
+    // 缓存完整句子
+    completedSentences.value.push({
+      userId: data.userId,
+      userName: data.userName,
+      text: userState.currentText,
+      translatedText: subtitles.value[data.userId]?.translatedText || "",
+      timestamp: now
+    });
+    
+    // 重置当前句子
+    userState.lastText = userState.currentText;
+    userState.currentText = data.text.length < userState.currentText.length ? data.text : "";
+  } else {
+    // 更新当前文本
+    userState.currentText = data.text;
+  }
+  
+  // 更新最后更新时间
+  userState.lastUpdateTime = now;
+  
+  // 使用Vue的响应式API安全地更新subtitles对象
+  if (!subtitles.value[data.userId]) {
+    // 如果不存在这个用户的字幕，添加一个新的空对象
+    const newSubtitle = {
+      userName: data.userName,
+      originalText: data.text, 
+      translatedText: "",
+      visible: true
+    };
+    
+    // 使用Vue的响应式API安全地更新
+    subtitles.value = { 
+      ...subtitles.value, 
+      [data.userId]: newSubtitle 
+    };
+  } else {
+    // 如果已存在，直接更新属性
+    const updatedSubtitles = { ...subtitles.value };
+    updatedSubtitles[data.userId] = {
+      ...updatedSubtitles[data.userId],
+      originalText: data.text,
+      visible: true
+    };
+    subtitles.value = updatedSubtitles;
+  }
 
-          // 调用翻译函数 translateText
-          // 将语音识别的文本、源语言(这里假设是中文'zh')、目标语言(这里假设是英文'en')传入
-          translateText(data.text, "zh", "en")
-            .then((translated) => {
-              // 翻译成功，将翻译结果赋值给 translatedText
-              subtitles.value[data.userId].translatedText = translated;
-            })
-            .catch((err) => {
-              // 翻译失败，处理错误
-              console.error("翻译失败:", err);
-              // 可选：将 translatedText 设置为错误提示信息
-              // subtitles.value[data.userId].translatedText = '翻译失败';
-            });
+  // 清除之前的计时器
+  if (subtitleTimers.value[data.userId]) {
+    clearTimeout(subtitleTimers.value[data.userId]);
+  }
 
-          // 将语音识别结果添加到转录历史记录
-          addTranscriptionToHistory(data.userId, data.userName, data.text, now);
-        }
+  // 设置新的计时器：1.5秒后隐藏此用户的字幕
+  const timerId = setTimeout(() => {
+    if (subtitles.value[data.userId]) {
+      const updatedSubtitles = { ...subtitles.value };
+      updatedSubtitles[data.userId] = {
+        ...updatedSubtitles[data.userId],
+        visible: false
       };
+      subtitles.value = updatedSubtitles;
+    }
+  }, 1500);
+  
+  // 保存计时器ID到响应式对象
+  const updatedTimers = { ...subtitleTimers.value };
+  updatedTimers[data.userId] = timerId;
+  subtitleTimers.value = updatedTimers;
+
+  // 调用翻译函数
+  translateText(data.text, "zh", targetLanguage.value)
+    .then((translated) => {
+      // 翻译成功，安全地更新翻译结果
+      if (subtitles.value[data.userId]) {
+        const updatedSubtitles = { ...subtitles.value };
+        updatedSubtitles[data.userId] = {
+          ...updatedSubtitles[data.userId],
+          translatedText: translated
+        };
+        subtitles.value = updatedSubtitles;
+      }
+      
+      // 如果这是最近添加到completedSentences的句子，更新其译文
+      const lastSentenceIndex = completedSentences.value.findIndex(
+        s => s.userId === data.userId && s.text === userState.lastText
+      );
+      if (lastSentenceIndex !== -1) {
+        const updatedSentences = [...completedSentences.value];
+        updatedSentences[lastSentenceIndex] = {
+          ...updatedSentences[lastSentenceIndex],
+          translatedText: translated
+        };
+        completedSentences.value = updatedSentences;
+      }
+    })
+    .catch((err) => {
+      console.error("翻译失败:", err);
+    });
+          
+  // 定期保存到Firebase (每20秒一次)
+  const currentTime = Date.now();
+  if (currentTime - lastSaveTimestamp.value > 20000) {
+    saveTranscriptionsToFirebase();
+    lastSaveTimestamp.value = currentTime;
+  }
+};
 
       transcriptionWs.value.onerror = (error) => {
         console.error("[Client] 转录 WebSocket 错误:", error);
@@ -2150,12 +2321,22 @@ const startTranscription = async () => {
   }
 };
 
+// 停止转录函数
 const stopTranscription = () => {
+  // 保存最后的转录内容
+  saveTranscriptionsToFirebase();
+  
+  // 清除所有字幕计时器
+  Object.values(subtitleTimers.value).forEach(timer => {
+    clearTimeout(timer);
+  });
+  subtitleTimers.value = {}; // 重置计时器对象
+  
   // 1. 关闭 WebSocket 连接 (如果存在)
   if (
     transcriptionWs.value &&
     (transcriptionWs.value.readyState === WebSocket.OPEN ||
-      transcriptionWs.value.readyState === WebSocket.CONNECTING)
+     transcriptionWs.value.readyState === WebSocket.CONNECTING)
   ) {
     transcriptionWs.value.close();
   }
@@ -2173,15 +2354,68 @@ const stopTranscription = () => {
     scriptNode = null;
   }
 
-  // 4. 关闭 AudioContext (可选, 根据需要) 如果不需要复用, 可以在停止时关闭
-  //   if (audioContext) {
-  //     audioContext.close();
-  //     audioContext = null;
-  //   }
-
+  // 4. 重置字幕相关状态
   isTranscribing.value = false;
-  subtitles.value = {};
+  subtitles.value = {}; // 清空字幕
 };
+
+// 在组件销毁前清理计时器
+onBeforeUnmount(() => {
+  // 清除所有字幕计时器
+  Object.values(subtitleTimers.value).forEach(timer => {
+    clearTimeout(timer);
+  });
+  subtitleTimers.value = {};
+});
+
+// 保存到Firebase的函数
+// 保存到Firebase的函数
+// 保存到Firebase的函数 - 改进版
+// 保存到Firebase的函数 - 改进版
+// 保存到Firebase的函数 - 改进版
+async function saveTranscriptionsToFirebase() {
+  if (completedSentences.value.length === 0) return;
+  
+  try {
+    const user = store.getters.getUser; // 获取当前用户信息
+    const meetingId = config.meetingId;
+    
+    // 确定正确的用户ID - 这是关键修改
+    const correctUserId = isHost.value ? user.uid : config.hostId;
+    
+    if (!correctUserId || !meetingId) {
+      console.error('保存转录历史记录失败: 用户ID或会议ID为空', {
+        correctUserId,
+        meetingId
+      });
+      return;
+    }
+    
+    // 格式化转录数据
+    const formattedTranscriptions = completedSentences.value.map(sentence => ({
+      userId: sentence.userId,
+      userName: sentence.userName,
+      text: sentence.text,
+      translatedText: sentence.translatedText || "",
+      date: format(sentence.timestamp, 'yyyy-MM-dd'),
+      time: format(sentence.timestamp, 'HH:mm:ss')
+    }));
+    
+    // 检查文档是否存在
+    console.log(`尝试更新会议记录，用户ID: ${correctUserId}, 会议ID: ${meetingId}`);
+    
+    // 保存到 Firebase
+    await FirestoreService.updateMeetingHistory(
+      correctUserId, 
+      meetingId, 
+      { transcriptionHistory: formattedTranscriptions }
+    );
+    
+    console.log(`转录历史记录已保存到Firebase，共 ${formattedTranscriptions.length} 条`);
+  } catch (error) {
+    console.error("保存转录历史记录失败:", error);
+  }
+}
 
 onUnmounted(() => {
   // ... 其他清理
@@ -2954,50 +3188,193 @@ video-player-container.speaker-area {
   text-align: center;
   padding: 20px;
 }
-
-/* 字幕容器 */
+/* 优化字幕容器 - 适用于所有屏幕 */
 .subtitle-container {
   position: absolute;
-  bottom: 80px; /* 控制栏高度 + 间距 */
+  bottom: 80px; /* 控制栏上方的距离 */
   left: 0;
   right: 0;
   z-index: 100;
   padding: 0 20px;
+  pointer-events: none; /* 允许点击穿透 */
 }
 
-/* 字幕样式 */
+/* 字幕基础样式 */
 .subtitle {
-  background: rgba(241, 241, 241, 0.219);
-  color: #fff;
-  padding: 3px 20px;
+  max-width: 85%;
+  margin: 0 auto;
+  background: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
   border-radius: 12px;
-  max-width: 800px;
-  margin: 3px auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  
-  /* 新增字幕项样式 */
-  .subtitle-item {
-    display: flex;
-    gap: 12px;
-    line-height: 1.6;
-  }
-
-  .subtitle-user {
-    color: #00aaff;
-    font-weight: 500;
-    flex-shrink: 0;
-  }
-
-  .subtitle-text {
-    flex: 1;
-    font-size: x;
-    color: #fff;
-  -webkit-text-stroke: 1.3px #000;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  paint-order: stroke fill;  }
+  padding: 10px 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.3s ease;
 }
 
+/* 字幕项样式 */
+.subtitle-item {
+  display: flex;
+  margin-bottom: 8px;
+  align-items: flex-start;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  backdrop-filter: blur(3px); /* 增加毛玻璃效果 */
+  transform-origin: bottom center;
+  animation: subtitleFadeIn 0.3s ease forwards;
+}
+
+/* 字幕项淡入动画 */
+@keyframes subtitleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 发言者名称样式 */
+.subtitle-user {
+  color: #4fc3f7; /* 亮蓝色 */
+  font-weight: 600;
+  margin-right: 8px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* 字幕文本样式 */
+.subtitle-text {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* 翻译文本样式 */
+.subtitle-translation {
+  color: #e0e0e0; /* 浅灰色 */
+  font-size: 13px;
+  margin-top: 3px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* 字幕占位符 */
+.subtitle-placeholder {
+  text-align: center;
+  padding: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* 移动端优化 (小屏幕) */
+@media (max-width: 480px) {
+  .subtitle-container {
+    bottom: 70px; /* 距离控制栏更近 */
+  }
+  
+  .subtitle {
+    max-width: 95%; /* 宽度更大，占用更多空间 */
+    margin: 0 auto;
+    padding: 8px 12px;
+  }
+  
+  .subtitle-item {
+    flex-direction: column; /* 用户名在上，文本在下 */
+    padding: 8px 10px;
+    margin-bottom: 6px;
+  }
+  
+  .subtitle-user {
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  
+  .subtitle-text {
+    font-size: 14px; /* 稍小的字体 */
+    line-height: 1.3;
+  }
+  
+  .subtitle-translation {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+}
+
+/* 平板/中等屏幕优化 */
+@media (min-width: 481px) and (max-width: 768px) {
+  .subtitle {
+    max-width: 90%;
+    padding: 10px 15px;
+  }
+  
+  .subtitle-item {
+    padding: 8px 12px;
+  }
+  
+  .subtitle-user {
+    font-size: 14px;
+  }
+  
+  .subtitle-text {
+    font-size: 15px;
+  }
+}
+
+/* 竖屏手机特别优化 */
+@media (max-width: 480px) and (orientation: portrait) {
+  .subtitle {
+    max-width: 98%; /* 几乎占满宽度 */
+  }
+  
+  .subtitle-item {
+    margin-bottom: 5px;
+  }
+}
+
+/* 横屏手机特别优化 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .subtitle-container {
+    bottom: 60px; /* 横屏时控制栏可能更小 */
+  }
+  
+  .subtitle {
+    max-width: 70%; /* 横屏时可以窄一些 */
+  }
+  
+  .subtitle-item {
+    padding: 5px 10px;
+    margin-bottom: 4px;
+  }
+  
+  .subtitle-text, .subtitle-user {
+    font-size: 13px; /* 横屏时字体略小 */
+  }
+  
+  .subtitle-translation {
+    font-size: 11px;
+  }
+}
+
+/* 高对比度支持 */
+@media (prefers-contrast: high) {
+  .subtitle-item {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .subtitle-text {
+    text-shadow: none;
+  }
+  
+  .subtitle-user {
+    color: #74d9ff; /* 更亮的蓝色 */
+  }
+}
 
 /* 让共享的画面只在 .speaker-area 区域内等比例缩放 */
 video.video-element.share-video,
@@ -4018,4 +4395,288 @@ canvas.video-element.share-video {
     background: rgba(255, 255, 255, 0.6);
 }}
 
+
+.language-selector {
+  position: relative; /* Crucial for positioning the absolute dropdown */
+  display: inline-block; /* Or 'flex' if needed within controls */
+}
+
+/* Style the language button to match other controls */
+.language-button {
+  /* Inherit or match styles from .controls button */
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 0; /* Reset padding if applying flex */
+  border-radius: 50%; /* Make it circular like others */
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 60px; /* Match other buttons */
+  height: 60px; /* Match other buttons */
+  display: flex; /* Use flex to arrange icon and text */
+  flex-direction: column; /* Stack icon and text vertically */
+  align-items: center; /* Center items horizontally */
+  justify-content: center; /* Center items vertically */
+  gap: 2px; /* Space between icon and text */
+  overflow: hidden; /* Hide overflow if text is too long */
+  text-align: center; /* Center text */
+}
+
+.language-button:hover {
+  background-color: #555;
+}
+
+.language-button img {
+  width: 24px; /* Adjust icon size as needed */
+  height: 24px;
+  margin-bottom: 2px; /* Space below icon */
+}
+
+.language-button .selected-language {
+  font-size: 10px; /* Smaller font size for the language name */
+  line-height: 1.2;
+  display: block; /* Ensure it takes its own line */
+  max-width: 90%; /* Prevent text overflowing button width */
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis (...) if too long */
+  color: #eee; /* Slightly lighter text color */
+}
+
+/* The dropdown menu itself */
+.language-dropdown {
+  position: absolute;
+  bottom: 100%; /* Position above the button */
+  left: 50%; /* Center horizontally relative to the button */
+  transform: translateX(-50%); /* Correct horizontal centering */
+  margin-bottom: 10px; /* Space between button and dropdown */
+  background-color: #444; /* Dark background consistent with controls */
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 110; /* Ensure it's above controls */
+  min-width: 100px; /* Minimum width */
+  padding: 5px 0; /* Vertical padding */
+  max-height: 200px; /* Limit height and allow scrolling */
+  overflow-y: auto; /* Enable vertical scrolling if needed */
+  border: 1px solid #555; /* Subtle border */
+}
+
+/* Styling for each language option in the dropdown */
+.language-option {
+  padding: 8px 15px; /* Comfortable padding */
+  color: #eee; /* Light text color */
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap; /* Prevent options from wrapping */
+}
+
+/* Hover effect for options */
+.language-option:hover {
+  background-color: #5a5a5a; /* Slightly lighter background on hover */
+}
+
+/* Style for the currently active/selected language option */
+.language-option.active {
+  background-color: #1a73e8; /* Use a highlight color (e.g., blue) */
+  color: #fff; /* White text for active item */
+  font-weight: 500;
+}
+
+/* --- Responsive Adjustments for Language Selector --- */
+@media (max-width: 768px) {
+  .language-button {
+    width: 48px; /* Match smaller control buttons */
+    height: 48px;
+    gap: 1px;
+  }
+
+  .language-button img {
+    width: 20px; /* Adjust icon size */
+    height: 20px;
+  }
+
+  .language-button .selected-language {
+    font-size: 8px; /* Even smaller font */
+  }
+
+  .language-dropdown {
+    /* Potentially adjust min-width or max-height for mobile */
+    min-width: 90px;
+  }
+
+  .language-option {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+   .language-button {
+    width: 44px; /* Match smallest control buttons */
+    height: 44px;
+  }
+
+  .language-button img {
+    width: 18px; /* Adjust icon size */
+    height: 18px;
+  }
+    .language-button .selected-language {
+    font-size: 7px; /* Even smaller font */
+  }
+}
+
+
+/* 额外的极小屏幕优化 */
+
+/* 字幕过渡动画 */
+.subtitle-trans-enter-active, 
+.subtitle-trans-leave-active {
+  transition: all 0.3s ease;
+}
+
+.subtitle-trans-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.subtitle-trans-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 字幕头部（用户名区域）样式 */
+.subtitle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.subtitle-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.subtitle-content {
+  width: 100%;
+}
+
+/* 针对极小屏幕的优化 (4英寸及以下手机) */
+@media (max-width: 360px) {
+  .subtitle-container {
+    padding: 0 10px;
+    bottom: 65px;
+  }
+  
+  .subtitle {
+    padding: 6px 8px;
+  }
+  
+  .subtitle-item {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+  }
+  
+  .subtitle-user {
+    font-size: 12px;
+  }
+  
+  .subtitle-text {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  
+  .subtitle-translation {
+    font-size: 11px;
+  }
+  
+  .subtitle-placeholder {
+    font-size: 12px;
+    padding: 5px;
+  }
+}
+
+/* 适配折叠屏/可折叠设备 */
+@media (max-width: 320px) {
+  .subtitle {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 8px;
+  }
+  
+  .subtitle-item {
+    padding: 5px 7px;
+  }
+  
+  .subtitle-user {
+    font-size: 11px;
+  }
+  
+  .subtitle-text {
+    font-size: 12px;
+  }
+  
+  .subtitle-translation {
+    font-size: 10px;
+  }
+}
+
+/* 深色模式优化 */
+@media (prefers-color-scheme: dark) {
+  .subtitle-item {
+    background: rgba(30, 30, 30, 0.75);
+  }
+  
+  .subtitle-user {
+    color: #64b5f6; /* 稍暗的蓝色 */
+  }
+}
+
+/* 浅色模式优化 */
+@media (prefers-color-scheme: light) {
+  .subtitle-item {
+    background: rgba(0, 0, 0, 0.7); /* 稍深的背景 */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  .subtitle-user {
+    color: #29b6f6; /* 更亮的蓝色 */
+  }
+  
+  .subtitle-text {
+    color: #ffffff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8); /* 增强阴影 */
+  }
+}
+
+/* 更平滑的滚动 */
+.subtitle {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  overscroll-behavior: contain;
+}
+
+.subtitle::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* 降低动画效果 - 对于减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .subtitle-trans-enter-active, 
+  .subtitle-trans-leave-active {
+    transition: opacity 0.2s ease;
+  }
+  
+  .subtitle-trans-enter-from,
+  .subtitle-trans-leave-to {
+    opacity: 0;
+    transform: none;
+  }
+  
+  .subtitle-item {
+    animation: none;
+  }
+}
 </style>
