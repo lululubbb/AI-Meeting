@@ -2251,4 +2251,24 @@ h4 {
     font-size: 18px;
   }
 }
+
+/* 按钮样式修改 */
+.action-btn {
+  border-radius: 20px; /* 增加圆角效果 */
+}
+
+/* 一键优化按钮 */
+.optimize-all-btn {
+  border-radius: 20px; /* 增加圆角效果 */
+}
+
+/* 底部的几个选项卡按钮 */
+.meeting-tab {
+  border-radius: 20px; /* 增加圆角效果 */
+}
+
+/* 绿色的"一键优化"按钮 */
+button {
+  border-radius: 20px; /* 默认所有按钮添加圆角 */
+}
 </style>
