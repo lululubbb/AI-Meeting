@@ -168,7 +168,6 @@
                 <el-avatar :size="35" :src="post.author?.avatar || defaultAvatar" />
                 <div class="post-info">
                   <h3 class="post-title">{{ post.title }}
-                    <el-tag v-if="post.isAgendaPost" type="info" size="mini">议程帖子</el-tag>
                 </h3>
                   <div class="author-info">
                     <el-tag size="small">{{ post.author?.name || '用户' }}</el-tag>
@@ -438,7 +437,7 @@
   import FirestoreService from "../services/FirestoreService.js";
 import { Timestamp } from 'firebase/firestore';
 import { Search,ArrowUp, ArrowDown, View ,Loading, HotWater, ChatLineRound,Plus,Delete,Edit  } from '@element-plus/icons-vue'
-import defaultAvatar from '../assets/柴犬.png';
+import defaultAvatar from '../assets/西湖论剑.jpg';
 import { useStore } from 'vuex';
 const screenWidth = ref(window.innerWidth)
 const isMobile = computed(() => screenWidth.value < 768)
@@ -1180,7 +1179,7 @@ const scaleComment = dpConfig.sensitivityComment / dpConfig.epsilonComment;
 
 // 创建一个计算属性，用于添加差分隐私噪声
 const dpPosts = computed(() => {
-  return allPosts.value.map(post => {
+  return [...allPosts.value].map(post => {
     // 1. 获取原始计数
     const originalViewCount = post.viewCount || 0;
     // 使用 commentCount 字段，如果不存在则回退到 comments.length
@@ -1201,9 +1200,7 @@ const dpPosts = computed(() => {
     return {
       ...post,
       hotScore: noisyHotScore // 核心：使用加噪后的分数进行排序
-      // 可以选择性地保留加噪后的计数值用于调试或展示（但不建议直接展示）
-      // dpViewCount: noisyViewCount,
-      // dpCommentCount: noisyCommentCount,
+
     };
   });
 });

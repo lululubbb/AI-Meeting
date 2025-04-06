@@ -186,7 +186,7 @@ const logout = async () => {
   background-clip: text;            /* 2. (标准) 将背景裁剪到文字形状 */
   -webkit-text-fill-color: transparent; /* 3. (兼容性) 使文字填充色透明，显示背景 */
   color: transparent;  
-  font-size: 1.5rem; /* 24px */
+  font-size: 1.3rem; /* 24px */
   position: relative;
   transition: color 0.3s, transform 0.3s;
   /* 关键：防止中文字符如“会议”断行成竖排 */
@@ -195,13 +195,13 @@ const logout = async () => {
 
 .nav-link i {
   margin-bottom: 0.3125rem; /* 图标与文字间的距离 5px */
-  font-size: 20px;      /* 18px */
+  font-size: 18px;      /* 18px */
   color: inherit;           /* 继承父元素的颜色 */
 }
 
 /* 避免中文断行成竖排, 额外在文字上也可加 white-space */
 .nav-label {
-  font-size: 22px;
+  font-size: 19px;
   white-space: nowrap; /* 防止中文换行 */
 }
 

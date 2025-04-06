@@ -94,7 +94,7 @@
         <h3>选择导航应用</h3>
         <div class="map-choice-buttons">
           <button @click="selectAmap" class="map-choice-btn amap">
-            <img src="https://webapi.amap.com/theme/v1.3/images/autonavi.png" alt="高德地图 Logo" width="24" height="24"/>
+            <img :src="gaode" alt="高德地图 Logo" width="24" height="24"/>
             <span>高德地图</span>
           </button>
           <button @click="selectTencent" class="map-choice-btn tencent">
@@ -118,7 +118,7 @@ import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { useStore } from 'vuex';
 // 引入 baiduMapUtils 用于内部地图操作和坐标转换
 import * as mapUtils from '../utils/baiduMapUtils.js';
-
+import gaode from '../assets/OIP.jpg';
 const store = useStore();
 
 // --- Refs, Local State, UI State ---
