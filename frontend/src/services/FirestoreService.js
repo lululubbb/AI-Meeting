@@ -625,7 +625,101 @@ async getUserProfile(uid) {
       return { id: uid, name: '加载出错', avatarUrl: defaultAvatar };
   }
 }
+// 1. 添加保存优化后文本的方法
+async saveOptimizedText(userId, meetingId, optimizationData) {
+  try {
+    const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+    await updateDoc(meetingDocRef, {
+      optimizedTexts: optimizationData // 这是一个对象，包含各段落和用户的优化文本
+    });
+    console.log('优化文本已保存');
+    return true;
+  } catch (error) {
+    console.error('保存优化文本失败:', error);
+    ElMessage.error('保存优化文本失败');
+    throw error;
+  }
+}
 
+// 2. 添加保存摘要的方法
+async saveSummaries(userId, meetingId, summaries) {
+  try {
+    const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+    await updateDoc(meetingDocRef, {
+      summaries: summaries // 这是一个对象，包含各段落的摘要
+    });
+    console.log('摘要已保存');
+    return true;
+  } catch (error) {
+    console.error('保存摘要失败:', error);
+    ElMessage.error('保存摘要失败');
+    throw error;
+  }
+}
+
+// 3. 添加保存关键词的方法
+async saveKeywords(userId, meetingId, keywords) {
+  try {
+    const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+    await updateDoc(meetingDocRef, {
+      keywords: keywords // 这是一个对象，包含各段落的关键词
+    });
+    console.log('关键词已保存');
+    return true;
+  } catch (error) {
+    console.error('保存关键词失败:', error);
+    ElMessage.error('保存关键词失败');
+    throw error;
+  }
+}
+
+// 4. 添加保存整体摘要的方法
+async saveOverallSummary(userId, meetingId, overallSummary) {
+  try {
+    const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+    await updateDoc(meetingDocRef, {
+      overallSummary: overallSummary
+    });
+    console.log('整体摘要已保存');
+    return true;
+  } catch (error) {
+    console.error('保存整体摘要失败:', error);
+    ElMessage.error('保存整体摘要失败');
+    throw error;
+  }
+}
+
+// 5. 添加保存待办与拓展的方法
+async saveTodosAndExtensions(userId, meetingId, todosAndExtensions) {
+  try {
+    const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+    await updateDoc(meetingDocRef, {
+      todosAndExtensions: todosAndExtensions
+    });
+    console.log('待办与拓展已保存');
+    return true;
+  } catch (error) {
+    console.error('保存待办与拓展失败:', error);
+    ElMessage.error('保存待办与拓展失败');
+    throw error;
+  }
+}
+
+// 6. 添加保存词云数据的方法
+async saveWordCloudData(userId, meetingId, wordCloudData) {
+  try {
+    const meetingDocRef = doc(db, 'users', userId, 'meetings', meetingId);
+    await updateDoc(meetingDocRef, {
+      wordCloudData: wordCloudData
+    });
+    console.log('词云数据已保存');
+    return true;
+  } catch (error) {
+    console.error('保存词云数据失败:', error);
+    ElMessage.error('保存词云数据失败');
+    throw error;
+  }
+}
 
 
 }

@@ -273,6 +273,8 @@ const formatTime = (timestamp) => {
   return format(new Date(timestamp), 'HH:mm');
 };
 
+// 在 fetchData 函数中添加加载已保存的优化内容的逻辑
+
 async function fetchData() {
   const meetingId = route.params.meetingId;
   if (!userId.value || !meetingId) {
@@ -318,6 +320,54 @@ async function fetchData() {
       });
       processedData.value = groupedData;
       generateChartData();
+      
+      // 加载已保存的优化文本(如果有)
+      if (meetingData.optimizedTexts) {
+        Object.keys(meetingData.optimizedTexts).forEach(segmentIndex => {
+          Object.keys(meetingData.optimizedTexts[segmentIndex]).forEach(userId => {
+            if (!optimizationData[segmentIndex]) {
+              optimizationData[segmentIndex] = {};
+            }
+            optimizationData[segmentIndex][userId] = meetingData.optimizedTexts[segmentIndex][userId];
+          });
+        });
+        console.log('已加载优化文本');
+      }
+      
+      // 加载已保存的摘要(如果有)
+      if (meetingData.summaries) {
+        Object.keys(meetingData.summaries).forEach(segmentIndex => {
+          summaries[segmentIndex] = meetingData.summaries[segmentIndex];
+        });
+        console.log('已加载摘要');
+      }
+      
+      // 加载已保存的关键词(如果有)
+      if (meetingData.keywords) {
+        Object.keys(meetingData.keywords).forEach(segmentIndex => {
+          keywords[segmentIndex] = meetingData.keywords[segmentIndex];
+        });
+        console.log('已加载关键词');
+      }
+      
+      // 加载已保存的整体摘要(如果有)
+      if (meetingData.overallSummary) {
+        overallSummary.value = meetingData.overallSummary;
+        console.log('已加载整体摘要');
+      }
+      
+      // 加载已保存的待办与拓展(如果有)
+      if (meetingData.todosAndExtensions) {
+        todosAndExtensions.value = meetingData.todosAndExtensions;
+        console.log('已加载待办与拓展');
+      }
+      
+      // 加载已保存的词云数据(如果有)
+      if (meetingData.wordCloudData) {
+        wordCloudData.value = meetingData.wordCloudData;
+        console.log('已加载词云数据');
+      }
+      
     } else {
       transcriptionData.value = null;
       error.value = '未找到转录数据';
@@ -439,6 +489,7 @@ async function optimizeText(segmentIndex, userId, text) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let done = false;
+    let optimizedContent = ''; // 用于累积完整的优化内容
 
     while (!done) {
       const { value, done: readDone } = await reader.read();
@@ -449,11 +500,16 @@ async function optimizeText(segmentIndex, userId, text) {
           optimizationData[segmentIndex] = {};
         }
         optimizationData[segmentIndex][userId] += chunk;
+        optimizedContent += chunk; // 累积完整内容
         nextTick(() => {
           scrollToBottom(segmentIndex, userId);
         });
       }
     }
+
+    // 保存到 Firebase
+    saveOptimizedTextToFirebase(segmentIndex, userId, optimizedContent);
+
   } catch (err) {
     console.error('优化文本出错:', err);
     if (!optimizationData[segmentIndex]) {
@@ -462,6 +518,34 @@ async function optimizeText(segmentIndex, userId, text) {
     optimizationData[segmentIndex][userId] = '优化失败';
   }
 }
+// 2. 添加保存优化文本到 Firebase 的方法
+async function saveOptimizedTextToFirebase(segmentIndex, userId, content) {
+  try {
+    const meetingId = route.params.meetingId;
+    const currentUserId = store.state.user.uid;
+    
+    // 获取当前的优化文本数据（如果存在）
+    let optimizedTexts = {};
+    const meetingData = await FirestoreService.getMeetingHistory(currentUserId, meetingId);
+    if (meetingData && meetingData.optimizedTexts) {
+      optimizedTexts = meetingData.optimizedTexts;
+    }
+    
+    // 更新优化文本
+    if (!optimizedTexts[segmentIndex]) {
+      optimizedTexts[segmentIndex] = {};
+    }
+    optimizedTexts[segmentIndex][userId] = content;
+    
+    // 保存到 Firebase
+    await FirestoreService.saveOptimizedText(currentUserId, meetingId, optimizedTexts);
+    console.log(`优化文本已保存到 Firebase: 段落 ${segmentIndex}, 用户 ${userId}`);
+    
+  } catch (error) {
+    console.error('保存优化文本到 Firebase 失败:', error);
+  }
+}
+
 
 function getLatestThreeLines(text) {
   if (!text) return '';
@@ -574,6 +658,7 @@ function getSegmentAndUserIdFromExpanded() {
   return { segmentIndex: null, userId: null };
 }
 
+// 3. 修改 getAllSummaries 方法，添加保存功能
 async function getAllSummaries() {
   summaryLoading.value = true;
   const texts = processedData.value.map(segment =>
@@ -599,6 +684,7 @@ async function getAllSummaries() {
     const decoder = new TextDecoder();
     let done = false;
     let currentSegment = -1;
+    let summaryTexts = {}; // 用于保存完整的摘要内容
 
     while (!done) {
       const { value, done: readDone } = await reader.read();
@@ -614,6 +700,12 @@ async function getAllSummaries() {
           } catch (e) {
             if (currentSegment >= 0) {
               summaries[currentSegment] += line;
+              
+              // 同时累积完整摘要
+              if (!summaryTexts[currentSegment]) {
+                summaryTexts[currentSegment] = '';
+              }
+              summaryTexts[currentSegment] += line;
             }
             continue;
           }
@@ -624,10 +716,15 @@ async function getAllSummaries() {
             // 可以做些动画
           } else if (parsedLine.error) {
             summaries[currentSegment] = parsedLine.error;
+            summaryTexts[currentSegment] = parsedLine.error;
           }
         }
       }
     }
+
+    // 保存到 Firebase
+    await saveSummariesToFirebase(summaryTexts);
+
   } catch (err) {
     console.error('获取摘要出错:', err);
     for (let i = 0; i < 5; i++) {
@@ -640,6 +737,22 @@ async function getAllSummaries() {
   }
 }
 
+// 4. 添加保存摘要到 Firebase 的方法
+async function saveSummariesToFirebase(summaryTexts) {
+  try {
+    const meetingId = route.params.meetingId;
+    const currentUserId = store.state.user.uid;
+    
+    // 保存到 Firebase
+    await FirestoreService.saveSummaries(currentUserId, meetingId, summaryTexts);
+    console.log(`摘要已保存到 Firebase`);
+    
+  } catch (error) {
+    console.error('保存摘要到 Firebase 失败:', error);
+  }
+}
+
+// 5. 修改 getAllKeywords 方法，添加保存功能
 async function getAllKeywords() {
   keywordLoading.value = true;
   const texts = processedData.value.map(segment =>
@@ -665,6 +778,7 @@ async function getAllKeywords() {
     const decoder = new TextDecoder();
     let done = false;
     let currentSegment = -1;
+    let keywordTexts = {}; // 用于保存完整的关键词内容
 
     while (!done) {
       const { value, done: readDone } = await reader.read();
@@ -680,6 +794,12 @@ async function getAllKeywords() {
           } catch (e) {
             if (currentSegment >= 0) {
               keywords[currentSegment] += line;
+              
+              // 同时累积完整关键词
+              if (!keywordTexts[currentSegment]) {
+                keywordTexts[currentSegment] = '';
+              }
+              keywordTexts[currentSegment] += line;
             }
             continue;
           }
@@ -690,10 +810,15 @@ async function getAllKeywords() {
             // 可以做些动画
           } else if (parsedLine.error) {
             keywords[currentSegment] = parsedLine.error;
+            keywordTexts[currentSegment] = parsedLine.error;
           }
         }
       }
     }
+
+    // 保存到 Firebase
+    await saveKeywordsToFirebase(keywordTexts);
+
   } catch (err) {
     console.error('获取关键词出错:', err);
     for (let i = 0; i < 5; i++) {
@@ -705,6 +830,22 @@ async function getAllKeywords() {
     keywordLoading.value = false;
   }
 }
+
+// 6. 添加保存关键词到 Firebase 的方法
+async function saveKeywordsToFirebase(keywordTexts) {
+  try {
+    const meetingId = route.params.meetingId;
+    const currentUserId = store.state.user.uid;
+    
+    // 保存到 Firebase
+    await FirestoreService.saveKeywords(currentUserId, meetingId, keywordTexts);
+    console.log(`关键词已保存到 Firebase`);
+    
+  } catch (error) {
+    console.error('保存关键词到 Firebase 失败:', error);
+  }
+}
+
 // 获取会议整体摘要函数
 async function getOverallSummary() {
     overallSummaryLoading.value = true;
@@ -714,7 +855,6 @@ async function getOverallSummary() {
     const allText = processedData.value.map(segment =>
         Object.values(segment).map(user => user.text).join(" ")
     ).join(" ");
-
 
     try {
         const response = await fetch('http://localhost:8899/api/overall_summarize', {
@@ -730,6 +870,7 @@ async function getOverallSummary() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let done = false;
+        let fullSummary = ''; // 用于累积完整的摘要
 
         while (!done) {
             const { value, done: readDone } = await reader.read();
@@ -737,8 +878,12 @@ async function getOverallSummary() {
             if (value) {
                 const chunk = decoder.decode(value);
                 overallSummary.value += chunk;
+                fullSummary += chunk; // 累积完整摘要
             }
         }
+
+        // 保存到 Firebase
+        await saveOverallSummaryToFirebase(fullSummary);
 
     } catch (err) {
         console.error('获取整体摘要出错:', err);
@@ -749,8 +894,20 @@ async function getOverallSummary() {
     }
 }
 
+async function saveOverallSummaryToFirebase(summary) {
+  try {
+    const meetingId = route.params.meetingId;
+    const currentUserId = store.state.user.uid;
+    
+    // 保存到 Firebase
+    await FirestoreService.saveOverallSummary(currentUserId, meetingId, summary);
+    console.log(`整体摘要已保存到 Firebase`);
+    
+  } catch (error) {
+    console.error('保存整体摘要到 Firebase 失败:', error);
+  }
+}
 
-// 获取会议待办与拓展函数
 async function getTodosAndExtensions() {
     todosLoading.value = true;
     todosAndExtensions.value = ''; // 清空旧数据
@@ -773,6 +930,7 @@ async function getTodosAndExtensions() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let done = false;
+        let fullTodos = ''; // 用于累积完整的待办与拓展
 
         while (!done) {
             const { value, done: readDone } = await reader.read();
@@ -780,8 +938,13 @@ async function getTodosAndExtensions() {
             if (value) {
                 const chunk = decoder.decode(value);
                 todosAndExtensions.value += chunk;
+                fullTodos += chunk; // 累积完整内容
             }
         }
+
+        // 保存到 Firebase
+        await saveTodosToFirebase(fullTodos);
+
     } catch (err) {
         console.error('获取待办与拓展出错:', err);
         todosAndExtensions.value = '获取待办与拓展失败';
@@ -790,7 +953,23 @@ async function getTodosAndExtensions() {
     }
 }
 
+async function saveTodosToFirebase(todos) {
+  try {
+    const meetingId = route.params.meetingId;
+    const currentUserId = store.state.user.uid;
+    
+    // 保存到 Firebase
+    await FirestoreService.saveTodosAndExtensions(currentUserId, meetingId, todos);
+    console.log(`待办与拓展已保存到 Firebase`);
+    
+  } catch (error) {
+    console.error('保存待办与拓展到 Firebase 失败:', error);
+  }
+}
+
+
 // 新增：生成词云函数
+// 11. 修改 generateWordCloud 方法，添加保存功能
 async function generateWordCloud() {
     wordCloudLoading.value = true;
     wordCloudData.value = []; // 清空旧数据
@@ -812,8 +991,9 @@ async function generateWordCloud() {
         //直接使用 json()
         const data = await response.json();
         wordCloudData.value = data; // 更新词云数据
-        console.log('词云数据 (展开):', ...wordCloudData.value); // 使用展开运算符
-        console.log('词云数据 (第一个元素):', wordCloudData.value[0]); // 打印第一个元素
+        
+        // 保存到 Firebase
+        await saveWordCloudToFirebase(data);
 
     } catch (err) {
         console.error('生成词云出错:', err);
@@ -821,6 +1001,21 @@ async function generateWordCloud() {
     } finally {
         wordCloudLoading.value = false;
     }
+}
+
+// 12. 添加保存词云到 Firebase 的方法
+async function saveWordCloudToFirebase(wordcloudData) {
+  try {
+    const meetingId = route.params.meetingId;
+    const currentUserId = store.state.user.uid;
+    
+    // 保存到 Firebase
+    await FirestoreService.saveWordCloudData(currentUserId, meetingId, wordcloudData);
+    console.log(`词云数据已保存到 Firebase`);
+    
+  } catch (error) {
+    console.error('保存词云数据到 Firebase 失败:', error);
+  }
 }
 
 onMounted(fetchData);

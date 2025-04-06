@@ -1824,7 +1824,6 @@ const leaveSession = async () => {
     showSnackBar("退出会议失败");
   }
 };
-
 const endSession = async () => {
   //主持人结束会议
   if (!isHost.value) {
@@ -1877,6 +1876,7 @@ const endSession = async () => {
         u.isSharing.timeline.push({ time: now, value: u.isSharing.final });
       }
     });
+    
     //在更新 Firestore 之前，过滤和检查数据,这部分过滤数据的代码可以考虑封装成一个函数
     const filteredUsers = users.value.map((user) => {
       const filteredUser = { ...user };
@@ -1913,7 +1913,30 @@ const endSession = async () => {
 
     // 新增: 保存转录历史 (如果 isTranscribing.value 为 true)
     if (isTranscribing.value) {
-      stopTranscription(); // 先停止转录 (重要!)
+      // 新增: 处理未完成的转录句子
+      Object.keys(userTranscriptions).forEach(userId => {
+        const userState = userTranscriptions[userId];
+        
+        // 如果当前有未完成的文本内容，将其作为完整句子保存
+        if (userState.currentText && userState.currentText.trim().length > 0) {
+          // 添加到完整句子列表中
+          completedSentences.value.push({
+            userId: userId,
+            userName: userState.userName,
+            text: userState.currentText,
+            translatedText: subtitles.value[userId]?.translatedText || "",
+            timestamp: new Date()
+          });
+          console.log(`添加未完成句子: ${userState.currentText}`);
+        }
+      });
+      
+      // 先停止转录 (重要!)
+      stopTranscription(); 
+      
+      // 立即保存所有转录内容 (新增，确保立即保存)
+      await saveTranscriptionsToFirebase();
+      console.log("会议结束时立即保存转录内容，句子数:", completedSentences.value.length);
       
       // 确保保存所有已完成的句子
       const formattedTranscriptions = formatTranscriptionsForSaving(completedSentences.value);
