@@ -1040,7 +1040,46 @@ export function setMapType(currentMapInstance, typeId) {
         throw new Error(errorMsg);
     }
 }
-
+// --- 【【新增】】坐标转换函数 ---
+/**
+ * 将 BD09LL 坐标转换为 GCJ02 坐标。
+ * @param {{lng: number, lat: number}} point BD09LL 坐标对象.
+ * @returns {Promise<{lng: number, lat: number}>} 成功时 resolve GCJ02 坐标对象, 失败时 reject Error.
+ */
+export function convertBd09ToGcj02(point) {
+    return new Promise((resolve, reject) => {
+      // 确保 BMapGL 和 Convertor 可用
+      if (!window.BMapGL || !window.BMapGL.Convertor) {
+        console.error("[Coord Convert] BMapGL or BMapGL.Convertor is not available.");
+        return reject(new Error("坐标转换器 BMapGL.Convertor 不可用或 SDK 未加载"));
+      }
+      if (!point?.lng || !point?.lat) {
+        console.error("[Coord Convert] Invalid point for conversion:", point);
+        return reject(new Error("无效的 BD09LL 坐标点，无法进行转换"));
+      }
+  
+      const convertor = new BMapGL.Convertor();
+      const pointArr = [new BMapGL.Point(point.lng, point.lat)];
+  
+      // 使用百度地图 JS API 的坐标转换功能
+      // coordType 参数定义: 1(WGS84), 2(WGS84_MC), 3(GCJ02), 4(GCJ02_MC), 5(BD09LL), 6(BD09MC)
+      // 从 BD09LL (5) 转换为 GCJ02 (3)
+      console.log(`[Coord Convert] 开始转换: BD09LL (${point.lng}, ${point.lat}) to GCJ02...`);
+      convertor.translate(pointArr, 5, 3, (result) => {
+        if (result.status === 0 && result.points && result.points.length > 0) {
+          const gcj02Point = {
+            lng: result.points[0].lng,
+            lat: result.points[0].lat
+          };
+          console.log(`[Coord Convert] 转换成功: GCJ02 (${gcj02Point.lng}, ${gcj02Point.lat})`);
+          resolve(gcj02Point);
+        } else {
+          console.error("[Coord Convert] BD09LL 转 GCJ02 失败. Status:", result.status, "Result:", result);
+          reject(new Error(`坐标转换失败 (状态码: ${result.status})`));
+        }
+      });
+    });
+  }
 
 // --- 其他辅助函数 ---
 
