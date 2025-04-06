@@ -91,7 +91,7 @@ const handleHistoryMeeting = () => {
 
 .icon-wrapper {
   border-radius: 50%;
-  background: linear-gradient(to right, #E4F5FC,#B5E1FC, #9bd9fc); /* 新会议图标背景色 */
+  background: linear-gradient(to right, #bdf0e8,#B5E1FC, #9bd9fc); /* 新会议图标背景色 */
 
 }
 
