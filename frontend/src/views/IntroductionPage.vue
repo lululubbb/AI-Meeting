@@ -68,7 +68,7 @@
   
       <!-- 页脚 -->
       <footer class="footer">
-        <p>&copy; 慧议先锋.</p>
+        <p>&copy; 智汇西湖.</p>
       </footer>
     </div>
   </template>
@@ -78,7 +78,7 @@ import FeatureCard from '../components/FeatureCard.vue'
 import ScreenshotCarousel from '../components/ScreenshotCarousel.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import logo from '../assets/logo.png';
+import logo from '../assets/logo.jpg';
 import teamlogo from '../assets/team2.png';
 import heroImage from '../assets/feature/usage_scene1.png';
  // 产品截图数据

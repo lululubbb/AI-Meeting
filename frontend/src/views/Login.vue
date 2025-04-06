@@ -69,8 +69,8 @@
     <div class="intro-section" v-if="!isMobile">
       <img src="@/assets/intro1.png" alt="Illustration of modern meeting" class="intro-image animate-subtle-slide" />
       <div class="intro-text">
-        <h3 class="intro-title">智能化会议，尽在慧议先锋</h3>
-        <p class="intro-description">实时转录、智能摘要、多语言支持，开启高效协作新篇章。</p>
+        <h3 class="intro-title">智汇西湖，AI在慧议</h3>
+        <p class="intro-description">大会讯息、实时转录、智能摘要、多语言支持，开启西湖论剑新篇章。</p>
       </div>
     </div>
         <!-- 隐私政策弹窗 -->
