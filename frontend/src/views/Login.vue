@@ -6,7 +6,7 @@
       <div class="brand-area">
         <h1 class="title">
           <span class="title-icon">🚀</span>
-          智汇西湖
+          智会西湖
         </h1>
         <h2 class="subtitle">AI Westlake</h2>
         <p class="welcome-text">欢迎回来！请登录您的账号</p>
@@ -69,7 +69,7 @@
     <div class="intro-section" v-if="!isMobile">
       <img src="@/assets/intro1.png" alt="Illustration of modern meeting" class="intro-image animate-subtle-slide" />
       <div class="intro-text">
-        <h3 class="intro-title">智汇西湖，AI在慧议</h3>
+        <h3 class="intro-title">智会西湖，AI在慧议</h3>
         <p class="intro-description">大会讯息、实时转录、智能摘要、多语言支持，开启西湖论剑新篇章。</p>
       </div>
     </div>
