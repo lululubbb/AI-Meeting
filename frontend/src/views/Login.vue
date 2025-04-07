@@ -8,7 +8,7 @@
           <span class="title-icon">🚀</span>
           智汇西湖
         </h1>
-        <h2 class="subtitle">AI Westlake Connect</h2>
+        <h2 class="subtitle">AI Westlake</h2>
         <p class="welcome-text">欢迎回来！请登录您的账号</p>
       </div>
 
