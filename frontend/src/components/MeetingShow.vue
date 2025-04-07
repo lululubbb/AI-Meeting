@@ -1029,15 +1029,15 @@ onUnmounted(() => {
   
   /* 暗色模式 */
   @media (prefers-color-scheme: dark) {
-  .expanded-note {
-    background-color: var(--card-background); /* 确保暗色模式下背景色正确 */
-    color: var(--text-color); /* 确保暗色模式下文字颜色正确 */
-  }
-  
-    .expanded-content {
-    background-color: var(--card-background);
-    color: var(--text-color);
-  }
+    .expanded-note {
+  background-color: var(--card-background); /* 使用变量确保一致性 */
+  color: var(--text-color); /* 确保文字颜色与背景匹配 */
+}
+
+.expanded-content {
+  background-color: var(--card-background);
+  color: var(--text-color);
+}
 }
 }
 
@@ -1047,13 +1047,65 @@ onUnmounted(() => {
   padding: 30px;
   background-color: var(--background-color);
   color: var(--text-color);
-  max-width: 1800px;
+  max-width: 1650px;
   margin: 0 auto;
   line-height: 1.6;
 }
 
 
 /* 导航栏左上角样式 */
+
+/* 导航栏毛玻璃效果增强 */
+.navbar {
+  position: fixed;
+  top: 100px; /* 调整位置以避免遮挡内容 */
+  left: 0;
+  width: 20px; /* 保持原来的宽度 */
+  background-color: rgba(255, 255, 255, 0.7); /* 半透明背景 */
+  backdrop-filter: blur(10px); /* 毛玻璃效果 */
+  -webkit-backdrop-filter: blur(10px); /* Safari 兼容 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px 15px;
+  border-radius: 0 0 var(--border-radius-md) 0;
+  z-index: 1200; /* 提高z-index确保在顶层 */
+}
+
+/* 导航栏文字增强 */
+.navbar a {
+  position: relative;
+  text-decoration: none;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600; /* 加粗文字 */
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-normal);
+  display: block;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8); /* 添加白色文字阴影增加可读性 */
+}
+
+/* 活跃状态和悬停状态增强 */
+.navbar a.active, .navbar a:hover {
+  color: var(--primary-color);
+  background-color: rgba(232, 238, 255, 0.8); /* 半透明背景色 */
+  transform: translateX(3px);
+}
+
+/* 暗色模式调整 */
+@media (prefers-color-scheme: dark) {
+  .navbar {
+    background-color: rgba(30, 30, 30, 0.8); /* 更深的背景色 */
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .navbar a {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); /* 暗色模式下的文字阴影 */
+  }
+  
+  .navbar a.active, .navbar a:hover {
+    background-color: rgba(74, 107, 255, 0.2); /* 暗色模式下的活跃背景色 */
+  }
+}
 .navbar {
   position: fixed;
   top: 30;
@@ -1902,14 +1954,28 @@ h4 {
   width: 85%;
   max-width: 900px;
   max-height: 85vh;
-  background-color: var(--card-background); /* 确保使用正确的背景色 */
-  border-radius: var(--border-radius-lg);
+  background-color: white; /* 使用主题变量，适应暗色/亮色模式 */
+  border-radius: var(--border-radius-lg); /* 使用已定义的圆角变量 */
   box-shadow: var(--shadow-lg);
   padding: 25px;
   z-index: 2001; /* 确保在overlay之上 */
   overflow: hidden;
   animation: slideIn 0.4s ease;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color); /* 将120px改为1px，这可能是错误的 */
+}
+
+/* 增加悬浮光效和主题色彩边框 */
+.expanded-note::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 0 0 3px var(--primary-color); /* 添加主题色边框 */
+  opacity: 0.5;
+  pointer-events: none; /* 确保不会干扰点击事件 */
 }
 
 @keyframes slideIn {

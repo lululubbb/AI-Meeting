@@ -178,7 +178,7 @@
               <!-- 在 controls div 内，加入以下代码 -->
               <div class="language-selector"> <!-- Add this wrapper -->
   <button @click="showLanguageDropdown = !showLanguageDropdown" class="language-button">
-    <img src="@/assets/audio_off.png" alt="语言选择" />
+    <img src="@/assets/transcription.png" alt="语言选择" />
     <span class="selected-language">{{ supportedLanguages.find(l => l.code === targetLanguage).name }}</span>
   </button>
 
@@ -2676,7 +2676,7 @@ function subscribeEvents() {
     const { state, reason } = payload;
     console.log("[connection-change]", state, reason);
     if (state === "Closed") {
-      ElMessage.info(`会议连接已关闭`);
+      // ElMessage.info(`会议连接已关闭`);
       leaveSession();
     } else if (state === "Reconnecting") {
       ElMessage.info("正在重新连接...");
@@ -4427,7 +4427,7 @@ canvas.video-element.share-video {
 /* Style the language button to match other controls */
 .language-button {
   /* Inherit or match styles from .controls button */
-  background-color: #333;
+  background-color: #faf2f2;
   color: #fff;
   border: none;
   padding: 0; /* Reset padding if applying flex */
