@@ -175,13 +175,14 @@
 </div>
             <!-- 底部控制栏 -->
             <div class="controls">
-              <!-- 在 controls div 内，加入以下代码 -->
-              <div class="language-selector"> <!-- Add this wrapper -->
-  <button @click="showLanguageDropdown = !showLanguageDropdown" class="language-button">
+              <button 
+    @click="showLanguageDropdown = !showLanguageDropdown" 
+    :class="{ active: showLanguageDropdown }"
+  >
     <img src="@/assets/transcription.png" alt="语言选择" />
-    <span class="selected-language">{{ supportedLanguages.find(l => l.code === targetLanguage).name }}</span>
   </button>
-
+  
+  <!-- 下拉菜单改为向上弹出 -->
   <div v-if="showLanguageDropdown" class="language-dropdown">
     <div
       v-for="lang in supportedLanguages"
@@ -193,16 +194,18 @@
       {{ lang.name }}
     </div>
   </div>
-</div>
-              <button @click="toggleTranscription" :class="{ active: isTranscribing }">
-                <img v-if="isTranscribing" src="@/assets/字幕_on.png" alt="停止转录" />
-                <img v-else src="@/assets/字幕_off.png" alt="开始转录" />
-              </button>
+  
 
-              <button @click="toggleVideo" :class="{ active: isVideoOn }">
-                <img v-if="isVideoOn" src="@/assets/video_on.png" alt="关闭视频" />
-                <img v-else src="@/assets/video_off.png" alt="开启视频" />
-              </button>
+<!-- Other buttons remain the same -->
+<button @click="toggleTranscription" :class="{ active: isTranscribing }">
+    <img v-if="isTranscribing" src="@/assets/字幕_on.png" alt="停止转录" />
+    <img v-else src="@/assets/字幕_off.png" alt="开始转录" />
+</button>
+<button @click="toggleVideo" :class="{ active: isVideoOn }">
+    <img v-if="isVideoOn" src="@/assets/video_on.png" alt="关闭视频" />
+    <img v-else src="@/assets/video_off.png" alt="开启视频" />
+</button>
+
               <button @click="toggleAudio" :class="{ active: !isAudioOn }">
                 <img v-if="isAudioOn" src="@/assets/audio_on.png" alt="开启麦克风" />
                 <img v-else src="@/assets/audio_off.png" alt="静音" />
@@ -1816,7 +1819,7 @@ const leaveSession = async () => {
     // 普通用户离开，不再更新会议记录
     await ZoomVideoService.leaveSession(false);
     resetState();
-    ElMessage.success("已退出会议");
+    // ElMessage.success("已退出会议");
     store.commit("SET_VIDEOCALL_ACTIVE", false);
     router.push("/home");
   } catch (error) {
@@ -3212,6 +3215,7 @@ video-player-container.speaker-area {
   padding: 20px;
 }
 /* 优化字幕容器 - 适用于所有屏幕 */
+/* 修改字幕容器 - 更轻量化背景 */
 .subtitle-container {
   position: absolute;
   bottom: 80px; /* 控制栏上方的距离 */
@@ -3222,45 +3226,32 @@ video-player-container.speaker-area {
   pointer-events: none; /* 允许点击穿透 */
 }
 
-/* 字幕基础样式 */
+/* 字幕基础样式 - 降低背景透明度 */
 .subtitle {
   max-width: 85%;
   margin: 0 auto;
-  background: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
+  background: rgba(0, 0, 0, 0.4); /* 降低背景透明度 */
   border-radius: 12px;
-  padding: 10px 15px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 8px 12px; /* 减小内边距 */
   transition: opacity 0.3s ease;
 }
 
-/* 字幕项样式 */
+/* 字幕项样式 - 降低背景透明度，减小边距 */
 .subtitle-item {
   display: flex;
-  margin-bottom: 8px;
+  margin-bottom: 6px; /* 减小间距 */
   align-items: flex-start;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.2); /* 降低背景透明度 */
   border-radius: 8px;
-  padding: 8px 12px;
-  backdrop-filter: blur(3px); /* 增加毛玻璃效果 */
+  padding: 6px 10px; /* 减小内边距 */
+  backdrop-filter: blur(2px); /* 减轻毛玻璃效果 */
   transform-origin: bottom center;
   animation: subtitleFadeIn 0.3s ease forwards;
 }
 
-/* 字幕项淡入动画 */
-@keyframes subtitleFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* 发言者名称样式 */
 .subtitle-user {
-  color: #4fc3f7; /* 亮蓝色 */
+  color: #4fc3f7; /* 保持亮蓝色 */
   font-weight: 600;
   margin-right: 8px;
   flex-shrink: 0;
@@ -3270,7 +3261,7 @@ video-player-container.speaker-area {
 /* 字幕文本样式 */
 .subtitle-text {
   color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); /* 减轻文字阴影 */
   font-size: 15px;
   line-height: 1.4;
   word-break: break-word;
@@ -3280,51 +3271,36 @@ video-player-container.speaker-area {
 .subtitle-translation {
   color: #e0e0e0; /* 浅灰色 */
   font-size: 13px;
-  margin-top: 3px;
+  margin-top: 2px; /* 减小间距 */
   font-style: italic;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 /* 字幕占位符 */
 .subtitle-placeholder {
   text-align: center;
-  padding: 10px;
+  padding: 8px; /* 减小内边距 */
   color: rgba(255, 255, 255, 0.7);
   font-style: italic;
   font-size: 14px;
 }
 
-/* 移动端优化 (小屏幕) */
+/* 移动端优化 */
 @media (max-width: 480px) {
   .subtitle-container {
-    bottom: 70px; /* 距离控制栏更近 */
+    bottom: 70px;
   }
   
   .subtitle {
-    max-width: 95%; /* 宽度更大，占用更多空间 */
-    margin: 0 auto;
-    padding: 8px 12px;
+    max-width: 95%;
+    padding: 6px 10px;
   }
   
   .subtitle-item {
-    flex-direction: column; /* 用户名在上，文本在下 */
-    padding: 8px 10px;
-    margin-bottom: 6px;
-  }
-  
-  .subtitle-user {
-    margin-bottom: 4px;
-    font-size: 13px;
-  }
-  
-  .subtitle-text {
-    font-size: 14px; /* 稍小的字体 */
-    line-height: 1.3;
-  }
-  
-  .subtitle-translation {
-    font-size: 12px;
-    margin-top: 2px;
+    flex-direction: column;
+    padding: 6px 8px;
+    margin-bottom: 5px;
+    background: rgba(0, 0, 0, 0.25); /* 移动端更透明 */
   }
 }
 
@@ -4467,21 +4443,44 @@ canvas.video-element.share-video {
 }
 
 /* The dropdown menu itself */
+/* 调整下拉菜单定位和样式 */
 .language-dropdown {
   position: absolute;
-  bottom: 100%; /* Position above the button */
-  left: 50%; /* Center horizontally relative to the button */
-  transform: translateX(-50%); /* Correct horizontal centering */
-  margin-bottom: 10px; /* Space between button and dropdown */
-  background-color: #444; /* Dark background consistent with controls */
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 110; /* Ensure it's above controls */
-  min-width: 100px; /* Minimum width */
-  padding: 5px 0; /* Vertical padding */
-  max-height: 200px; /* Limit height and allow scrolling */
-  overflow-y: auto; /* Enable vertical scrolling if needed */
-  border: 1px solid #555; /* Subtle border */
+  bottom: 70px; /* 调整为控制栏上方适当位置 */
+  left: 40px; /* 对齐第一个按钮位置 */
+  background-color: #333;
+  border-radius: 8px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  width: auto;
+  padding: 8px 0;
+}
+
+/* 确保所有控制栏按钮尺寸一致 */
+.controls button {
+  width: 600px; /* 统一宽度 */
+  height: 60px; /* 统一高度 */
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  border: none;
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+
+
+/* 确保controls容器为单行 */
+.controls {
+  display: flex;
+  flex-wrap: nowrap; /* 防止换行 */
+  overflow-x: auto; /* 如果按钮太多，允许水平滚动 */
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  background: #1a1a1a;
 }
 
 /* Styling for each language option in the dropdown */
