@@ -31,7 +31,7 @@
     </main>
 
     <footer>
-        <p>&copy; 智汇西湖.</p>
+        <p>&copy; 智会西湖.</p>
     </footer>
   </div>
 </template>
