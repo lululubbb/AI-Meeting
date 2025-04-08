@@ -115,30 +115,59 @@ import { useRoute } from 'vue-router';
 // 更改脱敏函数！
 // 如果 anonymizeText 函数是在别处定义的，需要导入它
 // 否则可以直接在这里添加函数定义
-function anonymizeText(text) {
-  if (!text || typeof text !== 'string') return text;
+// function anonymizeText(text) {
+//   if (!text || typeof text !== 'string') return text;
   
-  // 将字符串分割成字符数组
-  const chars = text.split('');
+//   // 将字符串分割成字符数组
+//   const chars = text.split('');
   
-  // 定义脱敏概率（这里设为30%，可以调整）
-  const anonymizeProbability = 0.3;
+//   // 定义脱敏概率（这里设为30%，可以调整）
+//   const anonymizeProbability = 0.3;
   
-  // 遍历字符，随机插入星号
-  for (let i = 0; i < chars.length; i++) {
-    // 如果不是空格，并且随机数小于脱敏概率，则插入星号
-    if (chars[i] !== ' ' && Math.random() < anonymizeProbability) {
-      // 在当前字符后插入星号
-      chars.splice(i + 1, 0, '%%%');
-      // 跳过刚插入的星号
-      i++;
-    }
-  }
+//   // 遍历字符，随机插入星号
+//   for (let i = 0; i < chars.length; i++) {
+//     // 如果不是空格，并且随机数小于脱敏概率，则插入星号
+//     if (chars[i] !== ' ' && Math.random() < anonymizeProbability) {
+//       // 在当前字符后插入星号
+//       chars.splice(i + 1, 0, '%%%');
+//       // 跳过刚插入的星号
+//       i++;
+//     }
+//   }
   
-  // 将字符数组重新组合成字符串
-  return chars.join('');
-}
+//   // 将字符数组重新组合成字符串
+//   return chars.join('');
+// }
 
+
+/**
+ * 调用后端 PII 脱敏 API 处理文本
+ * @param {string} text - 需要脱敏的原始文本
+ * @returns {Promise<string>} - 返回脱敏后的文本（Promise）
+ */
+ async function anonymizeText(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  try {
+    // 调用后端 API（与 PiiTestTool.vue 相同的逻辑）
+    const response = await fetch('http://localhost:5000/api/pii-filter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.desensitizedText || text; // 如果脱敏失败，返回原始文本
+
+  } catch (error) {
+    console.error('[anonymizeText] PII 脱敏失败:', error);
+    return text; // 出错时返回原始文本
+  }
+};
 
 
 
