@@ -24,12 +24,12 @@ const router = useRouter();
 
 const tools = [
   {
-    name: 'Files',
-    title: '文件管理',
-    description: '上传、下载和管理会议相关文件',
-    icon: 'fa-solid fa-file',
+    name: 'AIBot',
+    title: '会议AI',
+    description: '咨询智能体西湖论剑会议相关事宜',
+    icon: 'fa-solid fa-robot',
     color: '#409eff',
-    route: 'Files',
+    route: 'AIBot',
   },
   {
     name: 'Map',
