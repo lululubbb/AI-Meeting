@@ -23,12 +23,20 @@ import { ElMessage } from 'element-plus';
 const router = useRouter();
 
 const tools = [
+{
+    name: 'AIBot',
+    title: '会议AI',
+    description: '咨询智能体西湖论剑会议相关事宜',
+    icon: 'fa-solid fa-robot',
+    color: '#409eff',
+    route: 'AIBot',
+  },
   {
-    name: 'Files',
+    name: 'File',
     title: '文件管理',
     description: '上传、下载和管理会议相关文件',
     icon: 'fa-solid fa-file',
-    color: '#409eff',
+    color: '#e56756',
     route: 'Files',
   },
   {
