@@ -5,23 +5,9 @@
       <h3>会议导出</h3>
       <div class="export-description">将会议内容导出为不同格式</div>
     </div>
-    
+  
     <div class="export-buttons">
-      <button @click="exportToPDF" class="export-btn pdf-btn" :disabled="isExporting.pdf">
-        <div class="btn-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <path d="M9 15h6"></path>
-            <path d="M9 11h6"></path>
-          </svg>
-        </div>
-        <div class="btn-content">
-          <span class="btn-title">导出为PDF</span>
-          <span class="btn-desc">适合打印和归档</span>
-        </div>
-        <div v-if="isExporting.pdf" class="btn-spinner"></div>
-      </button>
+
       
       <button @click="exportToMarkdown" class="export-btn md-btn" :disabled="isExporting.markdown">
         <div class="btn-icon">
@@ -56,6 +42,61 @@
         </div>
         <div v-if="isExporting.word" class="btn-spinner"></div>
       </button>
+      <button @click="exportToPDF" class="export-btn pdf-btn" :disabled="isExporting.pdf">
+        <div class="btn-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M9 15h6"></path>
+            <path d="M9 11h6"></path>
+          </svg>
+        </div>
+        <div class="btn-content">
+          <span class="btn-title">导出为PDF</span>
+          <span class="btn-desc">适合打印和归档</span>
+        </div>
+        <div v-if="isExporting.pdf" class="btn-spinner"></div>
+      </button>
+
+
+      <button @click="exportToAnonymizedMarkdown" class="export-btn anon-md-btn" :disabled="isExporting.anonMarkdown">
+  <div class="btn-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path>
+      <line x1="7" y1="7" x2="17" y2="7"></line>
+      <line x1="7" y1="11" x2="12" y2="11"></line>
+      <line x1="7" y1="15" x2="12" y2="15"></line>
+      <circle cx="17" cy="18" r="3"></circle>
+      <path d="M17 16v4"></path>
+    </svg>
+  </div>
+  <div class="btn-content">
+    <span class="btn-title">导出脱敏后Markdown</span>
+    <span class="btn-desc">适合分享时保护隐私</span>
+  </div>
+  <div v-if="isExporting.anonMarkdown" class="btn-spinner"></div>
+</button>
+
+<button @click="exportToAnonymizedWord" class="export-btn anon-word-btn" :disabled="isExporting.anonWord">
+  <div class="btn-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 18h16"></path>
+      <path d="M4 14h16"></path>
+      <path d="M4 10h16"></path>
+      <path d="M4 6h16"></path>
+      <path d="M16 6l-4 12-4-12"></path>
+      <circle cx="12" cy="14" r="2"></circle>
+      <path d="M12 12V8"></path>
+    </svg>
+  </div>
+  <div class="btn-content">
+    <span class="btn-title">导出脱敏后Word</span>
+    <span class="btn-desc">适合保护隐私信息</span>
+  </div>
+  <div v-if="isExporting.anonWord" class="btn-spinner"></div>
+</button>
+
+
     </div>
     
     <!-- 导出成功提示 -->
@@ -70,6 +111,42 @@
 import { ref, computed } from 'vue';
 import ExportUtils from '../services/ExportUtils.js'; // 假设你有一个导出工具类
 import { useRoute } from 'vue-router';
+
+// 更改脱敏函数！
+// 如果 anonymizeText 函数是在别处定义的，需要导入它
+// 否则可以直接在这里添加函数定义
+function anonymizeText(text) {
+  if (!text || typeof text !== 'string') return text;
+  
+  // 将字符串分割成字符数组
+  const chars = text.split('');
+  
+  // 定义脱敏概率（这里设为30%，可以调整）
+  const anonymizeProbability = 0.3;
+  
+  // 遍历字符，随机插入星号
+  for (let i = 0; i < chars.length; i++) {
+    // 如果不是空格，并且随机数小于脱敏概率，则插入星号
+    if (chars[i] !== ' ' && Math.random() < anonymizeProbability) {
+      // 在当前字符后插入星号
+      chars.splice(i + 1, 0, '%%%');
+      // 跳过刚插入的星号
+      i++;
+    }
+  }
+  
+  // 将字符数组重新组合成字符串
+  return chars.join('');
+}
+
+
+
+
+// --------------------------------------
+
+
+
+
 
 const props = defineProps({
   transcriptionData: {
@@ -115,7 +192,14 @@ const route = useRoute();
 const meetingId = computed(() => route.params.meetingId || '未命名会议');
 
 // 导出状态 - 注意这里已修复重复声明问题
-const isExporting = ref({ pdf: false, markdown: false, word: false });
+const isExporting = ref({ 
+  pdf: false, 
+  markdown: false, 
+  word: false,
+  anonWord: false,      // 新增
+  anonMarkdown: false   // 新增
+});
+
 const exportSuccess = ref(false);
 const successMessage = ref('');
 
@@ -132,6 +216,95 @@ const meetingData = computed(() => ({
   todosAndExtensions: props.todosAndExtensions,
   wordCloudData: props.wordCloudData
 }));
+
+
+
+
+// 添加两个新的导出函数
+// 导出为脱敏后Word
+async function exportToAnonymizedWord() {
+  if (isExporting.value.anonWord) return;
+  
+  isExporting.value.anonWord = true;
+  try {
+    // 创建脱敏后的数据副本
+    const anonymizedData = {...meetingData.value};
+    
+    // 对数据进行脱敏处理
+    anonymizedData.transcriptionData = anonymizeContent(anonymizedData.transcriptionData);
+    anonymizedData.processedData = anonymizeContent(anonymizedData.processedData);
+    anonymizedData.optimizationData = anonymizeContent(anonymizedData.optimizationData);
+    anonymizedData.summaries = anonymizeContent(anonymizedData.summaries);
+    anonymizedData.keywords = anonymizeContent(anonymizedData.keywords);
+    anonymizedData.overallSummary = anonymizeContent(anonymizedData.overallSummary);
+    anonymizedData.todosAndExtensions = anonymizeContent(anonymizedData.todosAndExtensions);
+    
+    // 调用导出Word的逻辑，但使用脱敏数据
+    await ExportUtils.exportToWord(props.meetingTitle + '(脱敏版)', anonymizedData);
+    showSuccessMessage('脱敏Word文档导出成功！');
+  } catch (error) {
+    console.error('脱敏Word导出错误:', error);
+  } finally {
+    isExporting.value.anonWord = false;
+  }
+}
+
+// 导出为脱敏后Markdown
+async function exportToAnonymizedMarkdown() {
+  if (isExporting.value.anonMarkdown) return;
+  
+  isExporting.value.anonMarkdown = true;
+  try {
+    // 创建脱敏后的数据副本
+    const anonymizedData = {...meetingData.value};
+    
+    // 对数据进行脱敏处理
+    anonymizedData.transcriptionData = anonymizeContent(anonymizedData.transcriptionData);
+    anonymizedData.processedData = anonymizeContent(anonymizedData.processedData);
+    anonymizedData.optimizationData = anonymizeContent(anonymizedData.optimizationData);
+    anonymizedData.summaries = anonymizeContent(anonymizedData.summaries);
+    anonymizedData.keywords = anonymizeContent(anonymizedData.keywords);
+    anonymizedData.overallSummary = anonymizeContent(anonymizedData.overallSummary);
+    anonymizedData.todosAndExtensions = anonymizeContent(anonymizedData.todosAndExtensions);
+    
+    // 调用导出Markdown的逻辑，但使用脱敏数据
+    await ExportUtils.exportToMarkdown(props.meetingTitle + '(脱敏版)', anonymizedData);
+    showSuccessMessage('脱敏Markdown文档导出成功！');
+  } catch (error) {
+    console.error('脱敏Markdown导出错误:', error);
+  } finally {
+    isExporting.value.anonMarkdown = false;
+  }
+}
+
+// 添加脱敏内容的递归处理函数
+function anonymizeContent(content) {
+  // 如果是字符串，直接脱敏
+  if (typeof content === 'string') {
+    return anonymizeText(content);
+  }
+  
+  // 如果是对象或数组，递归处理
+  if (typeof content === 'object' && content !== null) {
+    if (Array.isArray(content)) {
+      return content.map(item => anonymizeContent(item));
+    } else {
+      const result = {};
+      for (const key in content) {
+        if (Object.prototype.hasOwnProperty.call(content, key)) {
+          result[key] = anonymizeContent(content[key]);
+        }
+      }
+      return result;
+    }
+  }
+  
+  // 其他类型直接返回
+  return content;
+}
+
+
+
 
 // 导出为PDF
 async function exportToPDF() {
@@ -225,7 +398,7 @@ function showSuccessMessage(message) {
 
 .export-buttons {
   display: flex;
-  gap: 20px;
+  gap: 120px;
   flex-wrap: wrap;
 }
 
@@ -401,6 +574,50 @@ function showSuccessMessage(message) {
   
   .word-btn {
     background-color: rgba(43, 87, 154, 0.15);
+  }
+}
+
+
+/* 脱敏Word按钮样式 */
+.anon-word-btn {
+  border-color: #2b579a;
+  color: #2b579a;
+  background-color: rgba(43, 87, 154, 0.05);
+  position: relative;
+}
+
+.anon-word-btn:hover {
+  background-color: #2b579a;
+  color: white;
+}
+
+/* 脱敏Markdown按钮样式 */
+.anon-md-btn {
+  border-color: #2196f3;
+  color: #2196f3;
+  background-color: rgba(33, 150, 243, 0.05);
+  position: relative;
+}
+
+.anon-md-btn:hover {
+  background-color: #2196f3;
+  color: white;
+}
+
+/* 添加一个小锁图标指示脱敏功能 */
+.anon-word-btn::after, .anon-md-btn::after {
+  content: '🔒';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* 添加响应式支持 */
+@media (max-width: 768px) {
+  .anon-word-btn, .anon-md-btn {
+    width: 100%;
   }
 }
 </style>
