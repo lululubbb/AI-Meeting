@@ -1,4 +1,5 @@
 <!-- ExportButtons.vue -->
+<!-- ExportButtons.vue -->
 <template>
   <div class="export-panel">
     <div class="export-header">
@@ -7,8 +8,6 @@
     </div>
   
     <div class="export-buttons">
-
-      
       <button @click="exportToMarkdown" class="export-btn md-btn" :disabled="isExporting.markdown">
         <div class="btn-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -58,45 +57,42 @@
         <div v-if="isExporting.pdf" class="btn-spinner"></div>
       </button>
 
-
       <button @click="exportToAnonymizedMarkdown" class="export-btn anon-md-btn" :disabled="isExporting.anonMarkdown">
-  <div class="btn-icon">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path>
-      <line x1="7" y1="7" x2="17" y2="7"></line>
-      <line x1="7" y1="11" x2="12" y2="11"></line>
-      <line x1="7" y1="15" x2="12" y2="15"></line>
-      <circle cx="17" cy="18" r="3"></circle>
-      <path d="M17 16v4"></path>
-    </svg>
-  </div>
-  <div class="btn-content">
-    <span class="btn-title">导出脱敏后Markdown</span>
-    <span class="btn-desc">适合分享时保护隐私</span>
-  </div>
-  <div v-if="isExporting.anonMarkdown" class="btn-spinner"></div>
-</button>
+        <div class="btn-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path>
+            <line x1="7" y1="7" x2="17" y2="7"></line>
+            <line x1="7" y1="11" x2="12" y2="11"></line>
+            <line x1="7" y1="15" x2="12" y2="15"></line>
+            <circle cx="17" cy="18" r="3"></circle>
+            <path d="M17 16v4"></path>
+          </svg>
+        </div>
+        <div class="btn-content">
+          <span class="btn-title">导出脱敏后Markdown</span>
+          <span class="btn-desc">适合分享时保护隐私</span>
+        </div>
+        <div v-if="isExporting.anonMarkdown" class="btn-spinner"></div>
+      </button>
 
-<button @click="exportToAnonymizedWord" class="export-btn anon-word-btn" :disabled="isExporting.anonWord">
-  <div class="btn-icon">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 18h16"></path>
-      <path d="M4 14h16"></path>
-      <path d="M4 10h16"></path>
-      <path d="M4 6h16"></path>
-      <path d="M16 6l-4 12-4-12"></path>
-      <circle cx="12" cy="14" r="2"></circle>
-      <path d="M12 12V8"></path>
-    </svg>
-  </div>
-  <div class="btn-content">
-    <span class="btn-title">导出脱敏后Word</span>
-    <span class="btn-desc">适合保护隐私信息</span>
-  </div>
-  <div v-if="isExporting.anonWord" class="btn-spinner"></div>
-</button>
-
-
+      <button @click="exportToAnonymizedWord" class="export-btn anon-word-btn" :disabled="isExporting.anonWord">
+        <div class="btn-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 18h16"></path>
+            <path d="M4 14h16"></path>
+            <path d="M4 10h16"></path>
+            <path d="M4 6h16"></path>
+            <path d="M16 6l-4 12-4-12"></path>
+            <circle cx="12" cy="14" r="2"></circle>
+            <path d="M12 12V8"></path>
+          </svg>
+        </div>
+        <div class="btn-content">
+          <span class="btn-title">导出脱敏后Word</span>
+          <span class="btn-desc">适合保护隐私信息</span>
+        </div>
+        <div v-if="isExporting.anonWord" class="btn-spinner"></div>
+      </button>
     </div>
     
     <!-- 导出成功提示 -->
@@ -111,71 +107,199 @@
 import { ref, computed } from 'vue';
 import ExportUtils from '../services/ExportUtils.js'; // 假设你有一个导出工具类
 import { useRoute } from 'vue-router';
+import axios from 'axios';
 
-// 更改脱敏函数！
-// 如果 anonymizeText 函数是在别处定义的，需要导入它
-// 否则可以直接在这里添加函数定义
-// function anonymizeText(text) {
-//   if (!text || typeof text !== 'string') return text;
+// 基础脱敏函数 - 将调用后端API
+async function anonymizeText(text) {
+  if (!text || typeof text !== 'string') return text || '';
   
-//   // 将字符串分割成字符数组
-//   const chars = text.split('');
-  
-//   // 定义脱敏概率（这里设为30%，可以调整）
-//   const anonymizeProbability = 0.3;
-  
-//   // 遍历字符，随机插入星号
-//   for (let i = 0; i < chars.length; i++) {
-//     // 如果不是空格，并且随机数小于脱敏概率，则插入星号
-//     if (chars[i] !== ' ' && Math.random() < anonymizeProbability) {
-//       // 在当前字符后插入星号
-//       chars.splice(i + 1, 0, '%%%');
-//       // 跳过刚插入的星号
-//       i++;
-//     }
-//   }
-  
-//   // 将字符数组重新组合成字符串
-//   return chars.join('');
-// }
-
-
-/**
- * 调用后端 PII 脱敏 API 处理文本
- * @param {string} text - 需要脱敏的原始文本
- * @returns {Promise<string>} - 返回脱敏后的文本（Promise）
- */
- async function anonymizeText(text) {
-  if (!text || typeof text !== 'string') return text;
-
   try {
-    // 调用后端 API（与 PiiTestTool.vue 相同的逻辑）
-    const response = await fetch('http://localhost:5000/api/pii-filter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text })
+    // 调用后端API进行脱敏
+    const apiUrl = 'http://localhost:5000/api/pii-filter';
+    const response = await axios.post(apiUrl, {
+      text: text
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    
+    if (response.data && response.data.desensitizedText !== undefined) {
+      return response.data.desensitizedText;
+    } else {
+      console.error('脱敏API返回无效数据:', response.data);
+      return text; // 若API返回无效，保留原文本
     }
-
-    const data = await response.json();
-    return data.desensitizedText || text; // 如果脱敏失败，返回原始文本
-
   } catch (error) {
-    console.error('[anonymizeText] PII 脱敏失败:', error);
-    return text; // 出错时返回原始文本
+    console.error('调用脱敏API错误:', error);
+    return text; // 出错时返回原文本
   }
-};
+}
 
+// 批量处理字符串的函数 - 使用API批量处理
+async function anonymizeTextBatch(texts) {
+  if (!texts || !texts.length) return [];
+  
+  // 确保数组中所有项都是字符串
+  const validTexts = texts.map(text => typeof text === 'string' ? text : '');
+  
+  try {
+    // 将多个字符串合并为一个较大的请求，减少API调用次数
+    // 使用不太可能出现在正常文本中的分隔符
+    const DELIMITER = "|||SPLIT_MARK|||";
+    const combinedText = validTexts.join(DELIMITER);
+    
+    // 对合并后的文本进行一次性脱敏处理
+    const anonymizedCombined = await anonymizeText(combinedText);
+    
+    // 如果脱敏后的结果不是字符串，返回原始数组
+    if (typeof anonymizedCombined !== 'string') {
+      return validTexts;
+    }
+    
+    // 拆分回数组
+    const result = anonymizedCombined.split(DELIMITER);
+    
+    // 确保返回的数组长度与输入数组一致
+    if (result.length !== texts.length) {
+      console.warn('脱敏后的文本段数与原始文本不匹配', 
+                  { original: texts.length, anonymized: result.length });
+      
+      // 如果长度不匹配，使用原始长度并填充缺失部分
+      const finalResult = [];
+      for (let i = 0; i < texts.length; i++) {
+        finalResult.push(i < result.length ? result[i] : validTexts[i]);
+      }
+      
+      return finalResult;
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('批量脱敏处理错误:', error);
+    return validTexts; // 出错时返回原始文本数组
+  }
+}
 
-
-// --------------------------------------
-
-
-
-
+// 递归处理各种数据结构的脱敏函数 - 异步版本
+async function anonymizeContent(content) {
+  // 处理null或undefined
+  if (content === null || content === undefined) {
+    return content;
+  }
+  
+  // 字符串数组的批量处理
+  if (Array.isArray(content)) {
+    // 创建一个新数组结果
+    const result = [...content];
+    
+    // 收集所有字符串项
+    const stringItems = [];
+    const stringIndices = [];
+    
+    content.forEach((item, index) => {
+      if (typeof item === 'string') {
+        stringItems.push(item);
+        stringIndices.push(index);
+      }
+    });
+    
+    // 如果有字符串项，批量处理
+    if (stringItems.length > 0) {
+      try {
+        const anonymizedStrings = await anonymizeTextBatch(stringItems);
+        
+        // 将脱敏后的字符串放回结果数组
+        stringIndices.forEach((index, i) => {
+          if (i < anonymizedStrings.length) {
+            result[index] = anonymizedStrings[i];
+          }
+        });
+      } catch (error) {
+        console.error('批量脱敏数组错误:', error);
+        // 出错时保留原始字符串
+      }
+    }
+    
+    // 递归处理非字符串项
+    const promises = [];
+    for (let i = 0; i < content.length; i++) {
+      if (typeof content[i] !== 'string' && 
+          content[i] !== null && 
+          content[i] !== undefined) {
+        promises.push(
+          (async (index) => {
+            result[index] = await anonymizeContent(content[index]);
+          })(i)
+        );
+      }
+    }
+    
+    // 等待所有递归处理完成
+    await Promise.all(promises);
+    
+    return result;
+  }
+  
+  // 单个字符串直接处理
+  if (typeof content === 'string') {
+    return await anonymizeText(content);
+  }
+  
+  // 对象处理
+  if (typeof content === 'object') {
+    const result = {...content};
+    
+    // 收集所有字符串属性
+    const stringProps = {};
+    
+    for (const key in content) {
+      if (Object.prototype.hasOwnProperty.call(content, key) && 
+          typeof content[key] === 'string') {
+        stringProps[key] = content[key];
+      }
+    }
+    
+    // 批量处理字符串属性
+    if (Object.keys(stringProps).length > 0) {
+      try {
+        const propKeys = Object.keys(stringProps);
+        const propValues = Object.values(stringProps);
+        
+        const anonymizedValues = await anonymizeTextBatch(propValues);
+        
+        // 将脱敏后的值放回结果对象
+        propKeys.forEach((key, i) => {
+          if (i < anonymizedValues.length) {
+            result[key] = anonymizedValues[i];
+          }
+        });
+      } catch (error) {
+        console.error('批量脱敏对象错误:', error);
+        // 出错时保留原始值
+      }
+    }
+    
+    // 递归处理非字符串属性
+    const promises = [];
+    for (const key in content) {
+      if (Object.prototype.hasOwnProperty.call(content, key) && 
+          typeof content[key] !== 'string' && 
+          content[key] !== null && 
+          content[key] !== undefined) {
+        promises.push(
+          (async (k) => {
+            result[k] = await anonymizeContent(content[k]);
+          })(key)
+        );
+      }
+    }
+    
+    // 等待所有递归处理完成
+    await Promise.all(promises);
+    
+    return result;
+  }
+  
+  // 其他类型直接返回
+  return content;
+}
 
 const props = defineProps({
   transcriptionData: {
@@ -220,13 +344,13 @@ const props = defineProps({
 const route = useRoute();
 const meetingId = computed(() => route.params.meetingId || '未命名会议');
 
-// 导出状态 - 注意这里已修复重复声明问题
+// 导出状态
 const isExporting = ref({ 
   pdf: false, 
   markdown: false, 
   word: false,
-  anonWord: false,      // 新增
-  anonMarkdown: false   // 新增
+  anonWord: false,
+  anonMarkdown: false
 });
 
 const exportSuccess = ref(false);
@@ -246,33 +370,61 @@ const meetingData = computed(() => ({
   wordCloudData: props.wordCloudData
 }));
 
-
-
-
-// 添加两个新的导出函数
 // 导出为脱敏后Word
 async function exportToAnonymizedWord() {
   if (isExporting.value.anonWord) return;
   
   isExporting.value.anonWord = true;
   try {
-    // 创建脱敏后的数据副本
+    // 创建数据副本
     const anonymizedData = {...meetingData.value};
     
-    // 对数据进行脱敏处理
-    anonymizedData.transcriptionData = anonymizeContent(anonymizedData.transcriptionData);
-    anonymizedData.processedData = anonymizeContent(anonymizedData.processedData);
-    anonymizedData.optimizationData = anonymizeContent(anonymizedData.optimizationData);
-    anonymizedData.summaries = anonymizeContent(anonymizedData.summaries);
-    anonymizedData.keywords = anonymizeContent(anonymizedData.keywords);
-    anonymizedData.overallSummary = anonymizeContent(anonymizedData.overallSummary);
-    anonymizedData.todosAndExtensions = anonymizeContent(anonymizedData.todosAndExtensions);
+    // 添加日志便于调试
+    console.log('开始脱敏处理，原始数据结构:', 
+                JSON.stringify(anonymizedData, null, 2).slice(0, 500) + '...');
     
-    // 调用导出Word的逻辑，但使用脱敏数据
+    // 对数据进行脱敏处理
+    try {
+      // 并行处理各个部分以提高性能
+      await Promise.all([
+        (async () => {
+          anonymizedData.transcriptionData = await anonymizeContent(anonymizedData.transcriptionData);
+        })(),
+        (async () => {
+          anonymizedData.processedData = await anonymizeContent(anonymizedData.processedData);
+        })(),
+        (async () => {
+          anonymizedData.optimizationData = await anonymizeContent(anonymizedData.optimizationData);
+        })(),
+        (async () => {
+          anonymizedData.summaries = await anonymizeContent(anonymizedData.summaries);
+        })(),
+        (async () => {
+          anonymizedData.keywords = await anonymizeContent(anonymizedData.keywords);
+        })(),
+        (async () => {
+          anonymizedData.overallSummary = await anonymizeText(anonymizedData.overallSummary || '');
+        })(),
+        (async () => {
+          anonymizedData.todosAndExtensions = await anonymizeText(anonymizedData.todosAndExtensions || '');
+        })()
+      ]);
+      
+      // 添加日志验证脱敏后的数据结构
+      console.log('脱敏处理完成，脱敏后数据结构:', 
+                  JSON.stringify(anonymizedData, null, 2).slice(0, 500) + '...');
+    } catch (error) {
+      console.error('脱敏处理过程中出错:', error);
+      // 出错时仍然尝试导出原始数据
+      showSuccessMessage('脱敏处理失败，将导出原始数据');
+    }
+    
+    // 调用导出功能
     await ExportUtils.exportToWord(props.meetingTitle + '(脱敏版)', anonymizedData);
     showSuccessMessage('脱敏Word文档导出成功！');
   } catch (error) {
     console.error('脱敏Word导出错误:', error);
+    showSuccessMessage('脱敏Word导出失败！');
   } finally {
     isExporting.value.anonWord = false;
   }
@@ -284,56 +436,59 @@ async function exportToAnonymizedMarkdown() {
   
   isExporting.value.anonMarkdown = true;
   try {
-    // 创建脱敏后的数据副本
+    // 创建数据副本
     const anonymizedData = {...meetingData.value};
     
-    // 对数据进行脱敏处理
-    anonymizedData.transcriptionData = anonymizeContent(anonymizedData.transcriptionData);
-    anonymizedData.processedData = anonymizeContent(anonymizedData.processedData);
-    anonymizedData.optimizationData = anonymizeContent(anonymizedData.optimizationData);
-    anonymizedData.summaries = anonymizeContent(anonymizedData.summaries);
-    anonymizedData.keywords = anonymizeContent(anonymizedData.keywords);
-    anonymizedData.overallSummary = anonymizeContent(anonymizedData.overallSummary);
-    anonymizedData.todosAndExtensions = anonymizeContent(anonymizedData.todosAndExtensions);
+    // 添加日志便于调试
+    console.log('开始脱敏处理，原始数据结构:', 
+                JSON.stringify(anonymizedData, null, 2).slice(0, 500) + '...');
     
-    // 调用导出Markdown的逻辑，但使用脱敏数据
+    // 对数据进行脱敏处理
+    try {
+      // 并行处理各个部分以提高性能
+      await Promise.all([
+        (async () => {
+          anonymizedData.transcriptionData = await anonymizeContent(anonymizedData.transcriptionData);
+        })(),
+        (async () => {
+          anonymizedData.processedData = await anonymizeContent(anonymizedData.processedData);
+        })(),
+        (async () => {
+          anonymizedData.optimizationData = await anonymizeContent(anonymizedData.optimizationData);
+        })(),
+        (async () => {
+          anonymizedData.summaries = await anonymizeContent(anonymizedData.summaries);
+        })(),
+        (async () => {
+          anonymizedData.keywords = await anonymizeContent(anonymizedData.keywords);
+        })(),
+        (async () => {
+          anonymizedData.overallSummary = await anonymizeText(anonymizedData.overallSummary || '');
+        })(),
+        (async () => {
+          anonymizedData.todosAndExtensions = await anonymizeText(anonymizedData.todosAndExtensions || '');
+        })()
+      ]);
+      
+      // 添加日志验证脱敏后的数据结构
+      console.log('脱敏处理完成，脱敏后数据结构:', 
+                  JSON.stringify(anonymizedData, null, 2).slice(0, 500) + '...');
+    } catch (error) {
+      console.error('脱敏处理过程中出错:', error);
+      // 出错时仍然尝试导出原始数据
+      showSuccessMessage('脱敏处理失败，将导出原始数据');
+    }
+    
+    // 调用导出功能
     await ExportUtils.exportToMarkdown(props.meetingTitle + '(脱敏版)', anonymizedData);
     showSuccessMessage('脱敏Markdown文档导出成功！');
   } catch (error) {
     console.error('脱敏Markdown导出错误:', error);
+    showSuccessMessage('脱敏Markdown导出失败！');
   } finally {
     isExporting.value.anonMarkdown = false;
   }
 }
-
-// 添加脱敏内容的递归处理函数
-function anonymizeContent(content) {
-  // 如果是字符串，直接脱敏
-  if (typeof content === 'string') {
-    return anonymizeText(content);
-  }
-  
-  // 如果是对象或数组，递归处理
-  if (typeof content === 'object' && content !== null) {
-    if (Array.isArray(content)) {
-      return content.map(item => anonymizeContent(item));
-    } else {
-      const result = {};
-      for (const key in content) {
-        if (Object.prototype.hasOwnProperty.call(content, key)) {
-          result[key] = anonymizeContent(content[key]);
-        }
-      }
-      return result;
-    }
-  }
-  
-  // 其他类型直接返回
-  return content;
-}
-
-
-
 
 // 导出为PDF
 async function exportToPDF() {

@@ -10,7 +10,7 @@
    class Client {
        static createClient() {
            let config = new OpenApi.Config({
-               accessKeyId: "LTAI5tQhyJpfza5PCkxhtJUX",
+               accessKeyId: "****",
                accessKeySecret: "mvFFWIuRWmW7orJI5iyXtMT9YyyuL3",
            });
            config.endpoint = `mt.cn-hangzhou.aliyuncs.com`;

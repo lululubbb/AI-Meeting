@@ -15,7 +15,7 @@ const CONFIG = {
 
 // 创建RPC客户端
 const client = new RPCClient({
-  accessKeyId: "LTAI5tS2EbCgYqWFMBuiS935", // 替换为您的实际AccessKeyID
+  accessKeyId: "******", //
   accessKeySecret: "GfdFqUXCCQk7SLjbm8LivHreQfDclz", // 替换为您的实际AccessKeySecret
   endpoint: CONFIG.ENDPOINT,
   apiVersion: CONFIG.API_VERSION
